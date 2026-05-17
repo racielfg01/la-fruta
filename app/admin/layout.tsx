@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -15,9 +16,15 @@ import {
   ShoppingBag,
   Coins,
 } from "lucide-react";
-import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { useAdminStore } from "@/lib/admin-store";
+
+function AdminStoreInitializer() {
+  const initialize = useAdminStore((s) => s.initialize);
+  useEffect(() => { initialize(); }, [initialize]);
+  return null;
+}
 
 const navigation = [
   {
@@ -67,6 +74,7 @@ export default function AdminLayout({
 
   return (
     <div className="min-h-screen bg-muted/30">
+      <AdminStoreInitializer />
       {/* Mobile sidebar backdrop */}
       {sidebarOpen && (
         <div

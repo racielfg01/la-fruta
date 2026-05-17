@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { Suspense, useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { useAdminStore } from "@/lib/admin-store";
 import { Product, Unit } from "@/lib/store";
@@ -57,7 +57,15 @@ const emptyProduct: Omit<Product, "id"> = {
   inStock: true,
 };
 
-export default function ProductsAdmin() {
+export default function ProductsAdminPage() {
+  return (
+    <Suspense>
+      <ProductsAdmin />
+    </Suspense>
+  );
+}
+
+function ProductsAdmin() {
   const searchParams = useSearchParams();
   const { products, categories, addProduct, updateProduct, deleteProduct } =
     useAdminStore();

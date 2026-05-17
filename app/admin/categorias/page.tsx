@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { Suspense, useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { useAdminStore, Category } from "@/lib/admin-store";
 import { Button } from "@/components/ui/button";
@@ -34,7 +34,15 @@ const emptyCategory: Omit<Category, "id"> = {
   image: "",
 };
 
-export default function CategoriesAdmin() {
+export default function CategoriesAdminPage() {
+  return (
+    <Suspense>
+      <CategoriesAdmin />
+    </Suspense>
+  );
+}
+
+function CategoriesAdmin() {
   const searchParams = useSearchParams();
   const { categories, products, addCategory, updateCategory, deleteCategory } =
     useAdminStore();

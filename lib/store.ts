@@ -1,12 +1,16 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
+export type Unit = "por lb" | "por kg" | "c/u" | "por pinta" | "por docena";
+
+export const UNITS: Unit[] = ["por lb", "por kg", "c/u", "por pinta", "por docena"];
+
 export interface Product {
   id: string;
   name: string;
   description: string;
   price: number;
-  unit: string;
+  unit: Unit;
   image: string;
   category: string;
   origin: string;

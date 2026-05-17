@@ -7,7 +7,7 @@ export const products: Product[] = [
     description:
       "Crisp and sweet organic apples freshly picked from local orchards. Perfect for snacking, baking, or making fresh juice.",
     price: 4.99,
-    unit: "per lb",
+    unit: "por lb",
     image: "https://images.unsplash.com/photo-1560806887-1e4cd0b6cbd6?w=800&h=600&fit=crop",
     category: "Fruits",
     origin: "Washington Valley Farms",
@@ -19,7 +19,7 @@ export const products: Product[] = [
     description:
       "Juicy Valencia oranges bursting with vitamin C. Ideal for fresh-squeezed juice or eating out of hand.",
     price: 5.49,
-    unit: "per lb",
+    unit: "por lb",
     image: "https://images.unsplash.com/photo-1547514701-42782101795e?w=800&h=600&fit=crop",
     category: "Citrus",
     origin: "California Sun Orchards",
@@ -31,7 +31,7 @@ export const products: Product[] = [
     description:
       "Sweet, red strawberries picked at peak ripeness. Perfect for desserts, smoothies, or eating fresh.",
     price: 6.99,
-    unit: "per pint",
+    unit: "por pinta",
     image: "https://images.unsplash.com/photo-1464965911861-746a04b4bca6?w=800&h=600&fit=crop",
     category: "Berries",
     origin: "Green Valley Farms",
@@ -43,7 +43,7 @@ export const products: Product[] = [
     description:
       "Perfectly ripe bananas, naturally sweet and full of potassium. Great for smoothies, baking, or as a healthy snack.",
     price: 2.49,
-    unit: "per bunch",
+    unit: "c/u",
     image: "https://images.unsplash.com/photo-1571771894821-ce9b6c11b08e?w=800&h=600&fit=crop",
     category: "Tropical",
     origin: "Costa Rica Plantations",
@@ -55,7 +55,7 @@ export const products: Product[] = [
     description:
       "Plump, organic blueberries packed with antioxidants. Perfect for breakfast, baking, or snacking.",
     price: 7.99,
-    unit: "per pint",
+    unit: "por pinta",
     image: "https://images.unsplash.com/photo-1498557850523-fd3d118b962e?w=800&h=600&fit=crop",
     category: "Berries",
     origin: "Maine Berry Farms",
@@ -67,7 +67,7 @@ export const products: Product[] = [
     description:
       "Tropical mangoes with buttery, sweet flesh. Excellent for smoothies, salsas, or enjoying fresh.",
     price: 3.99,
-    unit: "each",
+    unit: "c/u",
     image: "https://images.unsplash.com/photo-1553279768-865429fa0078?w=800&h=600&fit=crop",
     category: "Tropical",
     origin: "Mexican Tropical Farms",
@@ -79,7 +79,7 @@ export const products: Product[] = [
     description:
       "Seedless red grapes, crisp and naturally sweet. Perfect for snacking, salads, or cheese boards.",
     price: 4.49,
-    unit: "per lb",
+    unit: "por lb",
     image: "https://images.unsplash.com/photo-1537640538966-79f369143f8f?w=800&h=600&fit=crop",
     category: "Fruits",
     origin: "Napa Valley Vineyards",
@@ -91,7 +91,7 @@ export const products: Product[] = [
     description:
       "Creamy Hass avocados, perfectly ripe and ready to eat. Ideal for guacamole, toast, or salads.",
     price: 2.99,
-    unit: "each",
+    unit: "c/u",
     image: "https://images.unsplash.com/photo-1523049673857-eb18f1d7b578?w=800&h=600&fit=crop",
     category: "Fruits",
     origin: "California Avocado Farms",
@@ -103,7 +103,7 @@ export const products: Product[] = [
     description:
       "Bright, tangy lemons perfect for cooking, baking, or making refreshing lemonade.",
     price: 3.49,
-    unit: "per lb",
+    unit: "por lb",
     image: "https://images.unsplash.com/photo-1590502593747-42a996133562?w=800&h=600&fit=crop",
     category: "Citrus",
     origin: "Mediterranean Citrus Co.",
@@ -115,7 +115,7 @@ export const products: Product[] = [
     description:
       "Refreshing seedless watermelon, perfectly sweet and hydrating. A summer favorite for picnics and gatherings.",
     price: 8.99,
-    unit: "each",
+    unit: "c/u",
     image: "https://images.unsplash.com/photo-1587049352846-4a222e784d38?w=800&h=600&fit=crop",
     category: "Melons",
     origin: "Georgia Melon Farms",
@@ -127,7 +127,7 @@ export const products: Product[] = [
     description:
       "Delicate, sweet raspberries with a perfect balance of tartness. Great for desserts and breakfast.",
     price: 8.49,
-    unit: "per pint",
+    unit: "por pinta",
     image: "https://images.unsplash.com/photo-1577003833619-76bbd7f82948?w=800&h=600&fit=crop",
     category: "Berries",
     origin: "Pacific Northwest Farms",
@@ -139,7 +139,7 @@ export const products: Product[] = [
     description:
       "Sweet, juicy organic pears with a buttery texture. Perfect for snacking or adding to salads.",
     price: 4.79,
-    unit: "per lb",
+    unit: "por lb",
     image: "https://images.unsplash.com/photo-1514756331096-242fdeb70d4a?w=800&h=600&fit=crop",
     category: "Fruits",
     origin: "Oregon Orchard Co.",

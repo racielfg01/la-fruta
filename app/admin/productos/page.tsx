@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { useAdminStore } from "@/lib/admin-store";
-import { Product } from "@/lib/store";
+import { Product, Unit } from "@/lib/store";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -368,7 +368,7 @@ export default function ProductsAdmin() {
                 <Select
                   value={formData.unit}
                   onValueChange={(value) =>
-                    setFormData({ ...formData, unit: value })
+                    setFormData({ ...formData, unit: value as Unit })
                   }
                 >
                   <SelectTrigger>

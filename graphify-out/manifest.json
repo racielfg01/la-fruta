@@ -1,0 +1,434 @@
+{
+  "/home/rack/Trabajo/la-fruta/next.config.mjs": {
+    "mtime": 1777655946.0,
+    "hash": "e36b6419c008f0a3d55bd789c4fabcf0"
+  },
+  "/home/rack/Trabajo/la-fruta/next-env.d.ts": {
+    "mtime": 1777655946.0,
+    "hash": "d0f8375ae1199dc7acd3977fc33b78b8"
+  },
+  "/home/rack/Trabajo/la-fruta/postcss.config.mjs": {
+    "mtime": 1777655946.0,
+    "hash": "f82d40129ab70e95110c0470895b366c"
+  },
+  "/home/rack/Trabajo/la-fruta/components/header.tsx": {
+    "mtime": 1777655946.0,
+    "hash": "1abb14d7ea6430695ef388b580cbfc2b"
+  },
+  "/home/rack/Trabajo/la-fruta/components/onboarding.tsx": {
+    "mtime": 1777655946.0,
+    "hash": "b7dffce09944ed19cf9d83b7c7f0d633"
+  },
+  "/home/rack/Trabajo/la-fruta/components/signup-form.tsx": {
+    "mtime": 1777655946.0,
+    "hash": "26f47a063db6c6e6ca796fc5aee120a0"
+  },
+  "/home/rack/Trabajo/la-fruta/components/theme-provider.tsx": {
+    "mtime": 1777655946.0,
+    "hash": "3cd89febe6ca9cb784ba567481e50b5d"
+  },
+  "/home/rack/Trabajo/la-fruta/components/login-form.tsx": {
+    "mtime": 1777655946.0,
+    "hash": "07763d65f5fb7909c0ee31202efc284d"
+  },
+  "/home/rack/Trabajo/la-fruta/components/store-view.tsx": {
+    "mtime": 1779028452.4195044,
+    "hash": "d49157078a9f75304b604f8764e55334"
+  },
+  "/home/rack/Trabajo/la-fruta/components/product-card.tsx": {
+    "mtime": 1777655946.0,
+    "hash": "1533169e2e686a56fb8d10013a40cc4f"
+  },
+  "/home/rack/Trabajo/la-fruta/components/delivery-map.tsx": {
+    "mtime": 1777655946.0,
+    "hash": "6bc0cb688ef8878f4d3fe8258433b51e"
+  },
+  "/home/rack/Trabajo/la-fruta/components/auth-provider.tsx": {
+    "mtime": 1777655946.0,
+    "hash": "0b54d19207c65e5abc7a53a18fe374e7"
+  },
+  "/home/rack/Trabajo/la-fruta/components/auth-check.tsx": {
+    "mtime": 1777655946.0,
+    "hash": "683f8697da6d6c7a2d0791767948640a"
+  },
+  "/home/rack/Trabajo/la-fruta/components/ui/switch.tsx": {
+    "mtime": 1777655946.0,
+    "hash": "5331f90f9f5dc71c2e0fe8d7073d3687"
+  },
+  "/home/rack/Trabajo/la-fruta/components/ui/command.tsx": {
+    "mtime": 1777655946.0,
+    "hash": "05f2f28c4223b32d8496c7f12af5df1d"
+  },
+  "/home/rack/Trabajo/la-fruta/components/ui/navigation-menu.tsx": {
+    "mtime": 1777655946.0,
+    "hash": "cf43f62575090447c33d2c4ca3a857c2"
+  },
+  "/home/rack/Trabajo/la-fruta/components/ui/sidebar.tsx": {
+    "mtime": 1777655946.0,
+    "hash": "2298e8a44ff28f5f335cf7204599ab85"
+  },
+  "/home/rack/Trabajo/la-fruta/components/ui/button-group.tsx": {
+    "mtime": 1777655946.0,
+    "hash": "054671d3035df1fb7d5da3e9cd6672c2"
+  },
+  "/home/rack/Trabajo/la-fruta/components/ui/select.tsx": {
+    "mtime": 1777655946.0,
+    "hash": "73ee5213dbcd25fc5e574c2facda58fd"
+  },
+  "/home/rack/Trabajo/la-fruta/components/ui/use-mobile.tsx": {
+    "mtime": 1777655946.0,
+    "hash": "aeaddfd0234c8ad696e5bc96ad23ef25"
+  },
+  "/home/rack/Trabajo/la-fruta/components/ui/dialog.tsx": {
+    "mtime": 1777655946.0,
+    "hash": "4c0ae830ee9a2accd99d6034ef69d7c2"
+  },
+  "/home/rack/Trabajo/la-fruta/components/ui/badge.tsx": {
+    "mtime": 1777655946.0,
+    "hash": "c668163ef77ed404525a44bdad8d4149"
+  },
+  "/home/rack/Trabajo/la-fruta/components/ui/tooltip.tsx": {
+    "mtime": 1777655946.0,
+    "hash": "c6e1691fd10fa06b4d20471aebd17d4d"
+  },
+  "/home/rack/Trabajo/la-fruta/components/ui/aspect-ratio.tsx": {
+    "mtime": 1777655946.0,
+    "hash": "54a4035369e138e3e28c8f81f24a3e4e"
+  },
+  "/home/rack/Trabajo/la-fruta/components/ui/alert-dialog.tsx": {
+    "mtime": 1777655946.0,
+    "hash": "f67f220ce30c2d4fc5c7f38f7cad743f"
+  },
+  "/home/rack/Trabajo/la-fruta/components/ui/separator.tsx": {
+    "mtime": 1777655946.0,
+    "hash": "fa1d6b256d52cabcb4107578b9b6b0a4"
+  },
+  "/home/rack/Trabajo/la-fruta/components/ui/item.tsx": {
+    "mtime": 1777655946.0,
+    "hash": "f92e1201b65414a10130bc003b98af73"
+  },
+  "/home/rack/Trabajo/la-fruta/components/ui/alert.tsx": {
+    "mtime": 1777655946.0,
+    "hash": "0b8a92e185c2b4b4132b39ab9d6bfd36"
+  },
+  "/home/rack/Trabajo/la-fruta/components/ui/pagination.tsx": {
+    "mtime": 1777655946.0,
+    "hash": "7198ef830dcb2a51b89a5ae56b4d5f24"
+  },
+  "/home/rack/Trabajo/la-fruta/components/ui/popover.tsx": {
+    "mtime": 1777655946.0,
+    "hash": "2cc3a66dc8b534b07b67166d450bf277"
+  },
+  "/home/rack/Trabajo/la-fruta/components/ui/input.tsx": {
+    "mtime": 1777655946.0,
+    "hash": "02eac2d9f2705426f0c836b3fdc47af6"
+  },
+  "/home/rack/Trabajo/la-fruta/components/ui/resizable.tsx": {
+    "mtime": 1777655946.0,
+    "hash": "346349c424a33f80008d3ad17748c8fb"
+  },
+  "/home/rack/Trabajo/la-fruta/components/ui/card.tsx": {
+    "mtime": 1777655946.0,
+    "hash": "6f194e053b597062d44b57b450728b2c"
+  },
+  "/home/rack/Trabajo/la-fruta/components/ui/textarea.tsx": {
+    "mtime": 1777655946.0,
+    "hash": "6f7f48a37038bd31f680a101da5f1297"
+  },
+  "/home/rack/Trabajo/la-fruta/components/ui/calendar.tsx": {
+    "mtime": 1777655946.0,
+    "hash": "849df3f14ce3ae50bf9f0daa48c0d192"
+  },
+  "/home/rack/Trabajo/la-fruta/components/ui/slider.tsx": {
+    "mtime": 1777655946.0,
+    "hash": "10c9432b1f32f2dabcda9df12ead549b"
+  },
+  "/home/rack/Trabajo/la-fruta/components/ui/sonner.tsx": {
+    "mtime": 1777655946.0,
+    "hash": "ccbedfa7e07db2476c5ce5753c1d2873"
+  },
+  "/home/rack/Trabajo/la-fruta/components/ui/input-group.tsx": {
+    "mtime": 1777655946.0,
+    "hash": "fffe8dfe70b07e97ea24022c57b5e328"
+  },
+  "/home/rack/Trabajo/la-fruta/components/ui/scroll-area.tsx": {
+    "mtime": 1777655946.0,
+    "hash": "8e2931c98fa1b2521793d3cdfabc1738"
+  },
+  "/home/rack/Trabajo/la-fruta/components/ui/skeleton.tsx": {
+    "mtime": 1777655946.0,
+    "hash": "2543986774fc345cb3bb7d170bd67647"
+  },
+  "/home/rack/Trabajo/la-fruta/components/ui/context-menu.tsx": {
+    "mtime": 1777655946.0,
+    "hash": "cb3dc3f738886fd4d80bdc48cf64d524"
+  },
+  "/home/rack/Trabajo/la-fruta/components/ui/dropdown-menu.tsx": {
+    "mtime": 1777655946.0,
+    "hash": "32eae2bb101ddbed92d64ace2936bde9"
+  },
+  "/home/rack/Trabajo/la-fruta/components/ui/collapsible.tsx": {
+    "mtime": 1777655946.0,
+    "hash": "b72b5773d0bf0c7f037492e24ba87f03"
+  },
+  "/home/rack/Trabajo/la-fruta/components/ui/breadcrumb.tsx": {
+    "mtime": 1777655946.0,
+    "hash": "73c34eacd6610e17fcf10fafc36e5e4f"
+  },
+  "/home/rack/Trabajo/la-fruta/components/ui/input-otp.tsx": {
+    "mtime": 1777655946.0,
+    "hash": "6c6765e5e951ce1c9478c91181f2070f"
+  },
+  "/home/rack/Trabajo/la-fruta/components/ui/sheet.tsx": {
+    "mtime": 1777655946.0,
+    "hash": "53dcbdaf54edbc8107df654165041fcc"
+  },
+  "/home/rack/Trabajo/la-fruta/components/ui/progress.tsx": {
+    "mtime": 1777655946.0,
+    "hash": "9bceccedd810bcfd115462ac2a49c5f9"
+  },
+  "/home/rack/Trabajo/la-fruta/components/ui/carousel.tsx": {
+    "mtime": 1777655946.0,
+    "hash": "3ddd9aa0bdb3ce098a2544c0796d7d5c"
+  },
+  "/home/rack/Trabajo/la-fruta/components/ui/toggle-group.tsx": {
+    "mtime": 1777655946.0,
+    "hash": "4e81bea74e40ba0c665ce5990ef2291e"
+  },
+  "/home/rack/Trabajo/la-fruta/components/ui/hover-card.tsx": {
+    "mtime": 1777655946.0,
+    "hash": "efa74c912813e82c46b09404186f50fe"
+  },
+  "/home/rack/Trabajo/la-fruta/components/ui/toggle.tsx": {
+    "mtime": 1777655946.0,
+    "hash": "5e48c4194c17ede135b2a02181bca0ce"
+  },
+  "/home/rack/Trabajo/la-fruta/components/ui/tabs.tsx": {
+    "mtime": 1777655946.0,
+    "hash": "58aacdaccdedde3bed1fbf686250a620"
+  },
+  "/home/rack/Trabajo/la-fruta/components/ui/field.tsx": {
+    "mtime": 1777655946.0,
+    "hash": "c23eb9872d5da4a9cecd435a3796c326"
+  },
+  "/home/rack/Trabajo/la-fruta/components/ui/toaster.tsx": {
+    "mtime": 1777655946.0,
+    "hash": "81ec599e471d6645e88c84c754ca4969"
+  },
+  "/home/rack/Trabajo/la-fruta/components/ui/accordion.tsx": {
+    "mtime": 1777655946.0,
+    "hash": "3280ea6d007c8a1a4eb2168853752f9d"
+  },
+  "/home/rack/Trabajo/la-fruta/components/ui/label.tsx": {
+    "mtime": 1777655946.0,
+    "hash": "d903b43cea5545736489d68398e9d721"
+  },
+  "/home/rack/Trabajo/la-fruta/components/ui/kbd.tsx": {
+    "mtime": 1777655946.0,
+    "hash": "a6533c169d40b559467cc159dfb79ace"
+  },
+  "/home/rack/Trabajo/la-fruta/components/ui/drawer.tsx": {
+    "mtime": 1777655946.0,
+    "hash": "8a97d59e7dcbe7fc6f33f099396dc1c7"
+  },
+  "/home/rack/Trabajo/la-fruta/components/ui/table.tsx": {
+    "mtime": 1777655946.0,
+    "hash": "f9c4a944e8f63900317a2e34d5749e00"
+  },
+  "/home/rack/Trabajo/la-fruta/components/ui/button.tsx": {
+    "mtime": 1777655946.0,
+    "hash": "299cedf4d416822d5148edb5fac28fe5"
+  },
+  "/home/rack/Trabajo/la-fruta/components/ui/avatar.tsx": {
+    "mtime": 1777655946.0,
+    "hash": "0b5f08c610364dfb4b439de3072c0a18"
+  },
+  "/home/rack/Trabajo/la-fruta/components/ui/radio-group.tsx": {
+    "mtime": 1777655946.0,
+    "hash": "4f88daf9c5a7e09cf0b7af5af0472441"
+  },
+  "/home/rack/Trabajo/la-fruta/components/ui/checkbox.tsx": {
+    "mtime": 1777655946.0,
+    "hash": "9704a9dc477951f889df4d9fe814e692"
+  },
+  "/home/rack/Trabajo/la-fruta/components/ui/toast.tsx": {
+    "mtime": 1777655946.0,
+    "hash": "5ee7ed62dc695a0ed611a999791189c6"
+  },
+  "/home/rack/Trabajo/la-fruta/components/ui/form.tsx": {
+    "mtime": 1777655946.0,
+    "hash": "8558308ba44bf5795b21e19316758047"
+  },
+  "/home/rack/Trabajo/la-fruta/components/ui/chart.tsx": {
+    "mtime": 1777655946.0,
+    "hash": "cc7a999284bd7783e837a08991ced461"
+  },
+  "/home/rack/Trabajo/la-fruta/components/ui/menubar.tsx": {
+    "mtime": 1777655946.0,
+    "hash": "dce0764df19697910c15e8953f182191"
+  },
+  "/home/rack/Trabajo/la-fruta/components/ui/use-toast.ts": {
+    "mtime": 1777655946.0,
+    "hash": "567b2bd208a7dc4377ecacdaf928e434"
+  },
+  "/home/rack/Trabajo/la-fruta/components/ui/empty.tsx": {
+    "mtime": 1777655946.0,
+    "hash": "53263933faf18ad4b65868c84deafec4"
+  },
+  "/home/rack/Trabajo/la-fruta/components/ui/spinner.tsx": {
+    "mtime": 1777655946.0,
+    "hash": "e75f6885c85989def66e3622ffb5b5c6"
+  },
+  "/home/rack/Trabajo/la-fruta/lib/admin-store.ts": {
+    "mtime": 1777655946.0,
+    "hash": "9fcf62e6fb436b894636822f3d215ae4"
+  },
+  "/home/rack/Trabajo/la-fruta/lib/auth.ts": {
+    "mtime": 1777655946.0,
+    "hash": "3f9b01fa5b4ada6c0c490992385be1c5"
+  },
+  "/home/rack/Trabajo/la-fruta/lib/utils.ts": {
+    "mtime": 1777655946.0,
+    "hash": "9a4cc6f9f3155ffdc1fa7c2c097f6429"
+  },
+  "/home/rack/Trabajo/la-fruta/lib/auth-context.ts": {
+    "mtime": 1777655946.0,
+    "hash": "9b91d680c03d4addfc9d1489d7e22421"
+  },
+  "/home/rack/Trabajo/la-fruta/lib/store.ts": {
+    "mtime": 1779028793.8419957,
+    "hash": "52680f699b060dc2a73724fabe01ae5c"
+  },
+  "/home/rack/Trabajo/la-fruta/lib/products.ts": {
+    "mtime": 1779028784.633466,
+    "hash": "f2c181ca287b0ff031ce08b4c98c96d9"
+  },
+  "/home/rack/Trabajo/la-fruta/hooks/use-mobile.ts": {
+    "mtime": 1777655946.0,
+    "hash": "aeaddfd0234c8ad696e5bc96ad23ef25"
+  },
+  "/home/rack/Trabajo/la-fruta/hooks/use-toast.ts": {
+    "mtime": 1777655946.0,
+    "hash": "567b2bd208a7dc4377ecacdaf928e434"
+  },
+  "/home/rack/Trabajo/la-fruta/app/layout.tsx": {
+    "mtime": 1777655946.0,
+    "hash": "f0128a5db601f664562af3127606a45d"
+  },
+  "/home/rack/Trabajo/la-fruta/app/page.tsx": {
+    "mtime": 1777655946.0,
+    "hash": "83460ed5f835720e2637aa9f42049745"
+  },
+  "/home/rack/Trabajo/la-fruta/app/admin/layout.tsx": {
+    "mtime": 1777655946.0,
+    "hash": "daa1aa6cec5474242f7d7a112ca1932c"
+  },
+  "/home/rack/Trabajo/la-fruta/app/admin/page.tsx": {
+    "mtime": 1777655946.0,
+    "hash": "6edf31563fdcbdaeda9b013aa82bb396"
+  },
+  "/home/rack/Trabajo/la-fruta/app/admin/usuarios/page.tsx": {
+    "mtime": 1777655946.0,
+    "hash": "4371e20902f2ebde67c6e09e2978c740"
+  },
+  "/home/rack/Trabajo/la-fruta/app/admin/ordenes/page.tsx": {
+    "mtime": 1777655946.0,
+    "hash": "62cc88c90fab7f9f1db167f558311bda"
+  },
+  "/home/rack/Trabajo/la-fruta/app/admin/monedas/page.tsx": {
+    "mtime": 1777655946.0,
+    "hash": "56719de27b092a3690bdd3b94701320b"
+  },
+  "/home/rack/Trabajo/la-fruta/app/admin/productos/page.tsx": {
+    "mtime": 1779028830.3666828,
+    "hash": "f38b70dcd3ff5e6236e9c462a25cb20e"
+  },
+  "/home/rack/Trabajo/la-fruta/app/admin/productos/[id]/page.tsx": {
+    "mtime": 1777655946.0,
+    "hash": "0e338308694cc5e2ae69573816f07533"
+  },
+  "/home/rack/Trabajo/la-fruta/app/admin/categorias/page.tsx": {
+    "mtime": 1777655946.0,
+    "hash": "db0e9f9009446c1611e113aa0772ea50"
+  },
+  "/home/rack/Trabajo/la-fruta/app/admin/envios/page.tsx": {
+    "mtime": 1777655946.0,
+    "hash": "0a33ed8b72b249941917db3b6ee52607"
+  },
+  "/home/rack/Trabajo/la-fruta/app/actions/auth.ts": {
+    "mtime": 1777655946.0,
+    "hash": "9caa1b376438d417bef73d0a019b0343"
+  },
+  "/home/rack/Trabajo/la-fruta/app/cart/page.tsx": {
+    "mtime": 1777655946.0,
+    "hash": "92c238f0d0c82383e60270e7f03acc44"
+  },
+  "/home/rack/Trabajo/la-fruta/app/perfil/page.tsx": {
+    "mtime": 1777655946.0,
+    "hash": "e0e3e3027a62ea75c116a8a293d48164"
+  },
+  "/home/rack/Trabajo/la-fruta/app/checkout/page.tsx": {
+    "mtime": 1777655946.0,
+    "hash": "46abdb5384dd194a9e43bb23ce5ea08e"
+  },
+  "/home/rack/Trabajo/la-fruta/app/product/[id]/page.tsx": {
+    "mtime": 1777655946.0,
+    "hash": "8bfaa05ef108315c30be4463fe799b5c"
+  },
+  "/home/rack/Trabajo/la-fruta/app/order-confirmation/page.tsx": {
+    "mtime": 1777655946.0,
+    "hash": "84adc84929af92e2bf398733d52f7e89"
+  },
+  "/home/rack/Trabajo/la-fruta/app/auth/layout.tsx": {
+    "mtime": 1777655946.0,
+    "hash": "f4257752efd812ac3b0ed26595aebdf1"
+  },
+  "/home/rack/Trabajo/la-fruta/app/auth/signup/page.tsx": {
+    "mtime": 1777655946.0,
+    "hash": "a0b46b7ba7fe7244ef4d79de7b38ece4"
+  },
+  "/home/rack/Trabajo/la-fruta/app/auth/login/page.tsx": {
+    "mtime": 1777655946.0,
+    "hash": "2aa3e49de06342859895d891a5f1564f"
+  },
+  "/home/rack/Trabajo/la-fruta/app/auth-demo/page.tsx": {
+    "mtime": 1777655946.0,
+    "hash": "994a9c36fa26d4d1d60ad6903bbeeec0"
+  },
+  "/home/rack/Trabajo/la-fruta/public/placeholder.jpg": {
+    "mtime": 1777655946.0,
+    "hash": "1e533b7b4545d1d605144ce893afc601"
+  },
+  "/home/rack/Trabajo/la-fruta/public/placeholder-user.jpg": {
+    "mtime": 1777655946.0,
+    "hash": "7ee6562646feae6d6d77e2c72e204591"
+  },
+  "/home/rack/Trabajo/la-fruta/public/icon-dark-32x32.png": {
+    "mtime": 1777655946.0,
+    "hash": "abd5ebe9e287ca0a89f4fd3da2b5cf9c"
+  },
+  "/home/rack/Trabajo/la-fruta/public/icon-light-32x32.png": {
+    "mtime": 1777655946.0,
+    "hash": "53426c910bcab7d3e5213cc64aa1b2c5"
+  },
+  "/home/rack/Trabajo/la-fruta/public/icon.svg": {
+    "mtime": 1777655946.0,
+    "hash": "6e5d88c5f7e97d26ac4ad47e703bf9de"
+  },
+  "/home/rack/Trabajo/la-fruta/public/placeholder.svg": {
+    "mtime": 1777655946.0,
+    "hash": "35707bd9960ba5281c72af927b79291f"
+  },
+  "/home/rack/Trabajo/la-fruta/public/placeholder-logo.png": {
+    "mtime": 1777655946.0,
+    "hash": "95d8d1a4a9bbcccc875e2c381e74064a"
+  },
+  "/home/rack/Trabajo/la-fruta/public/apple-icon.png": {
+    "mtime": 1777655946.0,
+    "hash": "734ce6c878789fcd5843e8a7963e0756"
+  },
+  "/home/rack/Trabajo/la-fruta/public/placeholder-logo.svg": {
+    "mtime": 1777655946.0,
+    "hash": "1e16dc7df824652c5906a2ab44aef78c"
+  }
+}

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   Package,
   Tags,
@@ -15,10 +15,12 @@ import {
   Users,
   ShoppingBag,
   Coins,
+  LogOut,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useAdminStore } from "@/lib/admin-store";
+import { adminLogoutAction } from "@/app/actions/admin-auth";
 
 function AdminStoreInitializer() {
   const initialize = useAdminStore((s) => s.initialize);
@@ -70,7 +72,19 @@ export default function AdminLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const isLoginPage = pathname === "/admin/login";
+
+  const handleLogout = async () => {
+    await adminLogoutAction();
+    router.push("/admin/login");
+    router.refresh();
+  };
+
+  if (isLoginPage) {
+    return <>{children}</>;
+  }
 
   return (
     <div className="min-h-screen bg-muted/30">
@@ -131,7 +145,7 @@ export default function AdminLayout({
           })}
         </nav>
 
-        <div className="absolute bottom-0 left-0 right-0 border-t border-border p-4">
+        <div className="absolute bottom-0 left-0 right-0 border-t border-border p-4 space-y-2">
           <Link
             href="/"
             className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
@@ -139,6 +153,13 @@ export default function AdminLayout({
             <ChevronRight className="h-4 w-4 rotate-180" />
             Volver a la tienda
           </Link>
+          <button
+            onClick={handleLogout}
+            className="flex w-full items-center gap-2 text-sm text-muted-foreground hover:text-destructive transition-colors"
+          >
+            <LogOut className="h-4 w-4" />
+            Cerrar sesión
+          </button>
         </div>
       </aside>
 

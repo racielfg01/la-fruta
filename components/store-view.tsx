@@ -1,0 +1,1041 @@
+"use client";
+
+import { useState, useMemo, useEffect, useRef } from "react";
+import { Header } from "@/components/header";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Card, CardContent } from "@/components/ui/card";
+import { Slider } from "@/components/ui/slider";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+  SheetClose,
+} from "@/components/ui/sheet";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { Checkbox } from "@/components/ui/checkbox";
+import { products, categories } from "@/lib/products";
+import { useCartStore, Product } from "@/lib/store";
+import {
+  Search,
+  SlidersHorizontal,
+  Leaf,
+  X,
+  Plus,
+  Check,
+  MapPin,
+  ShoppingCart,
+  Grid3X3,
+  LayoutGrid,
+  Heart,
+  Star,
+  Truck,
+  Shield,
+  ArrowUpDown,
+  Sparkles,
+  ChevronDown,
+  Eye,
+} from "lucide-react";
+import Link from "next/link";
+import Image from "next/image";
+
+type SortOption = "default" | "price-asc" | "price-desc" | "name";
+
+// Category icons and colors
+const categoryConfig: Record<string, { icon: typeof Leaf; color: string; bgColor: string }> = {
+  Fruits: { icon: Leaf, color: "text-emerald-600", bgColor: "bg-emerald-50" },
+  Citrus: { icon: Leaf, color: "text-orange-600", bgColor: "bg-orange-50" },
+  Berries: { icon: Leaf, color: "text-pink-600", bgColor: "bg-pink-50" },
+  Tropical: { icon: Leaf, color: "text-amber-600", bgColor: "bg-amber-50" },
+  Melons: { icon: Leaf, color: "text-green-600", bgColor: "bg-green-50" },
+};
+
+export function StoreView() {
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [priceRange, setPriceRange] = useState<[number, number]>([0, 15]);
+  const [sortBy, setSortBy] = useState<SortOption>("default");
+  const [showOnlyInStock, setShowOnlyInStock] = useState(false);
+  const [viewMode, setViewMode] = useState<"masonry" | "grid">("masonry");
+  const [isFiltersOpen, setIsFiltersOpen] = useState(false);
+  const [hoveredProduct, setHoveredProduct] = useState<string | null>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  const addItem = useCartStore((state) => state.addItem);
+  const items = useCartStore((state) => state.items);
+
+  const maxPrice = Math.max(...products.map((p) => p.price));
+
+  // Keyboard shortcut for search
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
+
+  const filteredProducts = useMemo(() => {
+    let filtered = products.filter((product) => {
+      const matchesSearch =
+        searchQuery === "" ||
+        product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        product.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        product.origin.toLowerCase().includes(searchQuery.toLowerCase());
+
+      const matchesCategory =
+        selectedCategories.length === 0 || selectedCategories.includes(product.category);
+
+      const matchesPrice = product.price >= priceRange[0] && product.price <= priceRange[1];
+
+      const matchesStock = !showOnlyInStock || product.inStock;
+
+      return matchesSearch && matchesCategory && matchesPrice && matchesStock;
+    });
+
+    switch (sortBy) {
+      case "price-asc":
+        filtered = [...filtered].sort((a, b) => a.price - b.price);
+        break;
+      case "price-desc":
+        filtered = [...filtered].sort((a, b) => b.price - a.price);
+        break;
+      case "name":
+        filtered = [...filtered].sort((a, b) => a.name.localeCompare(b.name));
+        break;
+      default:
+        break;
+    }
+
+    return filtered;
+  }, [searchQuery, selectedCategories, priceRange, sortBy, showOnlyInStock]);
+
+  const toggleCategory = (category: string) => {
+    setSelectedCategories((prev) =>
+      prev.includes(category) ? prev.filter((c) => c !== category) : [...prev, category]
+    );
+  };
+
+  const clearFilters = () => {
+    setSearchQuery("");
+    setSelectedCategories([]);
+    setPriceRange([0, maxPrice]);
+    setSortBy("default");
+    setShowOnlyInStock(false);
+  };
+
+  const hasActiveFilters =
+    searchQuery !== "" ||
+    selectedCategories.length > 0 ||
+    priceRange[0] > 0 ||
+    priceRange[1] < maxPrice ||
+    showOnlyInStock;
+
+  const activeFiltersCount = [
+    searchQuery !== "",
+    selectedCategories.length > 0,
+    priceRange[0] > 0 || priceRange[1] < maxPrice,
+    showOnlyInStock,
+  ].filter(Boolean).length;
+
+  const isInCart = (productId: string) => items.some((item) => item.product.id === productId);
+  const getCartQuantity = (productId: string) => {
+    const item = items.find((item) => item.product.id === productId);
+    return item?.quantity || 0;
+  };
+
+  return (
+    <TooltipProvider>
+      <div className="min-h-screen bg-background">
+        <Header />
+
+        {/* Hero Banner */}
+        <section className="relative overflow-hidden bg-gradient-to-r from-primary/10 via-primary/5 to-accent/10 py-8 md:py-12">
+          <div className="container mx-auto px-4">
+            <div className="flex flex-col items-center text-center">
+              <Badge className="mb-4 gap-1.5 bg-primary/10 text-primary hover:bg-primary/20">
+                <Sparkles className="h-3 w-3" />
+                Productos frescos del dia
+              </Badge>
+              <h1 className="font-[family-name:var(--font-playfair)] text-3xl font-bold text-foreground md:text-4xl lg:text-5xl text-balance">
+                Nuestra Tienda
+              </h1>
+              <p className="mt-3 max-w-2xl text-muted-foreground md:text-lg">
+                Explora nuestra seleccion de frutas frescas y productos agricolas de la mas alta calidad
+              </p>
+              
+              {/* Quick Stats */}
+              <div className="mt-6 flex flex-wrap items-center justify-center gap-6 text-sm">
+                <div className="flex items-center gap-2 text-muted-foreground">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-emerald-100">
+                    <Leaf className="h-4 w-4 text-emerald-600" />
+                  </div>
+                  <span>{products.length} productos</span>
+                </div>
+                <div className="flex items-center gap-2 text-muted-foreground">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-100">
+                    <Truck className="h-4 w-4 text-blue-600" />
+                  </div>
+                  <span>Envio gratis +$50</span>
+                </div>
+                <div className="flex items-center gap-2 text-muted-foreground">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-amber-100">
+                    <Shield className="h-4 w-4 text-amber-600" />
+                  </div>
+                  <span>Garantia de frescura</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          {/* Decorative elements */}
+          <div className="pointer-events-none absolute -left-20 top-0 h-40 w-40 rounded-full bg-primary/10 blur-3xl" />
+          <div className="pointer-events-none absolute -right-20 bottom-0 h-40 w-40 rounded-full bg-accent/10 blur-3xl" />
+        </section>
+
+        {/* Search and Filters Bar */}
+        <div className="sticky top-0 z-40 border-b bg-card/95 backdrop-blur-lg supports-[backdrop-filter]:bg-card/80">
+          <div className="container mx-auto px-4 py-4">
+            <div className="flex flex-col gap-4">
+              {/* Top row: Search and controls */}
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                {/* Search */}
+                <div className="relative flex-1 max-w-xl">
+                  <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    ref={searchInputRef}
+                    type="text"
+                    placeholder="Buscar productos, categorias u origen..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="h-11 pl-10 pr-20 text-base"
+                  />
+                  {searchQuery ? (
+                    <button
+                      onClick={() => setSearchQuery("")}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 rounded-md p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  ) : (
+                    <kbd className="pointer-events-none absolute right-3 top-1/2 hidden -translate-y-1/2 select-none rounded border bg-muted px-2 py-0.5 font-mono text-xs text-muted-foreground sm:inline-block">
+                      Ctrl+K
+                    </kbd>
+                  )}
+                </div>
+
+                {/* Right side controls */}
+                <div className="flex items-center gap-2">
+                  {/* Sort */}
+                  <Select value={sortBy} onValueChange={(v) => setSortBy(v as SortOption)}>
+                    <SelectTrigger className="h-11 w-[180px] gap-2">
+                      <ArrowUpDown className="h-4 w-4 text-muted-foreground" />
+                      <SelectValue placeholder="Ordenar por" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="default">Destacados</SelectItem>
+                      <SelectItem value="price-asc">Precio: menor a mayor</SelectItem>
+                      <SelectItem value="price-desc">Precio: mayor a menor</SelectItem>
+                      <SelectItem value="name">Nombre A-Z</SelectItem>
+                    </SelectContent>
+                  </Select>
+
+                  {/* View Toggle */}
+                  <div className="hidden items-center rounded-lg border bg-background p-1 md:flex">
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button
+                          onClick={() => setViewMode("masonry")}
+                          className={`rounded-md p-2.5 transition-colors ${
+                            viewMode === "masonry"
+                              ? "bg-primary text-primary-foreground shadow-sm"
+                              : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                          }`}
+                          aria-label="Vista masonry"
+                        >
+                          <LayoutGrid className="h-4 w-4" />
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent>Vista Masonry</TooltipContent>
+                    </Tooltip>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button
+                          onClick={() => setViewMode("grid")}
+                          className={`rounded-md p-2.5 transition-colors ${
+                            viewMode === "grid"
+                              ? "bg-primary text-primary-foreground shadow-sm"
+                              : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                          }`}
+                          aria-label="Vista cuadricula"
+                        >
+                          <Grid3X3 className="h-4 w-4" />
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent>Vista Cuadricula</TooltipContent>
+                    </Tooltip>
+                  </div>
+
+                  {/* Filter Button (Mobile) */}
+                  <Sheet open={isFiltersOpen} onOpenChange={setIsFiltersOpen}>
+                    <SheetTrigger asChild>
+                      <Button variant="outline" className="relative h-11 gap-2 lg:hidden">
+                        <SlidersHorizontal className="h-4 w-4" />
+                        <span className="hidden sm:inline">Filtros</span>
+                        {activeFiltersCount > 0 && (
+                          <Badge className="h-5 min-w-5 rounded-full bg-primary px-1.5 text-xs text-primary-foreground">
+                            {activeFiltersCount}
+                          </Badge>
+                        )}
+                      </Button>
+                    </SheetTrigger>
+                    <SheetContent side="right" className="w-full max-w-sm overflow-y-auto">
+                      <SheetHeader>
+                        <SheetTitle className="flex items-center justify-between">
+                          Filtros
+                          {hasActiveFilters && (
+                            <Button variant="ghost" size="sm" onClick={clearFilters}>
+                              Limpiar todo
+                            </Button>
+                          )}
+                        </SheetTitle>
+                      </SheetHeader>
+                      <div className="mt-6">
+                        <FilterContent
+                          categories={categories}
+                          selectedCategories={selectedCategories}
+                          toggleCategory={toggleCategory}
+                          priceRange={priceRange}
+                          setPriceRange={setPriceRange}
+                          maxPrice={maxPrice}
+                          showOnlyInStock={showOnlyInStock}
+                          setShowOnlyInStock={setShowOnlyInStock}
+                        />
+                        <div className="mt-6">
+                          <SheetClose asChild>
+                            <Button className="w-full" size="lg">
+                              Ver {filteredProducts.length} productos
+                            </Button>
+                          </SheetClose>
+                        </div>
+                      </div>
+                    </SheetContent>
+                  </Sheet>
+                </div>
+              </div>
+
+              {/* Category Pills - Scrollable on mobile */}
+              <div className="relative -mx-4 px-4">
+                <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+                  <Button
+                    variant={selectedCategories.length === 0 ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setSelectedCategories([])}
+                    className="flex-shrink-0 rounded-full gap-1.5"
+                  >
+                    <Sparkles className="h-3.5 w-3.5" />
+                    Todos
+                  </Button>
+                  {categories.map((category) => {
+                    const config = categoryConfig[category] || categoryConfig.Fruits;
+                    const isSelected = selectedCategories.includes(category);
+                    const count = products.filter((p) => p.category === category).length;
+                    
+                    return (
+                      <Button
+                        key={category}
+                        variant={isSelected ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => toggleCategory(category)}
+                        className={`flex-shrink-0 rounded-full gap-1.5 ${
+                          !isSelected ? `hover:${config.bgColor}` : ""
+                        }`}
+                      >
+                        <span className={!isSelected ? config.color : ""}>{getCategoryLabel(category)}</span>
+                        <Badge 
+                          variant="secondary" 
+                          className={`h-5 min-w-5 rounded-full px-1.5 text-xs ${
+                            isSelected ? "bg-primary-foreground/20 text-primary-foreground" : ""
+                          }`}
+                        >
+                          {count}
+                        </Badge>
+                      </Button>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Main Content */}
+        <div className="container mx-auto px-4 py-6 md:py-8">
+          <div className="flex gap-8">
+            {/* Desktop Filters Sidebar */}
+            <aside className="hidden w-72 flex-shrink-0 lg:block">
+              <div className="sticky top-32">
+                <Card className="border-0 shadow-sm">
+                  <CardContent className="p-6">
+                    <div className="mb-6 flex items-center justify-between">
+                      <h3 className="flex items-center gap-2 text-lg font-semibold text-foreground">
+                        <SlidersHorizontal className="h-4 w-4" />
+                        Filtros
+                      </h3>
+                      {hasActiveFilters && (
+                        <Button variant="ghost" size="sm" onClick={clearFilters} className="h-8 text-xs">
+                          Limpiar
+                        </Button>
+                      )}
+                    </div>
+                    <FilterContent
+                      categories={categories}
+                      selectedCategories={selectedCategories}
+                      toggleCategory={toggleCategory}
+                      priceRange={priceRange}
+                      setPriceRange={setPriceRange}
+                      maxPrice={maxPrice}
+                      showOnlyInStock={showOnlyInStock}
+                      setShowOnlyInStock={setShowOnlyInStock}
+                    />
+                  </CardContent>
+                </Card>
+
+                {/* Promo Card */}
+                <Card className="mt-4 overflow-hidden border-0 bg-gradient-to-br from-primary/10 to-accent/10">
+                  <CardContent className="p-5">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary">
+                        <Truck className="h-5 w-5 text-primary-foreground" />
+                      </div>
+                      <div>
+                        <p className="font-semibold text-foreground">Envio Gratis</p>
+                        <p className="text-sm text-muted-foreground">En pedidos mayores a $50</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </aside>
+
+            {/* Products */}
+            <div className="flex-1">
+              {/* Results Header */}
+              <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="text-lg font-medium text-foreground">
+                    {filteredProducts.length} producto{filteredProducts.length !== 1 ? "s" : ""}
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    {hasActiveFilters ? "con los filtros aplicados" : "disponibles"}
+                  </p>
+                </div>
+                {hasActiveFilters && (
+                  <div className="flex flex-wrap items-center gap-2">
+                    {selectedCategories.map((cat) => (
+                      <Badge
+                        key={cat}
+                        variant="secondary"
+                        className="cursor-pointer gap-1 pr-1 hover:bg-destructive/10"
+                        onClick={() => toggleCategory(cat)}
+                      >
+                        {getCategoryLabel(cat)}
+                        <X className="h-3 w-3" />
+                      </Badge>
+                    ))}
+                    {(priceRange[0] > 0 || priceRange[1] < maxPrice) && (
+                      <Badge variant="secondary" className="gap-1">
+                        ${priceRange[0]} - ${priceRange[1]}
+                      </Badge>
+                    )}
+                    {showOnlyInStock && (
+                      <Badge variant="secondary" className="gap-1">
+                        En stock
+                      </Badge>
+                    )}
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={clearFilters}
+                      className="h-6 px-2 text-xs text-primary hover:text-primary"
+                    >
+                      Limpiar todo
+                    </Button>
+                  </div>
+                )}
+              </div>
+
+              {/* Product Grid */}
+              {filteredProducts.length > 0 ? (
+                viewMode === "masonry" ? (
+                  <MasonryGrid
+                    products={filteredProducts}
+                    addItem={addItem}
+                    isInCart={isInCart}
+                    getCartQuantity={getCartQuantity}
+                    hoveredProduct={hoveredProduct}
+                    setHoveredProduct={setHoveredProduct}
+                  />
+                ) : (
+                  <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+                    {filteredProducts.map((product) => (
+                      <ProductCard
+                        key={product.id}
+                        product={product}
+                        addItem={addItem}
+                        isInCart={isInCart(product.id)}
+                        cartQuantity={getCartQuantity(product.id)}
+                        isHovered={hoveredProduct === product.id}
+                        onHover={setHoveredProduct}
+                      />
+                    ))}
+                  </div>
+                )
+              ) : (
+                <EmptyState onClear={clearFilters} searchQuery={searchQuery} />
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <footer className="border-t bg-card py-10">
+          <div className="container mx-auto px-4">
+            <div className="flex flex-col items-center justify-between gap-6 md:flex-row">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary shadow-lg shadow-primary/20">
+                  <Leaf className="h-5 w-5 text-primary-foreground" />
+                </div>
+                <div>
+                  <span className="font-[family-name:var(--font-playfair)] text-lg font-bold">
+                    La Fruta
+                  </span>
+                  <p className="text-xs text-muted-foreground">Del campo a tu mesa</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-6 text-sm text-muted-foreground">
+                <Link href="#" className="transition-colors hover:text-foreground">Terminos</Link>
+                <Link href="#" className="transition-colors hover:text-foreground">Privacidad</Link>
+                <Link href="#" className="transition-colors hover:text-foreground">Contacto</Link>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                &copy; {new Date().getFullYear()} La Fruta. Todos los derechos reservados.
+              </p>
+            </div>
+          </div>
+        </footer>
+      </div>
+    </TooltipProvider>
+  );
+}
+
+// Filter Content Component
+function FilterContent({
+  categories,
+  selectedCategories,
+  toggleCategory,
+  priceRange,
+  setPriceRange,
+  maxPrice,
+  showOnlyInStock,
+  setShowOnlyInStock,
+}: {
+  categories: string[];
+  selectedCategories: string[];
+  toggleCategory: (category: string) => void;
+  priceRange: [number, number];
+  setPriceRange: (range: [number, number]) => void;
+  maxPrice: number;
+  showOnlyInStock: boolean;
+  setShowOnlyInStock: (value: boolean) => void;
+}) {
+  return (
+    <div className="space-y-6">
+      {/* Categories */}
+      <div>
+        <h4 className="mb-4 flex items-center gap-2 text-sm font-semibold text-foreground">
+          <ChevronDown className="h-4 w-4" />
+          Categorias
+        </h4>
+        <div className="space-y-2">
+          {categories.map((category) => {
+            const config = categoryConfig[category] || categoryConfig.Fruits;
+            const count = products.filter((p) => p.category === category).length;
+            const isSelected = selectedCategories.includes(category);
+            
+            return (
+              <label
+                key={category}
+                className={`flex cursor-pointer items-center gap-3 rounded-lg p-2.5 transition-colors ${
+                  isSelected ? "bg-primary/10" : "hover:bg-muted"
+                }`}
+              >
+                <Checkbox
+                  checked={isSelected}
+                  onCheckedChange={() => toggleCategory(category)}
+                  className="data-[state=checked]:bg-primary data-[state=checked]:border-primary"
+                />
+                <div className={`flex h-6 w-6 items-center justify-center rounded-md ${config.bgColor}`}>
+                  <Leaf className={`h-3.5 w-3.5 ${config.color}`} />
+                </div>
+                <span className="flex-1 text-sm font-medium text-foreground">
+                  {getCategoryLabel(category)}
+                </span>
+                <span className="text-xs text-muted-foreground">{count}</span>
+              </label>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Price Range */}
+      <div>
+        <h4 className="mb-4 flex items-center gap-2 text-sm font-semibold text-foreground">
+          <ChevronDown className="h-4 w-4" />
+          Rango de Precio
+        </h4>
+        <div className="space-y-4">
+          <Slider
+            value={[priceRange[0], priceRange[1]]}
+            onValueChange={(value) => setPriceRange([value[0], value[1]])}
+            max={Math.ceil(maxPrice)}
+            step={0.5}
+            className="mb-2"
+          />
+          <div className="flex items-center gap-3">
+            <div className="flex-1">
+              <label className="mb-1 block text-xs text-muted-foreground">Minimo</label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">$</span>
+                <Input
+                  type="number"
+                  value={priceRange[0]}
+                  onChange={(e) => setPriceRange([Number(e.target.value), priceRange[1]])}
+                  className="h-9 pl-7 text-sm"
+                  min={0}
+                  max={priceRange[1]}
+                />
+              </div>
+            </div>
+            <div className="mt-5 text-muted-foreground">-</div>
+            <div className="flex-1">
+              <label className="mb-1 block text-xs text-muted-foreground">Maximo</label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">$</span>
+                <Input
+                  type="number"
+                  value={priceRange[1]}
+                  onChange={(e) => setPriceRange([priceRange[0], Number(e.target.value)])}
+                  className="h-9 pl-7 text-sm"
+                  min={priceRange[0]}
+                  max={maxPrice}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Availability */}
+      <div>
+        <h4 className="mb-4 flex items-center gap-2 text-sm font-semibold text-foreground">
+          <ChevronDown className="h-4 w-4" />
+          Disponibilidad
+        </h4>
+        <label
+          className={`flex cursor-pointer items-center gap-3 rounded-lg p-2.5 transition-colors ${
+            showOnlyInStock ? "bg-primary/10" : "hover:bg-muted"
+          }`}
+        >
+          <Checkbox
+            checked={showOnlyInStock}
+            onCheckedChange={(checked) => setShowOnlyInStock(checked as boolean)}
+            className="data-[state=checked]:bg-primary data-[state=checked]:border-primary"
+          />
+          <div className="flex h-6 w-6 items-center justify-center rounded-md bg-emerald-50">
+            <Check className="h-3.5 w-3.5 text-emerald-600" />
+          </div>
+          <span className="text-sm font-medium text-foreground">Solo en stock</span>
+        </label>
+      </div>
+    </div>
+  );
+}
+
+// Masonry Grid Component - Responsive columns
+function MasonryGrid({
+  products,
+  addItem,
+  isInCart,
+  getCartQuantity,
+  hoveredProduct,
+  setHoveredProduct,
+}: {
+  products: Product[];
+  addItem: (product: Product) => void;
+  isInCart: (id: string) => boolean;
+  getCartQuantity: (id: string) => number;
+  hoveredProduct: string | null;
+  setHoveredProduct: (id: string | null) => void;
+}) {
+  // Responsive column distribution
+  const getColumnCount = () => {
+    if (typeof window === "undefined") return 3;
+    if (window.innerWidth < 640) return 1;
+    if (window.innerWidth < 1024) return 2;
+    if (window.innerWidth < 1536) return 3;
+    return 4;
+  };
+
+  const [columnCount, setColumnCount] = useState(3);
+
+  useEffect(() => {
+    const handleResize = () => setColumnCount(getColumnCount());
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  // Distribute products into columns
+  const columns: Product[][] = Array.from({ length: columnCount }, () => []);
+  products.forEach((product, index) => {
+    columns[index % columnCount].push(product);
+  });
+
+  return (
+    <div className="flex gap-4">
+      {columns.map((columnProducts, columnIndex) => (
+        <div key={columnIndex} className="flex flex-1 flex-col gap-4">
+          {columnProducts.map((product, productIndex) => {
+            const heightVariant = (columnIndex + productIndex) % 4;
+            return (
+              <MasonryCard
+                key={product.id}
+                product={product}
+                addItem={addItem}
+                isInCart={isInCart(product.id)}
+                cartQuantity={getCartQuantity(product.id)}
+                heightVariant={heightVariant}
+                isHovered={hoveredProduct === product.id}
+                onHover={setHoveredProduct}
+              />
+            );
+          })}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// Masonry Card Component
+function MasonryCard({
+  product,
+  addItem,
+  isInCart,
+  cartQuantity,
+  heightVariant,
+  isHovered,
+  onHover,
+}: {
+  product: Product;
+  addItem: (product: Product) => void;
+  isInCart: boolean;
+  cartQuantity: number;
+  heightVariant: number;
+  isHovered: boolean;
+  onHover: (id: string | null) => void;
+}) {
+  const imageHeights = ["h-40 sm:h-48", "h-52 sm:h-64", "h-44 sm:h-56", "h-48 sm:h-60"];
+  const imageHeight = imageHeights[heightVariant];
+  const config = categoryConfig[product.category] || categoryConfig.Fruits;
+
+  return (
+    <Card
+      className={`group overflow-hidden border-0 bg-card shadow-sm transition-all duration-300 ${
+        isHovered ? "shadow-xl ring-2 ring-primary/20" : "hover:shadow-lg"
+      }`}
+      onMouseEnter={() => onHover(product.id)}
+      onMouseLeave={() => onHover(null)}
+    >
+      <Link href={`/product/${product.id}`}>
+        <div className={`relative ${imageHeight} overflow-hidden`}>
+          <Image
+            src={product.image}
+            alt={product.name}
+            fill
+            className={`object-cover transition-transform duration-500 ${
+              isHovered ? "scale-110" : "group-hover:scale-105"
+            }`}
+            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, (max-width: 1536px) 33vw, 25vw"
+          />
+          
+          {/* Overlay on hover */}
+          <div className={`absolute inset-0 bg-black/0 transition-colors duration-300 ${
+            isHovered ? "bg-black/10" : ""
+          }`} />
+          
+          {!product.inStock && (
+            <div className="absolute inset-0 flex items-center justify-center bg-black/60 backdrop-blur-[2px]">
+              <Badge variant="destructive" className="text-sm font-medium">Agotado</Badge>
+            </div>
+          )}
+          
+          {/* Category Badge */}
+          <div className="absolute left-3 top-3">
+            <Badge className={`${config.bgColor} ${config.color} border-0 shadow-sm`}>
+              {getCategoryLabel(product.category)}
+            </Badge>
+          </div>
+
+          {/* Quick actions */}
+          <div className={`absolute right-3 top-3 flex flex-col gap-2 transition-all duration-300 ${
+            isHovered ? "translate-x-0 opacity-100" : "translate-x-4 opacity-0"
+          }`}>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button className="flex h-9 w-9 items-center justify-center rounded-full bg-white/90 text-foreground shadow-md transition-colors hover:bg-white hover:text-rose-500">
+                  <Heart className="h-4 w-4" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="left">Agregar a favoritos</TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-full bg-white/90 text-foreground shadow-md transition-colors hover:bg-white hover:text-primary">
+                  <Eye className="h-4 w-4" />
+                </span>
+              </TooltipTrigger>
+              <TooltipContent side="left">Ver detalles</TooltipContent>
+            </Tooltip>
+          </div>
+
+          {/* Cart quantity indicator */}
+          {isInCart && (
+            <div className="absolute bottom-3 right-3">
+              <Badge className="bg-primary text-primary-foreground shadow-lg">
+                <ShoppingCart className="mr-1 h-3 w-3" />
+                {cartQuantity}
+              </Badge>
+            </div>
+          )}
+        </div>
+      </Link>
+      
+      <CardContent className="p-4">
+        <Link href={`/product/${product.id}`}>
+          <h3 className="font-semibold text-foreground transition-colors hover:text-primary line-clamp-1">
+            {product.name}
+          </h3>
+        </Link>
+        
+        <div className="mt-1.5 flex items-center gap-1.5 text-xs text-muted-foreground">
+          <MapPin className="h-3 w-3 flex-shrink-0" />
+          <span className="truncate">{product.origin}</span>
+        </div>
+        
+        <p className="mt-2 line-clamp-2 text-sm text-muted-foreground leading-relaxed">
+          {product.description}
+        </p>
+        
+        <div className="mt-4 flex items-center justify-between gap-2">
+          <div>
+            <span className="text-xl font-bold text-foreground">${product.price.toFixed(2)}</span>
+            <span className="ml-1 text-xs text-muted-foreground">{product.unit}</span>
+          </div>
+          <Button
+            size="sm"
+            onClick={(e) => {
+              e.preventDefault();
+              addItem(product);
+            }}
+            disabled={!product.inStock}
+            className={`gap-1.5 transition-all ${
+              isInCart 
+                ? "bg-emerald-600 text-white hover:bg-emerald-700" 
+                : ""
+            }`}
+          >
+            {isInCart ? (
+              <>
+                <Check className="h-4 w-4" />
+                <span className="hidden sm:inline">Agregado</span>
+              </>
+            ) : (
+              <>
+                <Plus className="h-4 w-4" />
+                <span className="hidden sm:inline">Agregar</span>
+              </>
+            )}
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+// Regular Product Card
+function ProductCard({
+  product,
+  addItem,
+  isInCart,
+  cartQuantity,
+  isHovered,
+  onHover,
+}: {
+  product: Product;
+  addItem: (product: Product) => void;
+  isInCart: boolean;
+  cartQuantity: number;
+  isHovered: boolean;
+  onHover: (id: string | null) => void;
+}) {
+  const config = categoryConfig[product.category] || categoryConfig.Fruits;
+
+  return (
+    <Card
+      className={`group overflow-hidden border-0 bg-card shadow-sm transition-all duration-300 ${
+        isHovered ? "shadow-xl ring-2 ring-primary/20" : "hover:shadow-lg"
+      }`}
+      onMouseEnter={() => onHover(product.id)}
+      onMouseLeave={() => onHover(null)}
+    >
+      <Link href={`/product/${product.id}`}>
+        <div className="relative aspect-square overflow-hidden">
+          <Image
+            src={product.image}
+            alt={product.name}
+            fill
+            className={`object-cover transition-transform duration-500 ${
+              isHovered ? "scale-110" : "group-hover:scale-105"
+            }`}
+            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, (max-width: 1536px) 33vw, 25vw"
+          />
+          
+          <div className={`absolute inset-0 bg-black/0 transition-colors duration-300 ${
+            isHovered ? "bg-black/10" : ""
+          }`} />
+          
+          {!product.inStock && (
+            <div className="absolute inset-0 flex items-center justify-center bg-black/60 backdrop-blur-[2px]">
+              <Badge variant="destructive" className="text-sm font-medium">Agotado</Badge>
+            </div>
+          )}
+          
+          <div className="absolute left-3 top-3">
+            <Badge className={`${config.bgColor} ${config.color} border-0 shadow-sm`}>
+              {getCategoryLabel(product.category)}
+            </Badge>
+          </div>
+
+          <div className={`absolute right-3 top-3 flex flex-col gap-2 transition-all duration-300 ${
+            isHovered ? "translate-x-0 opacity-100" : "translate-x-4 opacity-0"
+          }`}>
+            <button className="flex h-9 w-9 items-center justify-center rounded-full bg-white/90 text-foreground shadow-md transition-colors hover:bg-white hover:text-rose-500">
+              <Heart className="h-4 w-4" />
+            </button>
+          </div>
+
+          {isInCart && (
+            <div className="absolute bottom-3 right-3">
+              <Badge className="bg-primary text-primary-foreground shadow-lg">
+                <ShoppingCart className="mr-1 h-3 w-3" />
+                {cartQuantity}
+              </Badge>
+            </div>
+          )}
+        </div>
+      </Link>
+      
+      <CardContent className="p-4">
+        <Link href={`/product/${product.id}`}>
+          <h3 className="font-semibold text-foreground transition-colors hover:text-primary line-clamp-1">
+            {product.name}
+          </h3>
+        </Link>
+        
+        <div className="mt-1.5 flex items-center gap-1.5 text-xs text-muted-foreground">
+          <MapPin className="h-3 w-3 flex-shrink-0" />
+          <span className="truncate">{product.origin}</span>
+        </div>
+        
+        <div className="mt-4 flex items-center justify-between gap-2">
+          <div>
+            <span className="text-xl font-bold text-foreground">${product.price.toFixed(2)}</span>
+            <span className="ml-1 text-xs text-muted-foreground">{product.unit}</span>
+          </div>
+          <Button
+            size="sm"
+            onClick={(e) => {
+              e.preventDefault();
+              addItem(product);
+            }}
+            disabled={!product.inStock}
+            className={`gap-1.5 transition-all ${
+              isInCart 
+                ? "bg-emerald-600 text-white hover:bg-emerald-700" 
+                : ""
+            }`}
+          >
+            {isInCart ? <Check className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+// Empty State Component
+function EmptyState({ onClear, searchQuery }: { onClear: () => void; searchQuery: string }) {
+  return (
+    <div className="flex flex-col items-center justify-center py-20 text-center">
+      <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-2xl bg-muted">
+        <Search className="h-10 w-10 text-muted-foreground" />
+      </div>
+      <h3 className="mb-2 text-xl font-semibold text-foreground">No se encontraron productos</h3>
+      <p className="mb-6 max-w-md text-muted-foreground">
+        {searchQuery 
+          ? `No encontramos resultados para "${searchQuery}". Intenta con otros terminos o ajusta los filtros.`
+          : "Intenta ajustar tus filtros para encontrar lo que buscas."
+        }
+      </p>
+      <div className="flex gap-3">
+        <Button variant="outline" onClick={onClear}>
+          Limpiar filtros
+        </Button>
+        <Button asChild>
+          <Link href="/">Volver al inicio</Link>
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+// Helper function to translate category names
+function getCategoryLabel(category: string): string {
+  const labels: Record<string, string> = {
+    Fruits: "Frutas",
+    Citrus: "Citricos",
+    Berries: "Bayas",
+    Tropical: "Tropicales",
+    Melons: "Melones",
+  };
+  return labels[category] || category;
+}

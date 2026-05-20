@@ -1,6 +1,7 @@
 'use server';
 
 import { createUser, verifyUserCredentials, getUserByPhone } from '@/lib/auth';
+import { signAdminToken } from '@/lib/jwt';
 import { SignupData, LoginCredentials } from '@/lib/auth';
 
 export interface AuthResponse {

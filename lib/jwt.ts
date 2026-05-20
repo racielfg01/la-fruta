@@ -10,6 +10,12 @@ export interface AdminTokenPayload {
   role: string;
 }
 
+export interface UserTokenPayload {
+  userId: number;
+  phone: string;
+  name: string;
+}
+
 export async function signAdminToken(payload: AdminTokenPayload): Promise<string> {
   return new SignJWT({ ...payload })
     .setProtectedHeader({ alg: "HS256" })
@@ -22,6 +28,23 @@ export async function verifyAdminToken(token: string): Promise<AdminTokenPayload
   try {
     const { payload } = await jwtVerify(token, secret);
     return payload as unknown as AdminTokenPayload;
+  } catch {
+    return null;
+  }
+}
+
+export async function signUserToken(payload: UserTokenPayload): Promise<string> {
+  return new SignJWT({ ...payload })
+    .setProtectedHeader({ alg: "HS256" })
+    .setIssuedAt()
+    .setExpirationTime("24h")
+    .sign(secret);
+}
+
+export async function verifyUserToken(token: string): Promise<UserTokenPayload | null> {
+  try {
+    const { payload } = await jwtVerify(token, secret);
+    return payload as unknown as UserTokenPayload;
   } catch {
     return null;
   }

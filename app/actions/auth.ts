@@ -2,6 +2,7 @@
 
 import { createUser, verifyUserCredentials, getUserByPhone } from '@/lib/auth';
 import { SignupData, LoginCredentials } from '@/lib/auth';
+import { signUserToken } from '@/lib/jwt';
 
 export interface AuthResponse {
   success: boolean;
@@ -121,6 +122,13 @@ export async function signupAction(data: SignupData): Promise<AuthResponse> {
       };
     }
 
+    // Generate JWT token
+    const token = await signUserToken({
+      userId: newUser.id,
+      phone: newUser.phone,
+      name: newUser.name,
+    });
+
     return {
       success: true,
       message: '¡Registro exitoso! Redirigiendo...',
@@ -131,6 +139,7 @@ export async function signupAction(data: SignupData): Promise<AuthResponse> {
         gender: newUser.gender,
         created_at: newUser.created_at,
       },
+      token,
     };
   } catch (error) {
     console.error('Signup error:', error);
@@ -165,6 +174,13 @@ export async function loginAction(credentials: LoginCredentials): Promise<AuthRe
       };
     }
 
+    // Generate JWT token
+    const token = await signUserToken({
+      userId: user.id,
+      phone: user.phone,
+      name: user.name,
+    });
+
     return {
       success: true,
       message: '¡Inicio de sesión exitoso! Redirigiendo...',
@@ -175,6 +191,7 @@ export async function loginAction(credentials: LoginCredentials): Promise<AuthRe
         gender: user.gender,
         created_at: user.created_at,
       },
+      token,
     };
   } catch (error) {
     console.error('Login error:', error);

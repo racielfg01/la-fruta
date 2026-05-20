@@ -113,14 +113,14 @@ export async function getAdminUsers() {
       created_at::text AS "createdAt",
       total_orders AS "totalOrders",
       total_spent::float AS "totalSpent"
-    FROM admin_users ORDER BY created_at DESC
+    FROM users ORDER BY created_at DESC
   `;
   return rows as any[];
 }
 
 export async function createAdminUser(user: any) {
   await sql`
-    INSERT INTO admin_users (id, name, email, phone, address, role, status, created_at, total_orders, total_spent)
+    INSERT INTO users (id, name, email, phone, address, role, status, created_at, total_orders, total_spent)
     VALUES (${user.id}, ${user.name}, ${user.email}, ${user.phone}, ${user.address}, ${user.role}, ${user.status}, ${user.createdAt || new Date().toISOString()}, ${user.totalOrders || 0}, ${user.totalSpent || 0})
   `;
 }
@@ -138,12 +138,12 @@ export async function updateAdminUser(id: string, data: any) {
   if (data.totalSpent !== undefined) { fields.push("total_spent"); values.push(data.totalSpent); }
   if (fields.length === 0) return;
   await sql`
-    UPDATE admin_users SET ${sql(fields.join(", "), ...values)} WHERE id = ${id}
+    UPDATE users SET ${sql(fields.join(", "), ...values)} WHERE id = ${id}
   `;
 }
 
 export async function deleteAdminUser(id: string) {
-  await sql`DELETE FROM admin_users WHERE id = ${id}`;
+  await sql`DELETE FROM users WHERE id = ${id}`;
 }
 
 // ── Orders ──

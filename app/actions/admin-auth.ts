@@ -23,7 +23,7 @@ export async function adminLoginAction(
   try {
     const rows = await sql`
       SELECT id, email, password_hash, name, role
-      FROM admin_users
+      FROM users
       WHERE email = ${email.toLowerCase().trim()}
     `;
 

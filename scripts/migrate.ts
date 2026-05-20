@@ -60,7 +60,7 @@ async function migrate() {
     )`;
 
   await sql`
-    CREATE TABLE IF NOT EXISTS admin_users (
+    CREATE TABLE IF NOT EXISTS users (
       id TEXT PRIMARY KEY,
       name TEXT NOT NULL,
       email TEXT NOT NULL DEFAULT '',
@@ -168,10 +168,10 @@ async function migrate() {
   }
 
   // Seed admin users
-  const existingUsers = await sql`SELECT COUNT(*) as count FROM admin_users`;
+  const existingUsers = await sql`SELECT COUNT(*) as count FROM users`;
   if (Number(existingUsers[0].count) === 0) {
     await sql`
-      INSERT INTO admin_users (id, name, email, phone, address, role, status, created_at, total_orders, total_spent) VALUES
+      INSERT INTO users (id, name, email, phone, address, role, status, created_at, total_orders, total_spent) VALUES
         ('1', 'María García', 'maria@ejemplo.com', '+34 612 345 678', 'Calle Mayor 123, Madrid', 'customer', 'active', '2024-01-15', 12, 245.80),
         ('2', 'Carlos López', 'carlos@ejemplo.com', '+34 623 456 789', 'Avenida Principal 45, Barcelona', 'customer', 'active', '2024-02-20', 8, 156.50),
         ('3', 'Ana Martínez', 'ana@ejemplo.com', '+34 634 567 890', 'Plaza Central 7, Valencia', 'customer', 'inactive', '2024-03-10', 3, 67.20),

@@ -121,17 +121,19 @@ export async function signupAction(data: SignupData): Promise<AuthResponse> {
       };
     }
 
-    return {
-      success: true,
-      message: '¡Registro exitoso! Redirigiendo...',
-      user: {
-        id: newUser.id,
-        phone: newUser.phone,
-        name: newUser.name,
-        gender: newUser.gender,
-        created_at: newUser.created_at,
-      },
-    };
+const token = await signAdminToken({ userId: newUser.id.toString(), email: newUser.phone, role: 'user' });
+return {
+        success: true,
+        message: '¡Registro exitoso! Redirigiendo...',
+        user: {
+          id: newUser.id,
+          phone: newUser.phone,
+          name: newUser.name,
+          gender: newUser.gender,
+          created_at: newUser.created_at,
+        },
+        token,
+      };
   } catch (error) {
     console.error('Signup error:', error);
     return {

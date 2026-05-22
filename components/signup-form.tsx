@@ -519,7 +519,7 @@ export default function SignupForm() {
               touched.phone && !isFieldValid('phone') ? 'border-red-500' : 'border-gray-300'
             }`}
           />
-          {touched.phone && !isFieldValid('phone') && <p className="text-xs text-red-600">10 a 15 dígitos</p>}
+          {touched.phone && !isFieldValid('phone') && <p className="text-xs text-red-600">8 a 10 dígitos</p>}
         </div>
 
         {/* Género */}

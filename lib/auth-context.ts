@@ -58,7 +58,7 @@ export interface AuthUser {
   email: string;
   phone: string;
   gender: string;
-  created_at: string;
+  // created_at: string;
 }
 
 interface AuthStore {

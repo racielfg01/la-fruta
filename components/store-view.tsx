@@ -67,13 +67,13 @@ const categoryConfig: Record<
   Melons: { icon: Leaf, color: "text-green-600", bgColor: "bg-green-50" },
 };
 
-export function StoreView() {
-   const [products, setProducts] = useState<Product[]>([]);
+  export function StoreView() {
+  const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
-  const [priceRange, setPriceRange] = useState<[number, number]>([0, 15]);
+  const [priceRange, setPriceRange] = useState<[number, number]>([0, 150]);
   const [sortBy, setSortBy] = useState<SortOption>("default");
   const [showOnlyInStock, setShowOnlyInStock] = useState(false);
   const [viewMode, setViewMode] = useState<"masonry" | "grid">("masonry");
@@ -84,35 +84,30 @@ export function StoreView() {
   const addItem = useCartStore((state) => state.addItem);
   const items = useCartStore((state) => state.items);
 
+  // En StoreView, modifica la carga de datos:
+useEffect(() => {
+  const loadData = async () => {
+    setLoading(true);
+    const { products: prods, categories: cats } = await getPublicProducts();
+    // Convertir price a número manteniendo todas las propiedades
+    const prodsWithNumberPrice = prods.map(p => ({
+      ...p,
+      price: Number(p.price)
+    })) as Product[];
+    setProducts(prodsWithNumberPrice);
+    setCategories(cats);
+    setLoading(false);
+  };
+  loadData();
+}, []);
 
+  // Calcular maxPrice (depende de products)
+  const maxPrice = useMemo(() => {
+    if (products.length === 0) return 100;
+    return Math.max(...products.map(p => p.price));
+  }, [products]);
 
-   useEffect(() => {
-    const loadData = async () => {
-      setLoading(true);
-     const { products: prods, categories: cats } = await getPublicProducts();
-console.log("Productos recibidos (antes de setProducts):", prods);
-setProducts(prods as Product[]);
-console.log("Estado products actualizado");
-      setProducts(prods as Product[]);
-      setCategories(cats);
-      setLoading(false);
-    };
-    loadData();
-  }, []);
-
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
-        e.preventDefault();
-        searchInputRef.current?.focus();
-      }
-    };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, []);
-
-
-
+  // Calcular filteredProducts (depende de products y filtros)
   const filteredProducts = useMemo(() => {
     let filtered = products.filter((product) => {
       const matchesSearch =
@@ -146,31 +141,19 @@ console.log("Estado products actualizado");
       default:
         break;
     }
-
     return filtered;
-  }, [searchQuery, selectedCategories, priceRange, sortBy, showOnlyInStock]);
+  }, [products, searchQuery, selectedCategories, priceRange, sortBy, showOnlyInStock]);
 
-    const categoryCounts = useMemo(() => {
-  const counts: Record<string, number> = {};
-  products.forEach(p => {
-    counts[p.category] = (counts[p.category] || 0) + 1;
-  });
-  return counts;
-}, [products]);
+  // Calcular conteo por categorías
+  const categoryCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    products.forEach(p => {
+      counts[p.category] = (counts[p.category] || 0) + 1;
+    });
+    return counts;
+  }, [products]);
 
-const maxPrice = useMemo(() => {
-  if (products.length === 0) return 100;
-  return Math.max(...products.map(p => p.price));
-}, [products]);
-
-  const toggleCategory = (category: string) => {
-    setSelectedCategories((prev) =>
-      prev.includes(category)
-        ? prev.filter((c) => c !== category)
-        : [...prev, category],
-    );
-  };
-
+  // Funciones de filtro (usando maxPrice)
   const clearFilters = () => {
     setSearchQuery("");
     setSelectedCategories([]);
@@ -178,6 +161,14 @@ const maxPrice = useMemo(() => {
     setSortBy("default");
     setShowOnlyInStock(false);
   };
+
+  const toggleCategory = (category: string) => {
+  setSelectedCategories((prev) =>
+    prev.includes(category)
+      ? prev.filter((c) => c !== category)
+      : [...prev, category]
+  );
+};
 
   const hasActiveFilters =
     searchQuery !== "" ||
@@ -202,8 +193,12 @@ const maxPrice = useMemo(() => {
     return item?.quantity || 0;
   };
 
-   if (loading) {
-    return <div className="flex justify-center py-20"><Loader2 className="h-8 w-8 animate-spin" /></div>;
+  if (loading) {
+    return (
+      <div className="flex justify-center py-20">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
   }
 
   return (
@@ -392,17 +387,17 @@ const maxPrice = useMemo(() => {
                           </Select>
                         </div>
 
-                     <FilterContent
-  categories={categories}
-  selectedCategories={selectedCategories}
-  toggleCategory={toggleCategory}
-  priceRange={priceRange}
-  setPriceRange={setPriceRange}
-  maxPrice={maxPrice}
-  showOnlyInStock={showOnlyInStock}
-  setShowOnlyInStock={setShowOnlyInStock}
-  categoryCounts={categoryCounts}  
-/>
+                        <FilterContent
+                          categories={categories}
+                          selectedCategories={selectedCategories}
+                          toggleCategory={toggleCategory}
+                          priceRange={priceRange}
+                          setPriceRange={setPriceRange}
+                          maxPrice={maxPrice}
+                          showOnlyInStock={showOnlyInStock}
+                          setShowOnlyInStock={setShowOnlyInStock}
+                          categoryCounts={categoryCounts}
+                        />
                         <div className="mt-8">
                           <SheetClose asChild>
                             <Button className="w-full" size="lg">
@@ -521,17 +516,17 @@ const maxPrice = useMemo(() => {
                       </Select>
                     </div>
 
-                  <FilterContent
-  categories={categories}
-  selectedCategories={selectedCategories}
-  toggleCategory={toggleCategory}
-  priceRange={priceRange}
-  setPriceRange={setPriceRange}
-  maxPrice={maxPrice}
-  showOnlyInStock={showOnlyInStock}
-  setShowOnlyInStock={setShowOnlyInStock}
-  categoryCounts={categoryCounts}   // ← agregar
-/>
+                    <FilterContent
+                      categories={categories}
+                      selectedCategories={selectedCategories}
+                      toggleCategory={toggleCategory}
+                      priceRange={priceRange}
+                      setPriceRange={setPriceRange}
+                      maxPrice={maxPrice}
+                      showOnlyInStock={showOnlyInStock}
+                      setShowOnlyInStock={setShowOnlyInStock}
+                      categoryCounts={categoryCounts} // ← agregar
+                    />
                   </CardContent>
                 </Card>
 
@@ -707,7 +702,7 @@ function FilterContent({
   maxPrice,
   showOnlyInStock,
   setShowOnlyInStock,
-  categoryCounts
+  categoryCounts,
 }: {
   categories: string[];
   selectedCategories: string[];
@@ -717,7 +712,7 @@ function FilterContent({
   maxPrice: number;
   showOnlyInStock: boolean;
   setShowOnlyInStock: (value: boolean) => void;
-    categoryCounts: Record<string, number>;
+  categoryCounts: Record<string, number>;
 }) {
   return (
     <div className="space-y-8">
@@ -731,7 +726,7 @@ function FilterContent({
             // const count = products.filter(
             //   (p) => p.category === category,
             // ).length;
-            const count = categoryCounts[category] || 0
+            const count = categoryCounts[category] || 0;
             const isSelected = selectedCategories.includes(category);
 
             return (

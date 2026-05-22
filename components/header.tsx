@@ -15,6 +15,8 @@ export function Header() {
   const router = useRouter();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
+  const isAdmin = user?.role_id === 2; 
+
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80">
       <div className="container mx-auto flex h-16 items-center justify-between px-4">
@@ -40,15 +42,18 @@ export function Header() {
           >
             Carrito
           </Link>
-          <Link
-            href="/admin"
-            className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
-          >
-            <span className="flex items-center gap-1">
-              <Settings className="h-4 w-4" />
-              Admin
-            </span>
-          </Link>
+          {/* Mostrar Admin solo si el usuario es administrador */}
+          {isAdmin && (
+            <Link
+              href="/admin"
+              className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+            >
+              <span className="flex items-center gap-1">
+                <Settings className="h-4 w-4" />
+                Admin
+              </span>
+            </Link>
+          )}
         </nav>
 
         <div className="flex items-center gap-2">
@@ -87,14 +92,10 @@ export function Header() {
           ) : (
             <div className="hidden md:flex items-center gap-2">
               <Link href="/auth/login">
-                <Button variant="ghost" size="sm">
-                  Iniciar Sesión
-                </Button>
+                <Button variant="ghost" size="sm">Iniciar Sesión</Button>
               </Link>
               <Link href="/auth/signup">
-                <Button size="sm">
-                  Registrarse
-                </Button>
+                <Button size="sm">Registrarse</Button>
               </Link>
             </div>
           )}
@@ -127,16 +128,19 @@ export function Header() {
             >
               Carrito
             </Link>
-            <Link
-              href="/admin"
-              className="rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              <span className="flex items-center gap-1">
-                <Settings className="h-4 w-4" />
-                Admin
-              </span>
-            </Link>
+            {/* Admin en menú móvil solo para administradores */}
+            {isAdmin && (
+              <Link
+                href="/admin"
+                className="rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                <span className="flex items-center gap-1">
+                  <Settings className="h-4 w-4" />
+                  Admin
+                </span>
+              </Link>
+            )}
 
             {isAuthenticated && user ? (
               <>

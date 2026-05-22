@@ -202,7 +202,7 @@ export interface AuthResponse {
     email: string;
     phone: string;
     gender: string;
-    // created_at?: string;
+    role_id: number; 
   };
   token?: string;
   error?: string;
@@ -294,6 +294,7 @@ export async function signupAction(data: SignupData): Promise<AuthResponse> {
         email: newUser.email,
         phone: newUser.phone,
         gender: newUser.gender as "",
+        role_id: newUser.role_id,
         // created_at: newUser.created_at,
       },
       token,
@@ -330,6 +331,7 @@ export async function loginAction(credentials: { identifier: string; password: s
         email: user.email,
         phone: user.phone,
         gender: user.gender as "",
+        role_id: user.role_id,
         // created_at: user.created_at,
       },
       token,

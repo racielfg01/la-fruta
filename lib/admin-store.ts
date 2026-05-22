@@ -1,3 +1,4 @@
+// lib/admin-store.ts
 import { create } from "zustand";
 import { Product } from "./store";
 import {
@@ -21,7 +22,9 @@ import {
   removeCurrencyAction,
   setDefaultCurrencyAction,
 } from "@/app/actions/admin";
+import { useAuthStore } from "./auth-context";
 
+// Tipos (coinciden con la base de datos real)
 export interface Category {
   id: string;
   name: string;
@@ -44,11 +47,11 @@ export interface User {
   email: string;
   phone: string;
   address: string;
-  role: "admin" | "customer";
+  role_id: number;       // 1 = USER, 2 = ADMIN
   status: "active" | "inactive" | "suspended";
-  createdAt: string;
-  totalOrders: number;
-  totalSpent: number;
+  created_at: string;
+  total_orders: number;
+  total_spent: number;
 }
 
 export interface OrderItem {
@@ -123,6 +126,13 @@ interface AdminStore {
   setDefaultCurrency: (id: string) => Promise<void>;
 }
 
+// Helper para obtener el token actual (fuera del store para evitar ciclos)
+const getAuthToken = () => {
+  const token = useAuthStore.getState().token;
+  if (!token) throw new Error("No hay token de autenticación. Inicia sesión nuevamente.");
+  return token;
+};
+
 export const useAdminStore = create<AdminStore>()((set, get) => ({
   loaded: false,
   loading: false,
@@ -137,7 +147,8 @@ export const useAdminStore = create<AdminStore>()((set, get) => ({
     if (get().loaded || get().loading) return;
     set({ loading: true });
     try {
-      const data = await getAdminData();
+      const token = getAuthToken();
+      const data = await getAdminData(token);
       set({
         products: data.products as Product[],
         categories: data.categories as Category[],
@@ -148,66 +159,84 @@ export const useAdminStore = create<AdminStore>()((set, get) => ({
         loaded: true,
         loading: false,
       });
-    } catch (e) {
-      console.error("Failed to load admin data:", e);
+    } catch (error) {
+      console.error("Failed to load admin data:", error);
       set({ loading: false });
+      // Si el error es por token inválido, cerrar sesión y redirigir
+      if (error instanceof Error && error.message.includes("autenticación")) {
+        useAuthStore.getState().logout();
+        window.location.href = "/auth/login";
+      }
     }
   },
 
   addProduct: async (product) => {
-    await addProductAction(product);
+    const token = getAuthToken();
+    await addProductAction(product, token);
     set({ products: [...get().products, product] });
   },
   updateProduct: async (id, data) => {
-    await editProductAction(id, data);
+    const token = getAuthToken();
+    await editProductAction(id, data, token);
     set({ products: get().products.map((p) => (p.id === id ? { ...p, ...data } : p)) });
   },
   deleteProduct: async (id) => {
-    await removeProductAction(id);
+    const token = getAuthToken();
+    await removeProductAction(id, token);
     set({ products: get().products.filter((p) => p.id !== id) });
   },
 
   addCategory: async (category) => {
-    await addCategoryAction(category);
+    const token = getAuthToken();
+    await addCategoryAction(category, token);
     set({ categories: [...get().categories, category] });
   },
   updateCategory: async (id, data) => {
-    await editCategoryAction(id, data);
+    const token = getAuthToken();
+    await editCategoryAction(id, data, token);
     set({ categories: get().categories.map((c) => (c.id === id ? { ...c, ...data } : c)) });
   },
   deleteCategory: async (id) => {
-    await removeCategoryAction(id);
+    const token = getAuthToken();
+    await removeCategoryAction(id, token);
     set({ categories: get().categories.filter((c) => c.id !== id) });
   },
 
   addDeliveryZone: async (zone) => {
-    await addDeliveryZoneAction(zone);
+    const token = getAuthToken();
+    await addDeliveryZoneAction(zone, token);
     set({ deliveryZones: [...get().deliveryZones, zone] });
   },
   updateDeliveryZone: async (id, data) => {
-    await editDeliveryZoneAction(id, data);
+    const token = getAuthToken();
+    await editDeliveryZoneAction(id, data, token);
     set({ deliveryZones: get().deliveryZones.map((z) => (z.id === id ? { ...z, ...data } : z)) });
   },
   deleteDeliveryZone: async (id) => {
-    await removeDeliveryZoneAction(id);
+    const token = getAuthToken();
+    await removeDeliveryZoneAction(id, token);
     set({ deliveryZones: get().deliveryZones.filter((z) => z.id !== id) });
   },
 
   addUser: async (user) => {
-    await addUserAction(user);
+    const token = getAuthToken();
+    await addUserAction(user, token);
     set({ users: [...get().users, user] });
   },
   updateUser: async (id, data) => {
-    await editUserAction(id, data);
+    const token = getAuthToken();
+    await editUserAction(id, data, token);
     set({ users: get().users.map((u) => (u.id === id ? { ...u, ...data } : u)) });
   },
   deleteUser: async (id) => {
-    await removeUserAction(id);
+    const token = getAuthToken();
+    await removeUserAction(id, token);
     set({ users: get().users.filter((u) => u.id !== id) });
   },
 
   updateOrderStatus: async (id, status) => {
-    await setOrderStatusAction(id, status);
+    const token = getAuthToken();
+    await setOrderStatusAction(id, status, token);
     set({
       orders: get().orders.map((o) =>
         o.id === id ? { ...o, status, updatedAt: new Date().toISOString() } : o
@@ -215,7 +244,8 @@ export const useAdminStore = create<AdminStore>()((set, get) => ({
     });
   },
   updatePaymentStatus: async (id, paymentStatus) => {
-    await setPaymentStatusAction(id, paymentStatus);
+    const token = getAuthToken();
+    await setPaymentStatusAction(id, paymentStatus, token);
     set({
       orders: get().orders.map((o) =>
         o.id === id ? { ...o, paymentStatus, updatedAt: new Date().toISOString() } : o
@@ -224,19 +254,23 @@ export const useAdminStore = create<AdminStore>()((set, get) => ({
   },
 
   addCurrency: async (currency) => {
-    await addCurrencyAction(currency);
+    const token = getAuthToken();
+    await addCurrencyAction(currency, token);
     set({ currencies: [...get().currencies, currency] });
   },
   updateCurrency: async (id, data) => {
-    await editCurrencyAction(id, data);
+    const token = getAuthToken();
+    await editCurrencyAction(id, data, token);
     set({ currencies: get().currencies.map((c) => (c.id === id ? { ...c, ...data } : c)) });
   },
   deleteCurrency: async (id) => {
-    await removeCurrencyAction(id);
+    const token = getAuthToken();
+    await removeCurrencyAction(id, token);
     set({ currencies: get().currencies.filter((c) => c.id !== id) });
   },
   setDefaultCurrency: async (id) => {
-    await setDefaultCurrencyAction(id);
+    const token = getAuthToken();
+    await setDefaultCurrencyAction(id, token);
     set({ currencies: get().currencies.map((c) => ({ ...c, isDefault: c.id === id })) });
   },
 }));

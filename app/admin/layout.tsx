@@ -20,7 +20,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useAdminStore } from "@/lib/admin-store";
-import { adminLogoutAction } from "@/app/actions/admin-auth";
+import { useAuthStore } from "@/lib/auth-context";  // ✅ usar el store global
 
 function AdminStoreInitializer() {
   const initialize = useAdminStore((s) => s.initialize);
@@ -29,62 +29,47 @@ function AdminStoreInitializer() {
 }
 
 const navigation = [
-  {
-    name: "Panel Principal",
-    href: "/admin",
-    icon: LayoutDashboard,
-  },
-  {
-    name: "Productos",
-    href: "/admin/productos",
-    icon: Package,
-  },
-  {
-    name: "Categorías",
-    href: "/admin/categorias",
-    icon: Tags,
-  },
-  {
-    name: "Envíos",
-    href: "/admin/envios",
-    icon: Truck,
-  },
-  {
-    name: "Usuarios",
-    href: "/admin/usuarios",
-    icon: Users,
-  },
-  {
-    name: "Órdenes",
-    href: "/admin/ordenes",
-    icon: ShoppingBag,
-  },
-  {
-    name: "Monedas",
-    href: "/admin/monedas",
-    icon: Coins,
-  },
+  { name: "Panel Principal", href: "/admin", icon: LayoutDashboard },
+  { name: "Productos", href: "/admin/productos", icon: Package },
+  { name: "Categorías", href: "/admin/categorias", icon: Tags },
+  { name: "Envíos", href: "/admin/envios", icon: Truck },
+  { name: "Usuarios", href: "/admin/usuarios", icon: Users },
+  { name: "Órdenes", href: "/admin/ordenes", icon: ShoppingBag },
+  { name: "Monedas", href: "/admin/monedas", icon: Coins },
 ];
 
-export default function AdminLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const isLoginPage = pathname === "/admin/login";
 
-  const handleLogout = async () => {
-    await adminLogoutAction();
-    router.push("/admin/login");
-    router.refresh();
-  };
+  // ✅ Obtener estado de autenticación general
+  const { isAuthenticated, user, logout } = useAuthStore();
 
+  // ✅ Redirigir si no está autenticado o no es admin (role_id === 2)
+  useEffect(() => {
+    if (!isLoginPage && !isAuthenticated) {
+      router.push("/auth/login"); // o /admin/login si prefieres mantener esa ruta
+    } else if (!isLoginPage && user && user.role_id !== 2) {
+      router.push("/"); // acceso denegado, enviar a home
+    }
+  }, [isAuthenticated, user, isLoginPage, router]);
+
+  // Si está en página de login o aún verificando, no renderizar el layout
   if (isLoginPage) {
     return <>{children}</>;
   }
+
+  // No mostrar nada mientras verifica (evita flash)
+  if (!isAuthenticated || !user || user.role_id !== 2) {
+    return null;
+  }
+
+  const handleLogout = () => {
+    logout();               // cierra sesión global
+    router.push("/");       // redirige al home
+  };
 
   return (
     <div className="min-h-screen bg-muted/30">
@@ -106,9 +91,7 @@ export default function AdminLayout({
       >
         <div className="flex h-16 items-center gap-2 border-b border-border px-6">
           <Leaf className="h-6 w-6 text-primary" />
-          <span className="font-serif text-xl font-bold text-primary">
-            La Fruta
-          </span>
+          <span className="font-serif text-xl font-bold text-primary">La Fruta</span>
           <span className="ml-1 text-xs text-muted-foreground">Admin</span>
           <Button
             variant="ghost"
@@ -146,6 +129,10 @@ export default function AdminLayout({
         </nav>
 
         <div className="absolute bottom-0 left-0 right-0 border-t border-border p-4 space-y-2">
+          <div className="flex items-center gap-2 px-2 py-1 text-sm text-muted-foreground">
+            <span className="truncate">{user.name}</span>
+            <span className="text-xs bg-primary/10 px-1.5 py-0.5 rounded">Admin</span>
+          </div>
           <Link
             href="/"
             className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
@@ -165,7 +152,6 @@ export default function AdminLayout({
 
       {/* Main content */}
       <div className="lg:pl-64">
-        {/* Top bar */}
         <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b border-border bg-card px-4 lg:px-6">
           <Button
             variant="ghost"
@@ -179,8 +165,6 @@ export default function AdminLayout({
             <h1 className="text-lg font-semibold">Panel de Administración</h1>
           </div>
         </header>
-
-        {/* Page content */}
         <main className="p-4 lg:p-6">{children}</main>
       </div>
     </div>

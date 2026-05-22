@@ -84,10 +84,7 @@ export async function signupAction(data: SignupData): Promise<AuthResponse> {
       return { success: false, message: '', error: phoneValidation.error };
     }
 
-    const genderValidation = validateGender(data.gender);
-    if (!genderValidation.valid) {
-      return { success: false, message: '', error: genderValidation.error };
-    }
+// gender field removed per new schema
 
     const passwordValidation = validatePassword(data.password);
     if (!passwordValidation.valid) {

@@ -39,7 +39,7 @@ export async function comparePasswords(password: string, hash: string): Promise<
 export async function getUserByPhone(phone: string): Promise<User | null> {
   try {
     const result = await sql`
-      SELECT id, phone, name, gender, created_at 
+      SELECT id, phone, name, created_at 
       FROM users 
       WHERE phone = ${phone}
     `;
@@ -55,8 +55,16 @@ export async function createUser(data: SignupData): Promise<User | null> {
   try {
     const passwordHash = await hashPassword(data.password);
     const result = await sql`
-      INSERT INTO users (phone, name, gender, password_hash)
-      VALUES (${data.phone}, ${data.name}, ${data.gender}, ${passwordHash})
+      INSERT INTO users (id, name, email, phone, address, password_hash, role_id)
+      VALUES (
+        crypto.randomUUID(),
+        ${data.name},
+        '',
+        ${data.phone},
+        '',
+        ${passwordHash},
+        1
+      )
       RETURNING id, phone, name, gender, created_at
     `;
     return result.length > 0 ? (result[0] as User) : null;

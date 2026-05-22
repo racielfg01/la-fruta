@@ -1,6 +1,7 @@
 import { neon } from "@neondatabase/serverless";
 import * as fs from "fs";
 import * as path from "path";
+import bcrypt from "bcryptjs";
 
 // Load .env.local manually since plain Node.js doesn't auto-load it
 const envPath = path.resolve(process.cwd(), ".env.local");
@@ -23,6 +24,12 @@ if (fs.existsSync(envPath)) {
 }
 
 const sql = neon(process.env.DATABASE_URL!);
+
+// Función para hashear contraseñas
+async function hashPassword(password: string): Promise<string> {
+  const salt = await bcrypt.genSalt(10);
+  return bcrypt.hash(password, salt);
+}
 
 async function migrate() {
   console.log("Running migration...");
@@ -60,17 +67,27 @@ async function migrate() {
     )`;
 
   await sql`
+    CREATE TABLE IF NOT EXISTS roles (
+      id SERIAL PRIMARY KEY,
+      name TEXT NOT NULL UNIQUE,
+      description TEXT,
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    )`;
+
+  await sql`
     CREATE TABLE IF NOT EXISTS users (
       id TEXT PRIMARY KEY,
       name TEXT NOT NULL,
       email TEXT NOT NULL DEFAULT '',
       phone TEXT NOT NULL DEFAULT '',
       address TEXT NOT NULL DEFAULT '',
-      role TEXT NOT NULL DEFAULT 'customer',
+      role_id INTEGER NOT NULL DEFAULT 1,
       status TEXT NOT NULL DEFAULT 'active',
       created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
       total_orders INTEGER DEFAULT 0,
-      total_spent DECIMAL(10,2) DEFAULT 0
+      total_spent DECIMAL(10,2) DEFAULT 0,
+      password_hash TEXT NOT NULL DEFAULT '',
+      gender TEXT
     )`;
 
   await sql`
@@ -114,6 +131,17 @@ async function migrate() {
 
   console.log("Tables created.");
 
+  // Insert roles
+  const existingRoles = await sql`SELECT COUNT(*) as count FROM roles`;
+  if (Number(existingRoles[0].count) === 0) {
+    await sql`
+      INSERT INTO roles (name, description) VALUES
+        ('USER', 'Usuario regular con permisos básicos de compra'),
+        ('ADMIN', 'Administrador con acceso completo al sistema')
+    `;
+    console.log("Seeded roles.");
+  }
+
   // Seed categories
   const existingCats = await sql`SELECT COUNT(*) as count FROM categories`;
   if (Number(existingCats[0].count) === 0) {
@@ -132,18 +160,18 @@ async function migrate() {
   const existingProds = await sql`SELECT COUNT(*) as count FROM products`;
   if (Number(existingProds[0].count) === 0) {
     const products = [
-      { id: "1", name: "Organic Apples", description: "Crisp and sweet organic apples freshly picked from local orchards.", price: 4.99, unit: "por lb", image: "https://images.unsplash.com/photo-1560806887-1e4cd0b6cbd6?w=800&h=600&fit=crop", category: "Fruits", origin: "Washington Valley Farms" },
-      { id: "2", name: "Valencia Oranges", description: "Juicy Valencia oranges bursting with vitamin C.", price: 5.49, unit: "por lb", image: "https://images.unsplash.com/photo-1547514701-42782101795e?w=800&h=600&fit=crop", category: "Citrus", origin: "California Sun Orchards" },
-      { id: "3", name: "Fresh Strawberries", description: "Sweet, red strawberries picked at peak ripeness.", price: 6.99, unit: "por pinta", image: "https://images.unsplash.com/photo-1464965911861-746a04b4bca6?w=800&h=600&fit=crop", category: "Berries", origin: "Green Valley Farms" },
-      { id: "4", name: "Ripe Bananas", description: "Perfectly ripe bananas, naturally sweet.", price: 2.49, unit: "c/u", image: "https://images.unsplash.com/photo-1571771894821-ce9b6c11b08e?w=800&h=600&fit=crop", category: "Tropical", origin: "Costa Rica Plantations" },
-      { id: "5", name: "Organic Blueberries", description: "Plump, organic blueberries packed with antioxidants.", price: 7.99, unit: "por pinta", image: "https://images.unsplash.com/photo-1498557850523-fd3d118b962e?w=800&h=600&fit=crop", category: "Berries", origin: "Maine Berry Farms" },
-      { id: "6", name: "Fresh Mangoes", description: "Tropical mangoes with buttery, sweet flesh.", price: 3.99, unit: "c/u", image: "https://images.unsplash.com/photo-1553279768-865429fa0078?w=800&h=600&fit=crop", category: "Tropical", origin: "Mexican Tropical Farms" },
-      { id: "7", name: "Red Grapes", description: "Seedless red grapes, crisp and naturally sweet.", price: 4.49, unit: "por lb", image: "https://images.unsplash.com/photo-1537640538966-79f369143f8f?w=800&h=600&fit=crop", category: "Fruits", origin: "Napa Valley Vineyards" },
-      { id: "8", name: "Ripe Avocados", description: "Creamy Hass avocados, perfectly ripe.", price: 2.99, unit: "c/u", image: "https://images.unsplash.com/photo-1523049673857-eb18f1d7b578?w=800&h=600&fit=crop", category: "Fruits", origin: "California Avocado Farms" },
-      { id: "9", name: "Fresh Lemons", description: "Bright, tangy lemons perfect for cooking.", price: 3.49, unit: "por lb", image: "https://images.unsplash.com/photo-1590502593747-42a996133562?w=800&h=600&fit=crop", category: "Citrus", origin: "Mediterranean Citrus Co." },
-      { id: "10", name: "Sweet Watermelon", description: "Refreshing seedless watermelon.", price: 8.99, unit: "c/u", image: "https://images.unsplash.com/photo-1587049352846-4a222e784d38?w=800&h=600&fit=crop", category: "Melons", origin: "Georgia Melon Farms" },
-      { id: "11", name: "Fresh Raspberries", description: "Delicate, sweet raspberries.", price: 8.49, unit: "por pinta", image: "https://images.unsplash.com/photo-1577003833619-76bbd7f82948?w=800&h=600&fit=crop", category: "Berries", origin: "Pacific Northwest Farms" },
-      { id: "12", name: "Organic Pears", description: "Sweet, juicy organic pears.", price: 4.79, unit: "por lb", image: "https://images.unsplash.com/photo-1514756331096-242fdeb70d4a?w=800&h=600&fit=crop", category: "Fruits", origin: "Oregon Orchard Co." },
+      { id: "1", name: "Organic Apples", description: "Crisp and sweet organic apples freshly picked from local orchards.", price: 4.99, unit: "por lb", image: "https://images.unsplash.com/photo-1560806887-1e4cd0b6cbd6?w=800&h=600&fit=crop", category: "Frutas", origin: "Washington Valley Farms" },
+      { id: "2", name: "Valencia Oranges", description: "Juicy Valencia oranges bursting with vitamin C.", price: 5.49, unit: "por lb", image: "https://images.unsplash.com/photo-1547514701-42782101795e?w=800&h=600&fit=crop", category: "Cítricos", origin: "California Sun Orchards" },
+      { id: "3", name: "Fresh Strawberries", description: "Sweet, red strawberries picked at peak ripeness.", price: 6.99, unit: "por pinta", image: "https://images.unsplash.com/photo-1464965911861-746a04b4bca6?w=800&h=600&fit=crop", category: "Bayas", origin: "Green Valley Farms" },
+      { id: "4", name: "Ripe Bananas", description: "Perfectly ripe bananas, naturally sweet.", price: 2.49, unit: "c/u", image: "https://images.unsplash.com/photo-1571771894821-ce9b6c11b08e?w=800&h=600&fit=crop", category: "Tropicales", origin: "Costa Rica Plantations" },
+      { id: "5", name: "Organic Blueberries", description: "Plump, organic blueberries packed with antioxidants.", price: 7.99, unit: "por pinta", image: "https://images.unsplash.com/photo-1498557850523-fd3d118b962e?w=800&h=600&fit=crop", category: "Bayas", origin: "Maine Berry Farms" },
+      { id: "6", name: "Fresh Mangoes", description: "Tropical mangoes with buttery, sweet flesh.", price: 3.99, unit: "c/u", image: "https://images.unsplash.com/photo-1553279768-865429fa0078?w=800&h=600&fit=crop", category: "Tropicales", origin: "Mexican Tropical Farms" },
+      { id: "7", name: "Red Grapes", description: "Seedless red grapes, crisp and naturally sweet.", price: 4.49, unit: "por lb", image: "https://images.unsplash.com/photo-1537640538966-79f369143f8f?w=800&h=600&fit=crop", category: "Frutas", origin: "Napa Valley Vineyards" },
+      { id: "8", name: "Ripe Avocados", description: "Creamy Hass avocados, perfectly ripe.", price: 2.99, unit: "c/u", image: "https://images.unsplash.com/photo-1523049673857-eb18f1d7b578?w=800&h=600&fit=crop", category: "Frutas", origin: "California Avocado Farms" },
+      { id: "9", name: "Fresh Lemons", description: "Bright, tangy lemons perfect for cooking.", price: 3.49, unit: "por lb", image: "https://images.unsplash.com/photo-1590502593747-42a996133562?w=800&h=600&fit=crop", category: "Cítricos", origin: "Mediterranean Citrus Co." },
+      { id: "10", name: "Sweet Watermelon", description: "Refreshing seedless watermelon.", price: 8.99, unit: "c/u", image: "https://images.unsplash.com/photo-1587049352846-4a222e784d38?w=800&h=600&fit=crop", category: "Melones", origin: "Georgia Melon Farms" },
+      { id: "11", name: "Fresh Raspberries", description: "Delicate, sweet raspberries.", price: 8.49, unit: "por pinta", image: "https://images.unsplash.com/photo-1577003833619-76bbd7f82948?w=800&h=600&fit=crop", category: "Bayas", origin: "Pacific Northwest Farms" },
+      { id: "12", name: "Organic Pears", description: "Sweet, juicy organic pears.", price: 4.79, unit: "por lb", image: "https://images.unsplash.com/photo-1514756331096-242fdeb70d4a?w=800&h=600&fit=crop", category: "Frutas", origin: "Oregon Orchard Co." },
     ];
     for (const p of products) {
       await sql`
@@ -167,42 +195,63 @@ async function migrate() {
     console.log("Seeded delivery zones.");
   }
 
-  // Seed admin users
+  // Seed users (1 admin + 3 clients)
   const existingUsers = await sql`SELECT COUNT(*) as count FROM users`;
   if (Number(existingUsers[0].count) === 0) {
+    // Hashear contraseñas
+    const adminPasswordHash = await hashPassword("admin.123*");
+    const client1PasswordHash = await hashPassword("cliente.123");
+    const client2PasswordHash = await hashPassword("cliente.456");
+    const client3PasswordHash = await hashPassword("cliente.789");
+
+    // Obtener IDs de roles
+    const roles = await sql`SELECT id, name FROM roles`;
+    const userRoleId = roles.find(r => r.name === 'USER')?.id || 1;
+    const adminRoleId = roles.find(r => r.name === 'ADMIN')?.id || 2;
+
     await sql`
-      INSERT INTO users (id, name, email, phone, address, role, status, created_at, total_orders, total_spent) VALUES
-        ('1', 'María García', 'maria@ejemplo.com', '+34 612 345 678', 'Calle Mayor 123, Madrid', 'customer', 'active', '2024-01-15', 12, 245.80),
-        ('2', 'Carlos López', 'carlos@ejemplo.com', '+34 623 456 789', 'Avenida Principal 45, Barcelona', 'customer', 'active', '2024-02-20', 8, 156.50),
-        ('3', 'Ana Martínez', 'ana@ejemplo.com', '+34 634 567 890', 'Plaza Central 7, Valencia', 'customer', 'inactive', '2024-03-10', 3, 67.20),
-        ('4', 'Admin Principal', 'admin@lafruta.com', '+34 600 000 000', 'Oficina Central, Madrid', 'admin', 'active', '2024-01-01', 0, 0),
-        ('5', 'Pedro Sánchez', 'pedro@ejemplo.com', '+34 645 678 901', 'Calle Nueva 89, Sevilla', 'customer', 'suspended', '2024-04-05', 1, 23.50)
+      INSERT INTO users (id, name, email, phone, address, role_id, status, created_at, total_orders, total_spent, password_hash, gender) VALUES
+        ('usr_1', 'Administrador La Fruta', 'admin@lafruta.com', '+34 600 000 001', 'Calle Principal 123, Madrid', ${adminRoleId}, 'active', NOW(), 0, 0, ${adminPasswordHash}, 'masculino'),
+        ('usr_2', 'María García López', 'maria.garcia@email.com', '+34 612 345 678', 'Calle Mayor 45, Barcelona', ${userRoleId}, 'active', NOW(), 5, 245.80, ${client1PasswordHash}, 'femenino'),
+        ('usr_3', 'Carlos Rodríguez Sánchez', 'carlos.rodriguez@email.com', '+34 623 456 789', 'Avenida Reforma 234, Valencia', ${userRoleId}, 'active', NOW(), 3, 156.50, ${client2PasswordHash}, 'masculino'),
+        ('usr_4', 'Ana Martínez Fernández', 'ana.martinez@email.com', '+34 634 567 890', 'Plaza Central 78, Sevilla', ${userRoleId}, 'active', NOW(), 2, 89.30, ${client3PasswordHash}, 'femenino')
     `;
-    console.log("Seeded admin users.");
+    console.log("Seeded users (1 admin + 3 clients).");
+    console.log("Admin credentials: admin@lafruta.com / admin.123*");
+    console.log("Client credentials:");
+    console.log("  - maria.garcia@email.com / cliente.123");
+    console.log("  - carlos.rodriguez@email.com / cliente.456");
+    console.log("  - ana.martinez@email.com / cliente.789");
   }
 
   // Seed orders
   const existingOrders = await sql`SELECT COUNT(*) as count FROM orders`;
   if (Number(existingOrders[0].count) === 0) {
-    await sql`
-      INSERT INTO orders (id, user_id, user_name, user_email, subtotal, delivery_fee, total, status, payment_method, payment_status, delivery_address, delivery_notes, created_at, updated_at) VALUES
-        ('ORD-001', '1', 'María García', 'maria@ejemplo.com', 16.97, 2.99, 19.96, 'delivered', 'Tarjeta de Crédito', 'paid', 'Calle Mayor 123, Madrid', 'Dejar en portería', '2024-12-01T10:30:00', '2024-12-01T14:45:00'),
-        ('ORD-002', '2', 'Carlos López', 'carlos@ejemplo.com', 26.96, 4.99, 31.95, 'shipped', 'PayPal', 'paid', 'Avenida Principal 45, Barcelona', '', '2024-12-05T15:20:00', '2024-12-06T09:00:00'),
-        ('ORD-003', '1', 'María García', 'maria@ejemplo.com', 19.95, 2.99, 22.94, 'preparing', 'Tarjeta de Crédito', 'paid', 'Calle Mayor 123, Madrid', 'Llamar antes de entregar', '2024-12-07T11:00:00', '2024-12-07T11:30:00'),
-        ('ORD-004', '3', 'Ana Martínez', 'ana@ejemplo.com', 20.97, 4.99, 25.96, 'pending', 'Transferencia Bancaria', 'pending', 'Plaza Central 7, Valencia', '', '2024-12-08T09:15:00', '2024-12-08T09:15:00'),
-        ('ORD-005', '5', 'Pedro Sánchez', 'pedro@ejemplo.com', 5.99, 7.99, 13.98, 'cancelled', 'Tarjeta de Crédito', 'refunded', 'Calle Nueva 89, Sevilla', '', '2024-12-02T16:45:00', '2024-12-03T10:00:00')
-    `;
-    await sql`
-      INSERT INTO order_items (order_id, product_id, product_name, quantity, price) VALUES
-        ('ORD-001', '1', 'Manzanas Orgánicas', 2, 4.99),
-        ('ORD-001', '3', 'Fresas Premium', 1, 6.99),
-        ('ORD-002', '5', 'Mangos Maduros', 3, 5.99),
-        ('ORD-002', '7', 'Sandía Sin Semillas', 1, 8.99),
-        ('ORD-003', '2', 'Naranjas Valencia', 5, 3.99),
-        ('ORD-004', '4', 'Arándanos Frescos', 2, 7.99),
-        ('ORD-004', '6', 'Piña Tropical', 1, 4.99),
-        ('ORD-005', '8', 'Melón Cantalupo', 1, 5.99)
-    `;
+    // Obtener usuarios para relacionar pedidos
+    const users = await sql`SELECT id, name, email FROM users WHERE role_id = 1`; // solo clientes
+    
+    if (users.length > 0) {
+      await sql`
+        INSERT INTO orders (id, user_id, user_name, user_email, subtotal, delivery_fee, total, status, payment_method, payment_status, delivery_address, delivery_notes, created_at, updated_at) VALUES
+          ('ORD-001', ${users[0]?.id || ''}, ${users[0]?.name || 'Cliente'}, ${users[0]?.email || 'cliente@email.com'}, 16.97, 2.99, 19.96, 'delivered', 'Tarjeta de Crédito', 'paid', 'Calle Mayor 45, Barcelona', 'Dejar en portería', NOW() - INTERVAL '10 days', NOW() - INTERVAL '10 days'),
+          ('ORD-002', ${users[0]?.id || ''}, ${users[0]?.name || 'Cliente'}, ${users[0]?.email || 'cliente@email.com'}, 26.96, 4.99, 31.95, 'shipped', 'PayPal', 'paid', 'Calle Mayor 45, Barcelona', '', NOW() - INTERVAL '5 days', NOW() - INTERVAL '4 days'),
+          ('ORD-003', ${users[1]?.id || ''}, ${users[1]?.name || 'Cliente'}, ${users[1]?.email || 'cliente@email.com'}, 19.95, 2.99, 22.94, 'preparing', 'Tarjeta de Crédito', 'paid', 'Avenida Reforma 234, Valencia', 'Llamar antes de entregar', NOW() - INTERVAL '2 days', NOW() - INTERVAL '1 day'),
+          ('ORD-004', ${users[2]?.id || ''}, ${users[2]?.name || 'Cliente'}, ${users[2]?.email || 'cliente@email.com'}, 20.97, 4.99, 25.96, 'pending', 'Transferencia Bancaria', 'pending', 'Plaza Central 78, Sevilla', '', NOW(), NOW()),
+          ('ORD-005', ${users[0]?.id || ''}, ${users[0]?.name || 'Cliente'}, ${users[0]?.email || 'cliente@email.com'}, 5.99, 7.99, 13.98, 'cancelled', 'Tarjeta de Crédito', 'refunded', 'Calle Mayor 45, Barcelona', '', NOW() - INTERVAL '15 days', NOW() - INTERVAL '14 days')
+      `;
+      
+      await sql`
+        INSERT INTO order_items (order_id, product_id, product_name, quantity, price) VALUES
+          ('ORD-001', '1', 'Organic Apples', 2, 4.99),
+          ('ORD-001', '3', 'Fresh Strawberries', 1, 6.99),
+          ('ORD-002', '5', 'Organic Blueberries', 3, 5.99),
+          ('ORD-002', '7', 'Red Grapes', 1, 8.99),
+          ('ORD-003', '2', 'Valencia Oranges', 5, 3.99),
+          ('ORD-004', '4', 'Ripe Bananas', 2, 7.99),
+          ('ORD-004', '6', 'Fresh Mangoes', 1, 4.99),
+          ('ORD-005', '8', 'Ripe Avocados', 1, 5.99)
+      `;
+    }
     console.log("Seeded orders.");
   }
 
@@ -213,9 +262,7 @@ async function migrate() {
       INSERT INTO currencies (id, code, name, symbol, exchange_rate, is_default, is_active) VALUES
         ('1', 'EUR', 'Euro', '€', 1, true, true),
         ('2', 'USD', 'Dólar Estadounidense', '$', 1.08, false, true),
-        ('3', 'GBP', 'Libra Esterlina', '£', 0.86, false, true),
-        ('4', 'MXN', 'Peso Mexicano', '$', 18.50, false, false),
-        ('5', 'COP', 'Peso Colombiano', '$', 4250, false, false)
+        ('3', 'GBP', 'Libra Esterlina', '£', 0.86, false, true)
     `;
     console.log("Seeded currencies.");
   }

@@ -109,19 +109,23 @@ export async function deleteDeliveryZone(id: string) {
 
 export async function getAdminUsers() {
   const rows = await sql`
-    SELECT id, name, email, phone, address, role, status,
-      created_at::text AS "createdAt",
-      total_orders AS "totalOrders",
-      total_spent::float AS "totalSpent"
-    FROM users ORDER BY created_at DESC
+    SELECT u.id, u.name, u.email, u.phone, u.address, r.name AS role, u.status,
+      u.created_at::text AS "createdAt",
+      u.total_orders AS "totalOrders",
+      u.total_spent::float AS "totalSpent"
+    FROM users u
+    LEFT JOIN roles r ON r.id = u.role_id
+    ORDER BY u.created_at DESC
   `;
   return rows as any[];
 }
 
 export async function createAdminUser(user: any) {
+  const roleRow = await sql`SELECT id FROM roles WHERE name = ${user.role} LIMIT 1`;
+  const roleId = roleRow.length > 0 ? roleRow[0].id : 1;
   await sql`
-    INSERT INTO users (id, name, email, phone, address, role, status, created_at, total_orders, total_spent)
-    VALUES (${user.id}, ${user.name}, ${user.email}, ${user.phone}, ${user.address}, ${user.role}, ${user.status}, ${user.createdAt || new Date().toISOString()}, ${user.totalOrders || 0}, ${user.totalSpent || 0})
+    INSERT INTO users (id, name, email, phone, address, role_id, status, created_at, total_orders, total_spent)
+    VALUES (${user.id}, ${user.name}, ${user.email}, ${user.phone}, ${user.address}, ${roleId}, ${user.status}, ${user.createdAt || new Date().toISOString()}, ${user.totalOrders || 0}, ${user.totalSpent || 0})
   `;
 }
 

@@ -103,36 +103,68 @@ function ProductsAdmin() {
     setDialogOpen(true);
   };
 
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  // const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  //   const file = e.target.files?.[0];
+  //   if (!file) return;
 
-    const localPreview = URL.createObjectURL(file);
-    setPreviewImage(localPreview);
-    setUploadingImage(true);
+  //   const localPreview = URL.createObjectURL(file);
+  //   setPreviewImage(localPreview);
+  //   setUploadingImage(true);
 
-    const formData = new FormData();
-    formData.append("file", file);
+  //   const formData = new FormData();
+  //   formData.append("file", file);
 
-    try {
-      const result = await uploadImage(formData);
-      if (result.success && result.url) {
-        setFormData((prev) => ({ ...prev, image: result.url }));
-        setImageUploaded(true); // ← marca que la imagen fue subida
-        setPreviewImage(null);
-      } else {
-        console.error("Error al subir imagen:", result.error);
-        setPreviewImage(null);
-      }
-    } catch (error) {
-      console.error("Error en la subida:", error);
-    } finally {
-      setUploadingImage(false);
-      URL.revokeObjectURL(localPreview);
-    }
-  };
+  //   try {
+  //     const result = await uploadImage(formData);
+  //     if (result.success && result.url) {
+  //       setFormData((prev) => ({ ...prev, image: result.url }));
+  //       setImageUploaded(true); // ← marca que la imagen fue subida
+  //       setPreviewImage(null);
+  //     } else {
+  //       console.error("Error al subir imagen:", result.error);
+  //       setPreviewImage(null);
+  //     }
+  //   } catch (error) {
+  //     console.error("Error en la subida:", error);
+  //   } finally {
+  //     setUploadingImage(false);
+  //     URL.revokeObjectURL(localPreview);
+  //   }
+  // };
 
   // Manejar cuando el usuario escribe manualmente una URL:
+  
+  // Dentro de la función ProductsAdmin, modifica handleImageUpload:
+const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const file = e.target.files?.[0];
+  if (!file) return;
+
+  const localPreview = URL.createObjectURL(file);
+  setPreviewImage(localPreview);
+  setUploadingImage(true);
+
+  const uploadFormData = new FormData();  
+  uploadFormData.append("file", file);
+
+  try {
+    const result = await uploadImage(uploadFormData);
+    if (result.success && result.url) {
+      const imageUrl = result.url;       
+      setFormData((prev) => ({ ...prev, image: imageUrl }));
+      setImageUploaded(true);
+      setPreviewImage(null);
+    } else {
+      console.error("Error al subir imagen:", result.error);
+      setPreviewImage(null);
+    }
+  } catch (error) {
+    console.error("Error en la subida:", error);
+  } finally {
+    setUploadingImage(false);
+    URL.revokeObjectURL(localPreview);
+  }
+};
+
   const handleImageUrlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, image: e.target.value });
     setImageUploaded(false); // Si escribe manual, desmarcamos la subida

@@ -29,7 +29,6 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { Checkbox } from "@/components/ui/checkbox";
-import { products, categories } from "@/lib/products";
 import { useCartStore, Product } from "@/lib/store";
 import {
   Search,
@@ -49,9 +48,11 @@ import {
   Sparkles,
   ChevronDown,
   Eye,
+  Loader2,
 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
+import { getPublicProducts } from "@/app/actions/public-products";
 
 type SortOption = "default" | "price-asc" | "price-desc" | "name";
 
@@ -67,6 +68,9 @@ const categoryConfig: Record<
 };
 
 export function StoreView() {
+   const [products, setProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<string[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 15]);
@@ -80,7 +84,21 @@ export function StoreView() {
   const addItem = useCartStore((state) => state.addItem);
   const items = useCartStore((state) => state.items);
 
-  const maxPrice = Math.max(...products.map((p) => p.price));
+
+
+   useEffect(() => {
+    const loadData = async () => {
+      setLoading(true);
+     const { products: prods, categories: cats } = await getPublicProducts();
+console.log("Productos recibidos (antes de setProducts):", prods);
+setProducts(prods as Product[]);
+console.log("Estado products actualizado");
+      setProducts(prods as Product[]);
+      setCategories(cats);
+      setLoading(false);
+    };
+    loadData();
+  }, []);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -92,6 +110,8 @@ export function StoreView() {
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
+
+
 
   const filteredProducts = useMemo(() => {
     let filtered = products.filter((product) => {
@@ -129,6 +149,19 @@ export function StoreView() {
 
     return filtered;
   }, [searchQuery, selectedCategories, priceRange, sortBy, showOnlyInStock]);
+
+    const categoryCounts = useMemo(() => {
+  const counts: Record<string, number> = {};
+  products.forEach(p => {
+    counts[p.category] = (counts[p.category] || 0) + 1;
+  });
+  return counts;
+}, [products]);
+
+const maxPrice = useMemo(() => {
+  if (products.length === 0) return 100;
+  return Math.max(...products.map(p => p.price));
+}, [products]);
 
   const toggleCategory = (category: string) => {
     setSelectedCategories((prev) =>
@@ -168,6 +201,10 @@ export function StoreView() {
     const item = items.find((item) => item.product.id === productId);
     return item?.quantity || 0;
   };
+
+   if (loading) {
+    return <div className="flex justify-center py-20"><Loader2 className="h-8 w-8 animate-spin" /></div>;
+  }
 
   return (
     <TooltipProvider>
@@ -355,16 +392,17 @@ export function StoreView() {
                           </Select>
                         </div>
 
-                        <FilterContent
-                          categories={categories}
-                          selectedCategories={selectedCategories}
-                          toggleCategory={toggleCategory}
-                          priceRange={priceRange}
-                          setPriceRange={setPriceRange}
-                          maxPrice={maxPrice}
-                          showOnlyInStock={showOnlyInStock}
-                          setShowOnlyInStock={setShowOnlyInStock}
-                        />
+                     <FilterContent
+  categories={categories}
+  selectedCategories={selectedCategories}
+  toggleCategory={toggleCategory}
+  priceRange={priceRange}
+  setPriceRange={setPriceRange}
+  maxPrice={maxPrice}
+  showOnlyInStock={showOnlyInStock}
+  setShowOnlyInStock={setShowOnlyInStock}
+  categoryCounts={categoryCounts}  
+/>
                         <div className="mt-8">
                           <SheetClose asChild>
                             <Button className="w-full" size="lg">
@@ -483,16 +521,17 @@ export function StoreView() {
                       </Select>
                     </div>
 
-                    <FilterContent
-                      categories={categories}
-                      selectedCategories={selectedCategories}
-                      toggleCategory={toggleCategory}
-                      priceRange={priceRange}
-                      setPriceRange={setPriceRange}
-                      maxPrice={maxPrice}
-                      showOnlyInStock={showOnlyInStock}
-                      setShowOnlyInStock={setShowOnlyInStock}
-                    />
+                  <FilterContent
+  categories={categories}
+  selectedCategories={selectedCategories}
+  toggleCategory={toggleCategory}
+  priceRange={priceRange}
+  setPriceRange={setPriceRange}
+  maxPrice={maxPrice}
+  showOnlyInStock={showOnlyInStock}
+  setShowOnlyInStock={setShowOnlyInStock}
+  categoryCounts={categoryCounts}   // ← agregar
+/>
                   </CardContent>
                 </Card>
 
@@ -668,6 +707,7 @@ function FilterContent({
   maxPrice,
   showOnlyInStock,
   setShowOnlyInStock,
+  categoryCounts
 }: {
   categories: string[];
   selectedCategories: string[];
@@ -677,6 +717,7 @@ function FilterContent({
   maxPrice: number;
   showOnlyInStock: boolean;
   setShowOnlyInStock: (value: boolean) => void;
+    categoryCounts: Record<string, number>;
 }) {
   return (
     <div className="space-y-8">
@@ -687,9 +728,10 @@ function FilterContent({
         <div className="space-y-2">
           {categories.map((category) => {
             const config = categoryConfig[category] || categoryConfig.Fruits;
-            const count = products.filter(
-              (p) => p.category === category,
-            ).length;
+            // const count = products.filter(
+            //   (p) => p.category === category,
+            // ).length;
+            const count = categoryCounts[category] || 0
             const isSelected = selectedCategories.includes(category);
 
             return (

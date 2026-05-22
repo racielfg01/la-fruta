@@ -23,6 +23,8 @@ async function verifyAdminAndGetUserId(token: string): Promise<string> {
 // -------------------------------
 // 1. Obtener todos los datos del panel
 // -------------------------------
+
+// app/actions/admin.ts (fragmento)
 export async function getAdminData(token: string) {
   await verifyAdminAndGetUserId(token);
   
@@ -49,7 +51,40 @@ export async function getAdminData(token: string) {
     sql`SELECT * FROM currencies ORDER BY code ASC`,
   ]);
   
-  return { products, categories, deliveryZones, users, orders, currencies };
+  // Convertir productos (precio)
+  const productsFixed = products.map((p: any) => ({
+    ...p,
+    price: Number(p.price),
+  }));
+
+  // Convertir zonas de envío (precio)
+  const deliveryZonesFixed = deliveryZones.map((z: any) => ({
+    ...z,
+    price: Number(z.price),
+    minDistance: Number(z.min_distance),
+    maxDistance: Number(z.max_distance),
+  }));
+
+  // Convertir órdenes y sus items
+  const ordersFixed = orders.map((order: any) => ({
+    ...order,
+    subtotal: Number(order.subtotal),
+    deliveryFee: Number(order.delivery_fee),
+    total: Number(order.total),
+    items: order.items.map((item: any) => ({
+      ...item,
+      price: Number(item.price),
+    })),
+  }));
+
+  return {
+    products: productsFixed,
+    categories,
+    deliveryZones: deliveryZonesFixed,
+    users,
+    orders: ordersFixed,
+    currencies,
+  };
 }
 
 // -------------------------------

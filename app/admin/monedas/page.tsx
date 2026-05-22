@@ -107,7 +107,7 @@ export default function CurrenciesPage() {
         code: currency.code,
         name: currency.name,
         symbol: currency.symbol,
-        exchangeRate: currency.exchangeRate,
+        exchangeRate: currency.exchangeRate ?? 1,
         isActive: currency.isActive,
       });
     } else {
@@ -130,6 +130,7 @@ export default function CurrenciesPage() {
       const newCurrency: Currency = {
         id: Date.now().toString(),
         ...formData,
+        exchangeRate: formData.exchangeRate ?? 1,
         isDefault: false,
       };
       addCurrency(newCurrency);
@@ -155,8 +156,13 @@ export default function CurrenciesPage() {
     }
   };
 
-  const convertAmount = (amount: number, fromRate: number, toRate: number) => {
-    return (amount / fromRate) * toRate;
+  // Convertidor de moneda: convierte una cantidad de la moneda base a la moneda destino
+  // La moneda base es la predeterminada (exchangeRate = 1)
+  const convertAmount = (amount: number, targetCurrency: Currency) => {
+    // Si no hay moneda base o no tiene tasa válida, retornar el mismo monto
+    if (!defaultCurrency || targetCurrency.exchangeRate == null) return amount;
+    // La conversión es: amount * (exchangeRate de la moneda destino) porque la base es 1
+    return amount * (targetCurrency.exchangeRate ?? 1);
   };
 
   const defaultCurrency = currencies.find((c) => c.isDefault);
@@ -234,7 +240,7 @@ export default function CurrenciesPage() {
               Convertidor de Moneda
             </CardTitle>
             <CardDescription>
-              Conversión de ejemplo basada en 100 {defaultCurrency.symbol} ({defaultCurrency.code})
+              Conversión de ejemplo basada en 1000 {defaultCurrency.symbol} ({defaultCurrency.code})
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -256,14 +262,11 @@ export default function CurrenciesPage() {
                     <div className="text-right">
                       <p className="font-bold">
                         {currency.symbol}
-                        {convertAmount(
-                          100,
-                          defaultCurrency.exchangeRate,
-                          currency.exchangeRate
-                        ).toFixed(2)}
+                        {convertAmount(1000, currency).toFixed(2)}
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        1 {defaultCurrency.code} = {currency.exchangeRate.toFixed(4)} {currency.code}
+                        1 {defaultCurrency.code} ={" "}
+                        {(currency.exchangeRate ?? 1).toFixed(4)} {currency.code}
                       </p>
                     </div>
                   </div>
@@ -341,7 +344,7 @@ export default function CurrenciesPage() {
                       <div className="flex items-center justify-end gap-2">
                         <TrendingUp className="h-4 w-4 text-muted-foreground" />
                         <span className="font-mono">
-                          {currency.exchangeRate.toFixed(4)}
+                          {(currency.exchangeRate ?? 1).toFixed(4)}
                         </span>
                       </div>
                     </TableCell>
@@ -503,7 +506,7 @@ export default function CurrenciesPage() {
                 onChange={(e) =>
                   setFormData({
                     ...formData,
-                    exchangeRate: parseFloat(e.target.value) || 0,
+                    exchangeRate: parseFloat(e.target.value) || 1,
                   })
                 }
                 placeholder="1.08"

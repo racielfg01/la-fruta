@@ -48,9 +48,9 @@ export async function getPublicProducts() {
       FROM products
       ORDER BY name ASC
     `;
-    console.log("Productos obtenidos:", products); // ← log
+    // console.log("Productos obtenidos:", products); // ← log
     const categories = await sql`SELECT name FROM categories ORDER BY name ASC`;
-    console.log("Categorías obtenidas:", categories); // ← log
+    // console.log("Categorías obtenidas:", categories); // ← log
     return { 
       products: products.map(p => ({ ...p, price: Number(p.price) })), // convertir precio a número
       categories: categories.map(c => c.name) 

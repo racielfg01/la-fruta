@@ -47,7 +47,7 @@ interface DeliveryMapProps {
 export function DeliveryMap({ onLocationConfirm }: DeliveryMapProps) {
   const { deliveryLocation, setDeliveryLocation } = useCartStore();
   const [position, setPosition] = useState<[number, number]>(
-    deliveryLocation ? [deliveryLocation.lat, deliveryLocation.lng] : [40.7128, -74.006]
+    deliveryLocation ? [deliveryLocation.lat, deliveryLocation.lng] : [20.02287, -75.82171]
   );
   const [address, setAddress] = useState(deliveryLocation?.address || "");
   const [isLocating, setIsLocating] = useState(false);

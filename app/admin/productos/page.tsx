@@ -43,8 +43,9 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Field, FieldLabel } from "@/components/ui/field";
-import { Plus, Pencil, Trash2, Search, Package } from "lucide-react";
+import { Plus, Pencil, Trash2, Search, Package, Loader2 } from "lucide-react";
 import Link from "next/link";
+import { uploadImage } from "@/app/actions/upload-image";
 
 const emptyProduct: Omit<Product, "id"> = {
   name: "",
@@ -77,6 +78,9 @@ function ProductsAdmin() {
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [formData, setFormData] = useState(emptyProduct);
   const [productToDelete, setProductToDelete] = useState<string | null>(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [imageUploaded, setImageUploaded] = useState(false);
 
   useEffect(() => {
     if (searchParams.get("action") === "new") {
@@ -97,6 +101,41 @@ function ProductsAdmin() {
     setEditingProduct(null);
     setFormData(emptyProduct);
     setDialogOpen(true);
+  };
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const localPreview = URL.createObjectURL(file);
+    setPreviewImage(localPreview);
+    setUploadingImage(true);
+
+    const formData = new FormData();
+    formData.append("file", file);
+
+    try {
+      const result = await uploadImage(formData);
+      if (result.success && result.url) {
+        setFormData((prev) => ({ ...prev, image: result.url }));
+        setImageUploaded(true); // ← marca que la imagen fue subida
+        setPreviewImage(null);
+      } else {
+        console.error("Error al subir imagen:", result.error);
+        setPreviewImage(null);
+      }
+    } catch (error) {
+      console.error("Error en la subida:", error);
+    } finally {
+      setUploadingImage(false);
+      URL.revokeObjectURL(localPreview);
+    }
+  };
+
+  // Manejar cuando el usuario escribe manualmente una URL:
+  const handleImageUrlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFormData({ ...formData, image: e.target.value });
+    setImageUploaded(false); // Si escribe manual, desmarcamos la subida
   };
 
   const handleEditProduct = (product: Product) => {
@@ -129,6 +168,12 @@ function ProductsAdmin() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!formData.image.trim()) {
+      alert("Debes agregar una imagen (sube un archivo o ingresa una URL)");
+      return;
+    }
+
     if (editingProduct) {
       updateProduct(editingProduct.id, formData);
     } else {
@@ -404,7 +449,7 @@ function ProductsAdmin() {
               </Field>
             </div>
 
-            <Field>
+            {/* <Field>
               <FieldLabel htmlFor="image">URL de la imagen</FieldLabel>
               <Input
                 id="image"
@@ -422,6 +467,54 @@ function ProductsAdmin() {
               <div className="rounded-lg overflow-hidden border">
                 <img
                   src={formData.image}
+                  alt="Preview"
+                  className="h-32 w-full object-cover"
+                />
+              </div>
+            )} */}
+            {/* Campo de imagen mejorado */}
+            <Field>
+              <FieldLabel htmlFor="image">Imagen del producto</FieldLabel>
+              <div className="flex flex-col gap-3">
+                <div className="flex gap-2">
+                  <Input
+                    id="image"
+                    type="url"
+                    value={formData.image}
+                    onChange={handleImageUrlChange}
+                    placeholder="https://... o sube una imagen"
+                    className="flex-1"
+                    disabled={imageUploaded} // ← deshabilitado si viene de subida
+                    required={!imageUploaded} // ← solo requerido si no hay subida
+                  />
+                  <Input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageUpload}
+                    className="w-auto"
+                    disabled={uploadingImage}
+                  />
+                </div>
+                {uploadingImage && (
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Subiendo imagen...
+                  </div>
+                )}
+                {imageUploaded && (
+                  <div className="text-sm text-green-600">
+                    ✅ Imagen subida correctamente. No es necesario ingresar una
+                    URL manual.
+                  </div>
+                )}
+              </div>
+            </Field>
+
+            {/* Previsualización */}
+            {(formData.image || previewImage) && (
+              <div className="rounded-lg overflow-hidden border">
+                <img
+                  src={previewImage || formData.image}
                   alt="Preview"
                   className="h-32 w-full object-cover"
                 />

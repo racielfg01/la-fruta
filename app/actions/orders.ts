@@ -80,3 +80,81 @@ export async function updateUserProfile(
   
   return { success: true, user: result[0] || null };
 }
+
+export interface CreateOrderData {
+  userId: string;
+  userName: string;
+  userEmail: string;
+  items: Array<{
+    productId: string;
+    productName: string;
+    quantity: number;
+    price: number;
+  }>;
+  subtotal: number;
+  deliveryFee: number;
+  total: number;
+  paymentMethod: string;
+  deliveryAddress: string;
+  deliveryNotes?: string;
+  currencyCode: string;
+}
+
+export async function createOrderAction(orderData: CreateOrderData, token: string) {
+  const payload = await verifyAdminToken(token);
+  if (!payload) throw new Error('No autorizado');
+  
+  const orderId = `ORD-${Date.now()}-${Math.random().toString(36).substring(2, 7).toUpperCase()}`;
+  
+  // Insertar la orden
+  await sql`
+    INSERT INTO orders (
+      id, user_id, user_name, user_email, 
+      subtotal, delivery_fee, total, 
+      status, payment_method, payment_status, 
+      delivery_address, delivery_notes, 
+      created_at, updated_at
+    ) VALUES (
+      ${orderId},
+      ${orderData.userId},
+      ${orderData.userName},
+      ${orderData.userEmail},
+      ${orderData.subtotal},
+      ${orderData.deliveryFee},
+      ${orderData.total},
+      'pending',
+      ${orderData.paymentMethod},
+      'pending',
+      ${orderData.deliveryAddress},
+      ${orderData.deliveryNotes || ''},
+      NOW(),
+      NOW()
+    )
+  `;
+  
+  // Insertar los items de la orden
+  for (const item of orderData.items) {
+    await sql`
+      INSERT INTO order_items (
+        order_id, product_id, product_name, quantity, price
+      ) VALUES (
+        ${orderId},
+        ${item.productId},
+        ${item.productName},
+        ${item.quantity},
+        ${item.price}
+      )
+    `;
+  }
+  
+  // Actualizar total_orders y total_spent del usuario
+  await sql`
+    UPDATE users 
+    SET total_orders = total_orders + 1, 
+        total_spent = total_spent + ${orderData.total},
+        updated_at = NOW()
+    WHERE id = ${orderData.userId}
+  `;
+  
+  return { success: true, orderId };
+}

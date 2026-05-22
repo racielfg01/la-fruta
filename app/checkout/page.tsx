@@ -16,6 +16,7 @@ import { ShoppingBag, ArrowRight, CreditCard, User, Mail, Phone, MapPin, Truck, 
 import Image from "next/image";
 import Link from "next/link";
 import { getPublicCurrencies } from "@/app/actions/public-currencies";
+import { createOrderAction } from "@/app/actions/orders";
 
 const DeliveryMap = dynamic(
   () => import("@/components/delivery-map").then((mod) => mod.DeliveryMap),
@@ -93,7 +94,7 @@ interface Currency {
 export default function CheckoutPage() {
   const router = useRouter();
   const { items, deliveryLocation, getTotalPrice, clearCart } = useCartStore();
-  const { user, isAuthenticated, isLoading: authLoading } = useAuthStore();
+  const { user, isAuthenticated, isLoading: authLoading, token } = useAuthStore();
   const [isProcessing, setIsProcessing] = useState(false);
   const [locationConfirmed, setLocationConfirmed] = useState(!!deliveryLocation);
   const [currencies, setCurrencies] = useState<Currency[]>([]);
@@ -177,13 +178,53 @@ export default function CheckoutPage() {
       alert("Por favor, completa tus datos de contacto.");
       return;
     }
+    if (!selectedCurrency) {
+      alert("Por favor, selecciona una moneda.");
+      return;
+    }
+    
     setIsProcessing(true);
-    await new Promise((resolve) => setTimeout(resolve, 2000));
-    const orderId = Math.random().toString(36).substring(2, 10).toUpperCase();
-    clearCart();
-    router.push(
-      `/order-confirmation?orderId=${orderId}&paymentMethod=${selectedPaymentMethod}&currency=${selectedCurrency?.code}&amount=${totalConverted}`
-    );
+    
+    try {
+      // Preparar datos de la orden
+      const orderItems = items.map(item => ({
+        productId: item.id,
+        productName: item.name,
+        quantity: item.quantity,
+        price: item.price,
+      }));
+      
+      const orderData = {
+        userId: user!.id,
+        userName: formData.name,
+        userEmail: formData.email,
+        items: orderItems,
+        subtotal: subtotalBase,
+        deliveryFee: deliveryFeeBase,
+        total: totalBase,
+        paymentMethod: selectedPaymentMethod,
+        deliveryAddress: `${deliveryLocation.address}, ${deliveryLocation.city}`,
+        deliveryNotes: "",
+        currencyCode: selectedCurrency.code,
+      };
+      
+      // Crear la orden en la base de datos
+      const result = await createOrderAction(orderData, token!);
+      
+      if (result.success) {
+        clearCart();
+        router.push(
+          `/order-confirmation?orderId=${result.orderId}&paymentMethod=${selectedPaymentMethod}&currency=${selectedCurrency.code}&amount=${totalConverted}`
+        );
+      } else {
+        alert("Error al crear la orden. Por favor, intenta nuevamente.");
+        setIsProcessing(false);
+      }
+    } catch (error) {
+      console.error("Error creating order:", error);
+      alert("Ocurrió un error al procesar tu orden. Por favor, intenta nuevamente.");
+      setIsProcessing(false);
+    }
   };
 
   // Estados de carga

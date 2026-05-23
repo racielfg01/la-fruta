@@ -47,11 +47,13 @@ export interface User {
   email: string;
   phone: string;
   address: string;
-  role_id: number;       // 1 = USER, 2 = ADMIN
   status: "active" | "inactive" | "suspended";
-  created_at: string;
-  total_orders: number;
-  total_spent: number;
+  created_at: string;       // antes createdAt
+  total_orders: number;     // antes totalOrders
+  total_spent: number;      // antes totalSpent
+  password_hash: string;
+  role_id: number;          // antes role
+  gender?: string | null;   // opcional
 }
 
 export interface OrderItem {

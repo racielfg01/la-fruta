@@ -24,6 +24,7 @@ export interface CartItem {
 
 export interface DeliveryLocation {
   address: string;
+  city?: string;
   lat: number;
   lng: number;
 }

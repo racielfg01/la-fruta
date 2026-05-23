@@ -10,13 +10,13 @@ import { Suspense } from "react";
 
 function OrderConfirmationContent() {
   const searchParams = useSearchParams();
-  const orderId = searchParams.get("orderId") || "UNKNOWN";
+  const orderId = searchParams.get("orderId") || "DESCONOCIDO";
 
   const steps = [
-    { icon: CheckCircle, label: "Order Confirmed", status: "complete" },
-    { icon: Package, label: "Preparing", status: "current" },
-    { icon: Truck, label: "On the Way", status: "pending" },
-    { icon: Home, label: "Delivered", status: "pending" },
+    { icon: CheckCircle, label: "Pedido Confirmado", status: "complete" },
+    { icon: Package, label: "Preparando", status: "current" },
+    { icon: Truck, label: "En camino", status: "pending" },
+    { icon: Home, label: "Entregado", status: "pending" },
   ];
 
   return (
@@ -26,16 +26,21 @@ function OrderConfirmationContent() {
       </div>
 
       <h1 className="mb-2 font-[family-name:var(--font-playfair)] text-3xl font-bold text-foreground md:text-4xl">
-        Order Confirmed!
+        ¡Pedido Confirmado!
       </h1>
-      <p className="mb-2 text-lg text-muted-foreground">Thank you for shopping with La Fruta</p>
+      <p className="mb-2 text-lg text-muted-foreground">
+        Gracias por comprar en La Fruta
+      </p>
       <p className="mb-8 text-sm text-muted-foreground">
-        Order ID: <span className="font-mono font-semibold text-foreground">{orderId}</span>
+        ID del pedido:{" "}
+        <span className="font-mono font-semibold text-foreground">{orderId}</span>
       </p>
 
       <Card className="mb-8 w-full max-w-2xl">
         <CardContent className="p-6">
-          <h2 className="mb-6 text-lg font-semibold text-foreground">Order Progress</h2>
+          <h2 className="mb-6 text-lg font-semibold text-foreground">
+            Progreso del pedido
+          </h2>
           <div className="relative">
             <div className="absolute left-0 top-5 h-0.5 w-full bg-border" />
             <div className="absolute left-0 top-5 h-0.5 w-1/4 bg-primary transition-all duration-500" />
@@ -69,14 +74,16 @@ function OrderConfirmationContent() {
 
       <Card className="mb-8 w-full max-w-2xl">
         <CardContent className="p-6">
-          <h2 className="mb-4 text-lg font-semibold text-foreground">What happens next?</h2>
+          <h2 className="mb-4 text-lg font-semibold text-foreground">
+            ¿Qué sucede a continuación?
+          </h2>
           <ul className="space-y-3 text-left text-sm text-muted-foreground">
             <li className="flex items-start gap-3">
               <span className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-medium text-primary">
                 1
               </span>
               <span>
-                You will receive an email confirmation with your order details shortly.
+                Registraremos los detalles de tu pedido en breve.
               </span>
             </li>
             <li className="flex items-start gap-3">
@@ -84,7 +91,8 @@ function OrderConfirmationContent() {
                 2
               </span>
               <span>
-                Our team will carefully select and pack your fresh produce from local farms.
+                Nuestro equipo seleccionará y empaquetará cuidadosamente tus productos frescos
+                de granjas locales.
               </span>
             </li>
             <li className="flex items-start gap-3">
@@ -92,8 +100,7 @@ function OrderConfirmationContent() {
                 3
               </span>
               <span>
-                Your order will be delivered to your specified location within the estimated
-                time.
+                Tu pedido será entregado en la ubicación especificada dentro del tiempo estimado.
               </span>
             </li>
           </ul>
@@ -103,7 +110,7 @@ function OrderConfirmationContent() {
       <div className="flex flex-col gap-4 sm:flex-row">
         <Link href="/">
           <Button size="lg">
-            Continue Shopping
+            Seguir comprando
             <ArrowRight className="ml-2 h-4 w-4" />
           </Button>
         </Link>

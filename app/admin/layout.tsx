@@ -30,11 +30,11 @@ function AdminStoreInitializer() {
 
 const navigation = [
   { name: "Panel Principal", href: "/admin", icon: LayoutDashboard },
+  { name: "Órdenes", href: "/admin/ordenes", icon: ShoppingBag },
   { name: "Productos", href: "/admin/productos", icon: Package },
-  { name: "Categorías", href: "/admin/categorias", icon: Tags },
   { name: "Envíos", href: "/admin/envios", icon: Truck },
   { name: "Usuarios", href: "/admin/usuarios", icon: Users },
-  { name: "Órdenes", href: "/admin/ordenes", icon: ShoppingBag },
+  { name: "Categorías", href: "/admin/categorias", icon: Tags },
   { name: "Monedas", href: "/admin/monedas", icon: Coins },
 ];
 

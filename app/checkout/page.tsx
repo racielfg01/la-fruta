@@ -168,64 +168,123 @@ export default function CheckoutPage() {
     setLocationConfirmed(true);
   };
 
+  // const handleSubmit = async (e: React.FormEvent) => {
+  //   e.preventDefault();
+  //   if (!locationConfirmed || !deliveryLocation) {
+  //     alert("Por favor, confirma tu ubicación de entrega primero.");
+  //     return;
+  //   }
+  //   if (!formData.name || !formData.phone) {
+  //     alert("Por favor, completa tus datos de contacto.");
+  //     return;
+  //   }
+  //   if (!selectedCurrency) {
+  //     alert("Por favor, selecciona una moneda.");
+  //     return;
+  //   }
+    
+  //   setIsProcessing(true);
+    
+  //   try {
+  //     // Preparar datos de la orden
+  //     const orderItems = items.map(item => ({
+  //       productId: item.id,
+  //       productName: item.name,
+  //       quantity: item.quantity,
+  //       price: item.price,
+  //     }));
+      
+  //     const orderData = {
+  //       userId: user!.id,
+  //       userName: formData.name,
+  //       userEmail: formData.email,
+  //       items: orderItems,
+  //       subtotal: subtotalBase,
+  //       deliveryFee: deliveryFeeBase,
+  //       total: totalBase,
+  //       paymentMethod: selectedPaymentMethod,
+  //       deliveryAddress: `${deliveryLocation.address}, ${deliveryLocation.city}`,
+  //       deliveryNotes: "",
+  //       currencyCode: selectedCurrency.code,
+  //     };
+      
+  //     // Crear la orden en la base de datos
+  //     const result = await createOrderAction(orderData, token!);
+      
+  //     if (result.success) {
+  //       clearCart();
+  //       router.push(
+  //         `/order-confirmation?orderId=${result.orderId}&paymentMethod=${selectedPaymentMethod}&currency=${selectedCurrency.code}&amount=${totalConverted}`
+  //       );
+  //     } else {
+  //       alert("Error al crear la orden. Por favor, intenta nuevamente.");
+  //       setIsProcessing(false);
+  //     }
+  //   } catch (error) {
+  //     console.error("Error creating order:", error);
+  //     alert("Ocurrió un error al procesar tu orden. Por favor, intenta nuevamente.");
+  //     setIsProcessing(false);
+  //   }
+  // };
+
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!locationConfirmed || !deliveryLocation) {
-      alert("Por favor, confirma tu ubicación de entrega primero.");
-      return;
-    }
-    if (!formData.name || !formData.phone) {
-      alert("Por favor, completa tus datos de contacto.");
-      return;
-    }
-    if (!selectedCurrency) {
-      alert("Por favor, selecciona una moneda.");
-      return;
-    }
+  e.preventDefault();
+  if (!locationConfirmed || !deliveryLocation) {
+    alert("Por favor, confirma tu ubicación de entrega primero.");
+    return;
+  }
+  if (!formData.name || !formData.phone) {
+    alert("Por favor, completa tus datos de contacto.");
+    return;
+  }
+  if (!selectedCurrency) {
+    alert("Por favor, selecciona una moneda.");
+    return;
+  }
+  
+  setIsProcessing(true);
+  
+  try {
+    const orderItems = items.map(item => ({
+      productId: item.product.id,
+      productName: item.product.name,
+      quantity: item.quantity,
+      price: item.product.price,  // precio en moneda base
+    }));
     
-    setIsProcessing(true);
+    const deliveryAddress = `${deliveryLocation.address}${deliveryLocation.city ? ', ' + deliveryLocation.city : ''}`;
     
-    try {
-      // Preparar datos de la orden
-      const orderItems = items.map(item => ({
-        productId: item.id,
-        productName: item.name,
-        quantity: item.quantity,
-        price: item.price,
-      }));
-      
-      const orderData = {
-        userId: user!.id,
-        userName: formData.name,
-        userEmail: formData.email,
-        items: orderItems,
-        subtotal: subtotalBase,
-        deliveryFee: deliveryFeeBase,
-        total: totalBase,
-        paymentMethod: selectedPaymentMethod,
-        deliveryAddress: `${deliveryLocation.address}, ${deliveryLocation.city}`,
-        deliveryNotes: "",
-        currencyCode: selectedCurrency.code,
-      };
-      
-      // Crear la orden en la base de datos
-      const result = await createOrderAction(orderData, token!);
-      
-      if (result.success) {
-        clearCart();
-        router.push(
-          `/order-confirmation?orderId=${result.orderId}&paymentMethod=${selectedPaymentMethod}&currency=${selectedCurrency.code}&amount=${totalConverted}`
-        );
-      } else {
-        alert("Error al crear la orden. Por favor, intenta nuevamente.");
-        setIsProcessing(false);
-      }
-    } catch (error) {
-      console.error("Error creating order:", error);
-      alert("Ocurrió un error al procesar tu orden. Por favor, intenta nuevamente.");
+    const orderData = {
+      userId: user!.id,
+      userName: formData.name,
+      userEmail: formData.email,
+      items: orderItems,
+      subtotal: subtotalBase,
+      deliveryFee: deliveryFeeBase,
+      total: totalBase,
+      paymentMethod: selectedPaymentMethod,
+      deliveryAddress,
+      deliveryNotes: "",
+      currencyCode: selectedCurrency.code,
+    };
+    
+    const result = await createOrderAction(orderData, token!);
+    
+    if (result.success) {
+      clearCart();
+      router.push(
+        `/order-confirmation?orderId=${result.orderId}&paymentMethod=${selectedPaymentMethod}&currency=${selectedCurrency.code}&amount=${totalConverted}`
+      );
+    } else {
+      alert(result.error || "Error al crear la orden. Por favor, intenta nuevamente.");
       setIsProcessing(false);
     }
-  };
+  } catch (error) {
+    console.error("Error creating order:", error);
+    alert("Ocurrió un error al procesar tu orden. Por favor, intenta nuevamente.");
+    setIsProcessing(false);
+  }
+};
 
   // Estados de carga
   if (authLoading || isLoadingCurrencies || isCheckingAuth) {

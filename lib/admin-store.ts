@@ -39,6 +39,7 @@ export interface DeliveryZone {
   maxDistance: number;
   price: number;
   estimatedTime: string;
+  active: boolean; 
 }
 
 export interface User {
@@ -135,6 +136,14 @@ const getAuthToken = () => {
   return token;
 };
 
+const withTimeout = <T>(promise: Promise<T>, ms: number): Promise<T> => {
+  let timeoutId: NodeJS.Timeout;
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    timeoutId = setTimeout(() => reject(new Error(`Timeout after ${ms}ms`)), ms);
+  });
+  return Promise.race([promise, timeoutPromise]).finally(() => clearTimeout(timeoutId));
+};
+
 export const useAdminStore = create<AdminStore>()((set, get) => ({
   loaded: false,
   loading: false,
@@ -150,7 +159,8 @@ export const useAdminStore = create<AdminStore>()((set, get) => ({
     set({ loading: true });
     try {
       const token = getAuthToken();
-      const data = await getAdminData(token);
+      // const data = await getAdminData(token);
+const data = await withTimeout(getAdminData(token), 15000);
       set({
         products: data.products as Product[],
         categories: data.categories as Category[],

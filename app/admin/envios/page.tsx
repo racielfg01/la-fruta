@@ -1,3 +1,4 @@
+// components/admin/DeliveryAdmin.tsx
 "use client";
 
 import { useState } from "react";
@@ -32,6 +33,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Field, FieldLabel } from "@/components/ui/field";
+import { Switch } from "@/components/ui/switch";
 import {
   Plus,
   Pencil,
@@ -41,6 +43,8 @@ import {
   Clock,
   DollarSign,
   Info,
+  Power,
+  PowerOff,
 } from "lucide-react";
 
 const emptyZone: Omit<DeliveryZone, "id"> = {
@@ -49,6 +53,7 @@ const emptyZone: Omit<DeliveryZone, "id"> = {
   maxDistance: 0,
   price: 0,
   estimatedTime: "",
+  active: true,
 };
 
 export default function DeliveryAdmin() {
@@ -60,6 +65,9 @@ export default function DeliveryAdmin() {
   const [editingZone, setEditingZone] = useState<DeliveryZone | null>(null);
   const [formData, setFormData] = useState(emptyZone);
   const [zoneToDelete, setZoneToDelete] = useState<string | null>(null);
+
+  const activeZones = deliveryZones.filter((z) => z.active);
+  const inactiveZones = deliveryZones.filter((z) => !z.active);
 
   const handleNewZone = () => {
     setEditingZone(null);
@@ -75,6 +83,7 @@ export default function DeliveryAdmin() {
       maxDistance: zone.maxDistance,
       price: zone.price,
       estimatedTime: zone.estimatedTime,
+      active: zone.active,
     });
     setDialogOpen(true);
   };
@@ -90,6 +99,10 @@ export default function DeliveryAdmin() {
       setZoneToDelete(null);
     }
     setDeleteDialogOpen(false);
+  };
+
+  const handleToggleActive = (zone: DeliveryZone) => {
+    updateDeliveryZone(zone.id, { ...zone, active: !zone.active });
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -112,14 +125,15 @@ export default function DeliveryAdmin() {
     (a, b) => a.minDistance - b.minDistance
   );
 
+  // Stats only for active zones
   const avgPrice =
-    deliveryZones.length > 0
-      ? deliveryZones.reduce((sum, z) => sum + z.price, 0) / deliveryZones.length
+    activeZones.length > 0
+      ? activeZones.reduce((sum, z) => sum + z.price, 0) / activeZones.length
       : 0;
 
   const maxCoverage =
-    deliveryZones.length > 0
-      ? Math.max(...deliveryZones.map((z) => z.maxDistance))
+    activeZones.length > 0
+      ? Math.max(...activeZones.map((z) => z.maxDistance))
       : 0;
 
   return (
@@ -129,7 +143,7 @@ export default function DeliveryAdmin() {
         <div>
           <h2 className="text-2xl font-serif font-bold">Precios de Envío</h2>
           <p className="text-muted-foreground">
-            Configura las zonas y tarifas de entrega
+            Configura las zonas y tarifas de entrega, y actívalas o desactívalas según necesites.
           </p>
         </div>
         <Button onClick={handleNewZone}>
@@ -148,7 +162,7 @@ export default function DeliveryAdmin() {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Zonas Activas</p>
-                <p className="text-2xl font-bold">{deliveryZones.length}</p>
+                <p className="text-2xl font-bold">{activeZones.length}</p>
               </div>
             </div>
           </CardContent>
@@ -160,7 +174,7 @@ export default function DeliveryAdmin() {
                 <DollarSign className="h-5 w-5 text-primary" />
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">Precio Promedio</p>
+                <p className="text-sm text-muted-foreground">Precio Promedio (activas)</p>
                 <p className="text-2xl font-bold">${avgPrice.toFixed(2)}</p>
               </div>
             </div>
@@ -173,7 +187,7 @@ export default function DeliveryAdmin() {
                 <MapPin className="h-5 w-5 text-primary" />
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">Cobertura Máxima</p>
+                <p className="text-sm text-muted-foreground">Cobertura Máxima (km)</p>
                 <p className="text-2xl font-bold">{maxCoverage} km</p>
               </div>
             </div>
@@ -194,6 +208,7 @@ export default function DeliveryAdmin() {
                 Las zonas de envío se calculan automáticamente según la distancia
                 desde tu tienda hasta la ubicación del cliente. Define rangos de
                 distancia, precios y tiempos estimados de entrega para cada zona.
+                Puedes desactivar una zona temporalmente sin eliminarla.
               </p>
             </div>
           </div>
@@ -208,7 +223,7 @@ export default function DeliveryAdmin() {
             Zonas de Envío
           </CardTitle>
           <CardDescription>
-            Lista de todas las zonas de entrega configuradas
+            Lista de todas las zonas de entrega configuradas. Las zonas inactivas no se mostrarán al cliente.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -220,12 +235,13 @@ export default function DeliveryAdmin() {
                   <TableHead>Distancia</TableHead>
                   <TableHead>Precio</TableHead>
                   <TableHead>Tiempo Estimado</TableHead>
+                  <TableHead>Estado</TableHead>
                   <TableHead className="text-right">Acciones</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {sortedZones.map((zone) => (
-                  <TableRow key={zone.id}>
+                  <TableRow key={zone.id} className={!zone.active ? "opacity-60" : ""}>
                     <TableCell>
                       <div className="flex items-center gap-3">
                         <div className="p-2 rounded-lg bg-muted">
@@ -248,6 +264,20 @@ export default function DeliveryAdmin() {
                       <div className="flex items-center gap-1 text-muted-foreground">
                         <Clock className="h-4 w-4" />
                         {zone.estimatedTime}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <Switch
+                          checked={zone.active}
+                          onCheckedChange={() => handleToggleActive(zone)}
+                          aria-label={`Activar/desactivar zona ${zone.name}`}
+                        />
+                        {zone.active ? (
+                          <Power className="h-4 w-4 text-green-600" />
+                        ) : (
+                          <PowerOff className="h-4 w-4 text-gray-400" />
+                        )}
                       </div>
                     </TableCell>
                     <TableCell className="text-right">
@@ -274,10 +304,10 @@ export default function DeliveryAdmin() {
                 {deliveryZones.length === 0 && (
                   <TableRow>
                     <TableCell
-                      colSpan={5}
+                      colSpan={6}
                       className="text-center py-8 text-muted-foreground"
                     >
-                      No hay zonas de envío configuradas
+                      No hay zonas de envío configuradas. Crea una nueva zona para comenzar.
                     </TableCell>
                   </TableRow>
                 )}
@@ -287,17 +317,17 @@ export default function DeliveryAdmin() {
         </CardContent>
       </Card>
 
-      {/* Visual Zone Map */}
+      {/* Visual Zone Map - only active zones */}
       <Card>
         <CardHeader>
-          <CardTitle>Visualización de Zonas</CardTitle>
+          <CardTitle>Visualización de Zonas Activas</CardTitle>
           <CardDescription>
-            Representación visual de las zonas de cobertura
+            Representación visual de las zonas de cobertura actualmente activas.
           </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="flex flex-wrap gap-3">
-            {sortedZones.map((zone, index) => {
+            {activeZones.map((zone, index) => {
               const colors = [
                 "bg-green-500",
                 "bg-yellow-500",
@@ -321,6 +351,11 @@ export default function DeliveryAdmin() {
                 </div>
               );
             })}
+            {activeZones.length === 0 && (
+              <p className="text-sm text-muted-foreground">
+                No hay zonas activas. Activa alguna zona en la tabla de arriba.
+              </p>
+            )}
           </div>
         </CardContent>
       </Card>
@@ -414,6 +449,17 @@ export default function DeliveryAdmin() {
                   required
                 />
               </Field>
+            </div>
+
+            <div className="flex items-center justify-between pt-2">
+              <FieldLabel htmlFor="active">Zona activa</FieldLabel>
+              <Switch
+                id="active"
+                checked={formData.active}
+                onCheckedChange={(checked) =>
+                  setFormData({ ...formData, active: checked })
+                }
+              />
             </div>
 
             <DialogFooter className="gap-2">

@@ -131,6 +131,15 @@ async function migrate() {
 
   console.log("Tables created.");
 
+  // Add foreign key for role_id
+  await sql`
+    ALTER TABLE users
+    ADD CONSTRAINT fk_users_role
+    FOREIGN KEY (role_id) REFERENCES roles(id) ON DELETE RESTRICT
+  `.catch(() => {
+    // Constraint may already exist, ignore
+  });
+
   // Insert roles
   const existingRoles = await sql`SELECT COUNT(*) as count FROM roles`;
   if (Number(existingRoles[0].count) === 0) {

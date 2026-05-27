@@ -201,11 +201,6 @@ const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!formData.image.trim()) {
-      alert("Debes agregar una imagen (sube un archivo o ingresa una URL)");
-      return;
-    }
-
     if (editingProduct) {
       updateProduct(editingProduct.id, formData);
     } else {

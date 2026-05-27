@@ -463,42 +463,8 @@ const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
                   </SelectContent>
                 </Select>
               </Field>
-              <Field>
-                <FieldLabel htmlFor="origin">Origen</FieldLabel>
-                <Input
-                  id="origin"
-                  value={formData.origin}
-                  onChange={(e) =>
-                    setFormData({ ...formData, origin: e.target.value })
-                  }
-                  required
-                />
-              </Field>
             </div>
 
-            {/* <Field>
-              <FieldLabel htmlFor="image">URL de la imagen</FieldLabel>
-              <Input
-                id="image"
-                type="url"
-                value={formData.image}
-                onChange={(e) =>
-                  setFormData({ ...formData, image: e.target.value })
-                }
-                placeholder="https://..."
-                required
-              />
-            </Field>
-
-            {formData.image && (
-              <div className="rounded-lg overflow-hidden border">
-                <img
-                  src={formData.image}
-                  alt="Preview"
-                  className="h-32 w-full object-cover"
-                />
-              </div>
-            )} */}
             {/* Campo de imagen mejorado */}
             <Field>
               <FieldLabel htmlFor="image">Imagen del producto</FieldLabel>
@@ -511,8 +477,8 @@ const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
                     onChange={handleImageUrlChange}
                     placeholder="https://... o sube una imagen"
                     className="flex-1"
-                    disabled={imageUploaded} // ← deshabilitado si viene de subida
-                    required={!imageUploaded} // ← solo requerido si no hay subida
+                    disabled={imageUploaded}
+                    className="flex-1"
                   />
                   <Input
                     type="file"

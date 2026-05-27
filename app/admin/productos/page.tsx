@@ -198,21 +198,29 @@ const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     setDeleteDialogOpen(false);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsLoading(true);
 
-    if (editingProduct) {
-      updateProduct(editingProduct.id, formData);
-    } else {
-      const newProduct: Product = {
-        ...formData,
-        id: Date.now().toString(),
-      };
-      addProduct(newProduct);
+    try {
+      if (editingProduct) {
+        await updateProduct(editingProduct.id, formData);
+      } else {
+        const newProduct: Product = {
+          ...formData,
+          id: Date.now().toString(),
+        };
+        await addProduct(newProduct);
+      }
+      setDialogOpen(false);
+      setFormData(emptyProduct);
+      setEditingProduct(null);
+    } catch (err) {
+      console.error('Error al guardar producto:', err);
+      alert('Error al guardar el producto. Intenta de nuevo.');
+    } finally {
+      setIsLoading(false);
     }
-    setDialogOpen(false);
-    setFormData(emptyProduct);
-    setEditingProduct(null);
   };
 
   const uniqueCategories = [...new Set(products.map((p) => p.category))];
@@ -293,7 +301,7 @@ const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
                         className="flex items-center gap-3 hover:opacity-80"
                       >
                         <img
-                          src={product.image}
+                          src={product.image || '/placeholder.svg'}
                           alt={product.name}
                           className="h-12 w-12 rounded-md object-cover"
                         />
@@ -507,7 +515,7 @@ const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
             {(formData.image || previewImage) && (
               <div className="rounded-lg overflow-hidden border">
                 <img
-                  src={previewImage || formData.image}
+                  src={previewImage || formData.image || '/placeholder.svg'}
                   alt="Preview"
                   className="h-32 w-full object-cover"
                 />
@@ -533,8 +541,8 @@ const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
                   Cancelar
                 </Button>
               </DialogClose>
-              <Button type="submit">
-                {editingProduct ? "Guardar Cambios" : "Crear Producto"}
+              <Button type="submit" disabled={uploadingImage || isLoading}>
+                {isLoading ? "Guardando..." : editingProduct ? "Guardar Cambios" : "Crear Producto"}
               </Button>
             </DialogFooter>
           </form>

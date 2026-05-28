@@ -1193,6 +1193,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { usePagination } from "@/lib/use-pagination";
+import { PaginationBar } from "@/components/pagination-bar";
 import {
   Dialog,
   DialogContent,
@@ -1294,6 +1296,15 @@ export default function CurrenciesPage() {
       return matchesSearch && matchesStatus;
     });
   }, [normalizedCurrencies, search, statusFilter]);
+
+  const {
+    paginatedData: paginatedCurrencies,
+    currentPage,
+    totalPages,
+    perPage,
+    goToPage,
+    changePerPage,
+  } = usePagination(filteredCurrencies, 10);
 
   const stats = useMemo(() => {
     const defaultCurrency = normalizedCurrencies.find((c) => c.isDefault);
@@ -1520,8 +1531,43 @@ export default function CurrenciesPage() {
         </CardContent>
       </Card>
 
-      {/* Currencies Table */}
-      <Card>
+      {/* Mobile: Currency Cards */}
+      <div className="block md:hidden space-y-3">
+        {paginatedCurrencies.map((currency) => (
+          <Card key={currency.id}>
+            <CardContent className="p-4">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0 flex-1">
+                  <p className="font-medium">{currency.code} - {currency.name}</p>
+                  <p className="text-lg font-bold">{currency.symbol} <span className="text-sm font-mono text-muted-foreground">{currency.exchangeRate.toFixed(4)}</span></p>
+                  <div className="flex items-center gap-2 mt-2 flex-wrap">
+                    <span className={`text-xs px-2 py-0.5 rounded-full ${currency.isActive ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
+                      {currency.isActive ? 'Activa' : 'Inactiva'}
+                    </span>
+                    {currency.isDefault && (
+                      <span className="text-xs px-2 py-0.5 rounded-full bg-yellow-100 text-yellow-700">Predeterminada</span>
+                    )}
+                  </div>
+                </div>
+                <div className="flex gap-1 shrink-0">
+                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleOpenDialog(currency)}>
+                    <Pencil className="h-4 w-4" />
+                  </Button>
+                  <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => { setCurrencyToDelete(currency); setIsDeleteOpen(true); }} disabled={currency.isDefault}>
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+        {paginatedCurrencies.length === 0 && (
+          <p className="text-center text-muted-foreground py-8">No se encontraron monedas</p>
+        )}
+      </div>
+
+      {/* Desktop: Currencies Table */}
+      <Card className="hidden md:block">
         <CardHeader>
           <CardTitle>Lista de Monedas ({filteredCurrencies.length})</CardTitle>
         </CardHeader>
@@ -1539,7 +1585,7 @@ export default function CurrenciesPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredCurrencies.map((currency) => (
+                {paginatedCurrencies.map((currency) => (
                   <TableRow key={currency.id}>
                     <TableCell>
                       <div className="flex items-center gap-3">
@@ -1626,7 +1672,7 @@ export default function CurrenciesPage() {
                     </TableCell>
                   </TableRow>
                 ))}
-                {filteredCurrencies.length === 0 && (
+                {paginatedCurrencies.length === 0 && (
                   <TableRow>
                     <TableCell colSpan={6} className="text-center py-8">
                       <p className="text-muted-foreground">
@@ -1638,6 +1684,14 @@ export default function CurrenciesPage() {
               </TableBody>
             </Table>
           </div>
+          <PaginationBar
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalItems={filteredCurrencies.length}
+            perPage={perPage}
+            onPageChange={goToPage}
+            onPerPageChange={changePerPage}
+          />
         </CardContent>
       </Card>
 

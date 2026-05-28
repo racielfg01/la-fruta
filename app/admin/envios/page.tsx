@@ -46,6 +46,8 @@ import {
   Power,
   PowerOff,
 } from "lucide-react";
+import { usePagination } from "@/lib/use-pagination";
+import { PaginationBar } from "@/components/pagination-bar";
 
 const emptyZone: Omit<DeliveryZone, "id"> = {
   name: "",
@@ -124,6 +126,15 @@ export default function DeliveryAdmin() {
   const sortedZones = [...deliveryZones].sort(
     (a, b) => a.minDistance - b.minDistance
   );
+
+  const {
+    paginatedData: paginatedZones,
+    currentPage,
+    totalPages,
+    perPage,
+    goToPage,
+    changePerPage,
+  } = usePagination(sortedZones, 10);
 
   // Stats only for active zones
   const avgPrice =
@@ -215,8 +226,59 @@ export default function DeliveryAdmin() {
         </CardContent>
       </Card>
 
-      {/* Delivery Zones Table */}
-      <Card>
+      {/* Mobile: Delivery Zone Cards */}
+      <div className="block md:hidden space-y-3">
+        {paginatedZones.map((zone) => (
+          <Card key={zone.id} className={!zone.active ? "opacity-60" : ""}>
+            <CardContent className="p-4">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2">
+                    <MapPin className="h-4 w-4 text-primary shrink-0" />
+                    <span className="font-medium">{zone.name}</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {zone.minDistance} - {zone.maxDistance} km
+                  </p>
+                  <p className="text-sm font-semibold text-primary mt-1">
+                    ${zone.price.toFixed(2)}
+                  </p>
+                  <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
+                    <Clock className="h-3 w-3" />
+                    {zone.estimatedTime}
+                  </div>
+                  <div className="flex items-center gap-2 mt-2">
+                    <Switch
+                      checked={zone.active}
+                      onCheckedChange={() => handleToggleActive(zone)}
+                      aria-label={`Activar/desactivar zona ${zone.name}`}
+                    />
+                    {zone.active ? (
+                      <Power className="h-4 w-4 text-green-600" />
+                    ) : (
+                      <PowerOff className="h-4 w-4 text-gray-400" />
+                    )}
+                  </div>
+                </div>
+                <div className="flex gap-1 shrink-0">
+                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleEditZone(zone)}>
+                    <Pencil className="h-4 w-4" />
+                  </Button>
+                  <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => handleDeleteClick(zone.id)}>
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+        {paginatedZones.length === 0 && (
+          <p className="text-center text-muted-foreground py-8">No hay zonas de envío configuradas.</p>
+        )}
+      </div>
+
+      {/* Desktop: Delivery Zones Table */}
+      <Card className="hidden md:block">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Truck className="h-5 w-5" />
@@ -240,7 +302,7 @@ export default function DeliveryAdmin() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {sortedZones.map((zone) => (
+                {paginatedZones.map((zone) => (
                   <TableRow key={zone.id} className={!zone.active ? "opacity-60" : ""}>
                     <TableCell>
                       <div className="flex items-center gap-3">
@@ -301,7 +363,7 @@ export default function DeliveryAdmin() {
                     </TableCell>
                   </TableRow>
                 ))}
-                {deliveryZones.length === 0 && (
+                {paginatedZones.length === 0 && (
                   <TableRow>
                     <TableCell
                       colSpan={6}
@@ -314,6 +376,14 @@ export default function DeliveryAdmin() {
               </TableBody>
             </Table>
           </div>
+          <PaginationBar
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalItems={sortedZones.length}
+            perPage={perPage}
+            onPageChange={goToPage}
+            onPerPageChange={changePerPage}
+          />
         </CardContent>
       </Card>
 

@@ -46,6 +46,8 @@ import { Field, FieldLabel } from "@/components/ui/field";
 import { Plus, Pencil, Trash2, Search, Package, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { uploadImage } from "@/app/actions/upload-image";
+import { usePagination } from "@/lib/use-pagination";
+import { PaginationBar } from "@/components/pagination-bar";
 
 const emptyProduct: Omit<Product, "id"> = {
   name: "",
@@ -103,6 +105,15 @@ function ProductsAdmin() {
       categoryFilter === "all" || product.category === categoryFilter;
     return matchesSearch && matchesCategory;
   });
+
+  const {
+    paginatedData: paginatedProducts,
+    currentPage,
+    totalPages,
+    perPage,
+    goToPage,
+    changePerPage,
+  } = usePagination(filteredProducts, 10);
 
   // const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
   //   const file = e.target.files?.[0];
@@ -272,8 +283,63 @@ const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         </CardContent>
       </Card>
 
-      {/* Products Table */}
-      <Card>
+      {/* Mobile: Product Cards */}
+      <div className="block md:hidden space-y-3">
+        {paginatedProducts.map((product) => (
+          <Card key={product.id}>
+            <CardContent className="p-4">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0 flex-1">
+                  <Link href={`/admin/productos/${product.id}`} className="flex items-center gap-3 hover:opacity-80">
+                    <img
+                      src={product.image || '/placeholder.svg'}
+                      alt={product.name}
+                      className="h-12 w-12 rounded-md object-cover shrink-0"
+                    />
+                    <div className="min-w-0">
+                      <p className="font-medium truncate">{product.name}</p>
+                      <p className="text-xs text-muted-foreground line-clamp-1">{product.description}</p>
+                    </div>
+                  </Link>
+                  <div className="flex items-center gap-2 mt-2 flex-wrap">
+                    <span className="inline-flex items-center rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium">
+                      {product.category}
+                    </span>
+                    <span
+                      className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                        product.inStock
+                          ? "bg-primary/10 text-primary"
+                          : "bg-destructive/10 text-destructive"
+                      }`}
+                    >
+                      {product.inStock ? "Disponible" : "Agotado"}
+                    </span>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    <span className="font-medium">${product.price.toFixed(2)}</span>
+                    <span className="ml-1">{product.unit}</span>
+                    {product.origin && <span className="ml-2">· {product.origin}</span>}
+                  </p>
+                </div>
+                <div className="flex gap-1 shrink-0">
+                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleEditProduct(product)}>
+                    <Pencil className="h-4 w-4" />
+                  </Button>
+                  <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => handleDeleteClick(product.id)}>
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+        {paginatedProducts.length === 0 && (
+          <p className="text-center text-muted-foreground py-8">No se encontraron productos</p>
+        )}
+      </div>
+
+      {/* Desktop: Products Table */}
+      <Card className="hidden md:block">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Package className="h-5 w-5" />
@@ -294,7 +360,7 @@ const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredProducts.map((product) => (
+                {paginatedProducts.map((product) => (
                   <TableRow key={product.id}>
                     <TableCell>
                       <Link
@@ -362,7 +428,7 @@ const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
                     </TableCell>
                   </TableRow>
                 ))}
-                {filteredProducts.length === 0 && (
+                {paginatedProducts.length === 0 && (
                   <TableRow>
                     <TableCell
                       colSpan={6}
@@ -375,6 +441,14 @@ const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
               </TableBody>
             </Table>
           </div>
+          <PaginationBar
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalItems={filteredProducts.length}
+            perPage={perPage}
+            onPageChange={goToPage}
+            onPerPageChange={changePerPage}
+          />
         </CardContent>
       </Card>
 

@@ -594,6 +594,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { usePagination } from "@/lib/use-pagination";
+import { PaginationBar } from "@/components/pagination-bar";
 import {
   Dialog,
   DialogContent,
@@ -698,6 +700,15 @@ export default function UsersPage() {
       return matchesSearch && matchesRole && matchesStatus;
     });
   }, [normalizedUsers, search, roleFilter, statusFilter]);
+
+  const {
+    paginatedData: paginatedUsers,
+    currentPage,
+    totalPages,
+    perPage,
+    goToPage,
+    changePerPage,
+  } = usePagination(filteredUsers, 10);
 
   const stats = useMemo(() => {
     const adminRoleId = Object.keys(ROLE_MAP).find(
@@ -905,8 +916,46 @@ export default function UsersPage() {
         </CardContent>
       </Card>
 
-      {/* Users Table */}
-      <Card>
+      {/* Mobile: User Cards */}
+      <div className="block md:hidden space-y-3">
+        {paginatedUsers.map((user) => (
+          <Card key={user.id}>
+            <CardContent className="p-4">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0 flex-1">
+                  <p className="font-medium truncate">{user.name}</p>
+                  <p className="text-xs text-muted-foreground truncate">{user.email}</p>
+                  <p className="text-xs text-muted-foreground">{user.phone}</p>
+                  <div className="flex items-center gap-2 mt-2 flex-wrap">
+                    {getRoleBadge(user.role_id)}
+                    {getStatusBadge(user.status)}
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {Number(user.total_orders) || 0} órdenes · {(Number(user.total_spent) || 0).toFixed(2)}€
+                  </p>
+                </div>
+                <div className="flex gap-1 shrink-0">
+                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleViewDetails(user)}>
+                    <Eye className="h-4 w-4" />
+                  </Button>
+                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleOpenDialog(user)}>
+                    <Pencil className="h-4 w-4" />
+                  </Button>
+                  <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => { setUserToDelete(user); setIsDeleteOpen(true); }}>
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+        {paginatedUsers.length === 0 && (
+          <p className="text-center text-muted-foreground py-8">No se encontraron usuarios</p>
+        )}
+      </div>
+
+      {/* Desktop: Users Table */}
+      <Card className="hidden md:block">
         <CardHeader>
           <CardTitle>Lista de Usuarios ({filteredUsers.length})</CardTitle>
         </CardHeader>
@@ -925,7 +974,7 @@ export default function UsersPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredUsers.map((user) => (
+                {paginatedUsers.map((user) => (
                   <TableRow key={user.id}>
                     <TableCell>
                       <div>
@@ -981,7 +1030,7 @@ export default function UsersPage() {
                     </TableCell>
                   </TableRow>
                 ))}
-                {filteredUsers.length === 0 && (
+                {paginatedUsers.length === 0 && (
                   <TableRow>
                     <TableCell colSpan={7} className="text-center py-8">
                       <p className="text-muted-foreground">
@@ -993,6 +1042,14 @@ export default function UsersPage() {
               </TableBody>
             </Table>
           </div>
+          <PaginationBar
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalItems={filteredUsers.length}
+            perPage={perPage}
+            onPageChange={goToPage}
+            onPerPageChange={changePerPage}
+          />
         </CardContent>
       </Card>
 

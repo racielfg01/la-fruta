@@ -42,8 +42,12 @@ export default function AdminDashboard() {
     .reduce((sum, o) => sum + o.total, 0);
 
   // Currency stats
+  const totalCurrencies = currencies.length;
   const activeCurrencies = currencies.filter((c) => c.isActive).length;
   const defaultCurrency = currencies.find((c) => c.isDefault);
+  const otherActiveCurrencies = currencies.filter(
+    (c) => c.isActive && !c.isDefault
+  );
 
   const stats = [
     {
@@ -154,7 +158,7 @@ export default function AdminDashboard() {
             <div>
               <p className="text-sm text-muted-foreground">Ingresos Totales</p>
               <p className="text-2xl font-bold">
-                {defaultCurrency?.symbol || "€"}
+                {defaultCurrency?.symbol || "$"}
                 {totalRevenue.toFixed(2)}
               </p>
               <p className="text-xs text-muted-foreground">
@@ -171,7 +175,7 @@ export default function AdminDashboard() {
             <div>
               <p className="text-sm text-muted-foreground">Envío Promedio</p>
               <p className="text-2xl font-bold">
-                {defaultCurrency?.symbol || "€"}
+                {defaultCurrency?.symbol || "$"}
                 {avgDeliveryPrice.toFixed(2)}
               </p>
               <p className="text-xs text-muted-foreground">
@@ -180,21 +184,75 @@ export default function AdminDashboard() {
             </div>
           </CardContent>
         </Card>
+        <Link href="/admin/monedas">
+          <Card className="hover:shadow-md transition-shadow cursor-pointer h-full">
+            <CardContent className="flex items-center gap-4 p-6">
+              <div className="rounded-full bg-blue-500/10 p-3">
+                <Coins className="h-6 w-6 text-blue-500" />
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Monedas</p>
+                <p className="text-2xl font-bold">
+                  {activeCurrencies}
+                  <span className="text-sm text-muted-foreground font-normal">
+                    {" "}/ {totalCurrencies} activas
+                  </span>
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {defaultCurrency
+                    ? `${defaultCurrency.code} (${defaultCurrency.symbol}) predeterminada`
+                    : "Sin moneda predeterminada"}
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        </Link>
+      </div>
+
+      {/* Exchange Rates */}
+      {defaultCurrency && otherActiveCurrencies.length > 0 && (
         <Card>
-          <CardContent className="flex items-center gap-4 p-6">
-            <div className="rounded-full bg-blue-500/10 p-3">
-              <Coins className="h-6 w-6 text-blue-500" />
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <TrendingUp className="h-5 w-5 text-primary" />
+              Tasas de Cambio
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              {otherActiveCurrencies.slice(0, 4).map((currency) => (
+                <div
+                  key={currency.id}
+                  className="flex items-center justify-between p-3 rounded-lg bg-muted/50"
+                >
+                  <div>
+                    <p className="font-medium">{currency.code}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {currency.name}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm font-semibold">
+                      {currency.symbol}
+                      {currency.exchangeRate?.toFixed(4) || "1.0000"}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      1 {defaultCurrency.code}
+                    </p>
+                  </div>
+                </div>
+              ))}
             </div>
-            <div>
-              <p className="text-sm text-muted-foreground">Monedas Activas</p>
-              <p className="text-2xl font-bold">{activeCurrencies}</p>
-              <p className="text-xs text-muted-foreground">
-                {defaultCurrency?.code || "EUR"} como predeterminada
-              </p>
-            </div>
+            {otherActiveCurrencies.length > 4 && (
+              <Button variant="link" size="sm" className="mt-3 h-auto p-0" asChild>
+                <Link href="/admin/monedas">
+                  Ver todas las {otherActiveCurrencies.length} monedas activas
+                </Link>
+              </Button>
+            )}
           </CardContent>
         </Card>
-      </div>
+      )}
 
       {/* Alerts */}
       {(outOfStockProducts > 0 || pendingOrders > 0) && (
@@ -256,26 +314,26 @@ export default function AdminDashboard() {
               Acciones Rápidas
             </CardTitle>
           </CardHeader>
-          <CardContent className="grid gap-3">
-            <Button asChild className="justify-start">
+          <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <Button asChild className="justify-start w-full">
               <Link href="/admin/productos?action=new">
                 <Package className="mr-2 h-4 w-4" />
                 Agregar Nuevo Producto
               </Link>
             </Button>
-            <Button variant="outline" asChild className="justify-start">
+            <Button variant="outline" asChild className="justify-start w-full">
               <Link href="/admin/usuarios">
                 <Users className="mr-2 h-4 w-4" />
                 Gestionar Usuarios
               </Link>
             </Button>
-            <Button variant="outline" asChild className="justify-start">
+            <Button variant="outline" asChild className="justify-start w-full">
               <Link href="/admin/ordenes">
                 <ShoppingBag className="mr-2 h-4 w-4" />
                 Ver Órdenes
               </Link>
             </Button>
-            <Button variant="outline" asChild className="justify-start">
+            <Button variant="outline" asChild className="justify-start w-full">
               <Link href="/admin/monedas">
                 <Coins className="mr-2 h-4 w-4" />
                 Configurar Monedas
@@ -292,45 +350,47 @@ export default function AdminDashboard() {
               Órdenes Recientes
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
+          <CardContent className="px-3 sm:px-6">
+            <div className="space-y-1 sm:space-y-2">
               {recentOrders.map((order) => (
                 <Link
                   key={order.id}
                   href="/admin/ordenes"
-                  className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted transition-colors"
+                  className="flex items-center gap-2 sm:gap-3 p-2 sm:p-3 rounded-lg hover:bg-muted transition-colors active:bg-muted/80"
                 >
-                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
+                  <div className={`flex h-9 w-9 sm:h-10 sm:w-10 shrink-0 items-center justify-center rounded-full ${
+                    order.status === "delivered" ? "bg-green-500/10" : "bg-primary/10"
+                  }`}>
                     {order.status === "delivered" ? (
-                      <CheckCircle className="h-5 w-5 text-green-500" />
+                      <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 text-green-500" />
                     ) : (
-                      <Clock className="h-5 w-5 text-primary" />
+                      <Clock className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium truncate">
-                      {order.id} - {order.userName}
+                      {order.userName}
                     </p>
-                    <p className="text-xs text-muted-foreground">
-                      {order.items.length} productos - {formatDate(order.createdAt)}
+                    <p className="text-xs text-muted-foreground truncate">
+                      {order.items.length} producto{order.items.length !== 1 ? "s" : ""} · {formatDate(order.createdAt)}
+                      <span className="hidden sm:inline"> · {order.id}</span>
                     </p>
                   </div>
-                  <div className="text-right">
-                    <p className="text-sm font-medium">
-                      {defaultCurrency?.symbol || "€"}
-                      {order.total.toFixed(2)}
-                    </p>
+                  <div className="flex flex-col items-end gap-0.5 sm:gap-1 shrink-0">
+                    <span className="text-sm font-medium whitespace-nowrap">
+                      {defaultCurrency?.symbol || "$"}{order.total.toFixed(2)}
+                    </span>
                     {getStatusBadge(order.status)}
                   </div>
                 </Link>
               ))}
               {recentOrders.length === 0 && (
-                <p className="text-sm text-muted-foreground text-center py-4">
+                <p className="text-sm text-muted-foreground text-center py-6 sm:py-8">
                   No hay órdenes recientes
                 </p>
               )}
             </div>
-            <Button variant="ghost" size="sm" className="w-full mt-4" asChild>
+            <Button variant="ghost" size="sm" className="w-full mt-3 sm:mt-4" asChild>
               <Link href="/admin/ordenes">Ver todas las órdenes</Link>
             </Button>
           </CardContent>

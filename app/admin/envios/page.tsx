@@ -230,22 +230,24 @@ export default function DeliveryAdmin() {
       <div className="block md:hidden space-y-3">
         {paginatedZones.map((zone) => (
           <Card key={zone.id} className={!zone.active ? "opacity-60" : ""}>
-            <CardContent className="p-4">
-              <div className="flex items-start justify-between gap-3">
+            <CardContent className="p-3 sm:p-4">
+              <div className="flex items-start justify-between gap-2 sm:gap-3">
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
                     <MapPin className="h-4 w-4 text-primary shrink-0" />
-                    <span className="font-medium">{zone.name}</span>
+                    <span className="font-medium text-sm sm:text-base">{zone.name}</span>
                   </div>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {zone.minDistance} - {zone.maxDistance} km
-                  </p>
-                  <p className="text-sm font-semibold text-primary mt-1">
-                    ${zone.price.toFixed(2)}
-                  </p>
-                  <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
-                    <Clock className="h-3 w-3" />
-                    {zone.estimatedTime}
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 mt-1.5">
+                    <p className="text-xs text-muted-foreground">
+                      {zone.minDistance} - {zone.maxDistance} km
+                    </p>
+                    <p className="text-sm font-semibold text-primary">
+                      ${zone.price.toFixed(2)}
+                    </p>
+                    <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                      <Clock className="h-3 w-3" />
+                      {zone.estimatedTime}
+                    </span>
                   </div>
                   <div className="flex items-center gap-2 mt-2">
                     <Switch
@@ -261,10 +263,10 @@ export default function DeliveryAdmin() {
                   </div>
                 </div>
                 <div className="flex gap-1 shrink-0">
-                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleEditZone(zone)}>
+                  <Button variant="ghost" size="icon" className="h-8 w-8 active:scale-95" onClick={() => handleEditZone(zone)}>
                     <Pencil className="h-4 w-4" />
                   </Button>
-                  <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => handleDeleteClick(zone.id)}>
+                  <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive active:scale-95" onClick={() => handleDeleteClick(zone.id)}>
                     <Trash2 className="h-4 w-4" />
                   </Button>
                 </div>
@@ -273,7 +275,7 @@ export default function DeliveryAdmin() {
           </Card>
         ))}
         {paginatedZones.length === 0 && (
-          <p className="text-center text-muted-foreground py-8">No hay zonas de envío configuradas.</p>
+          <p className="text-center text-muted-foreground py-6 sm:py-8">No hay zonas de envío configuradas.</p>
         )}
       </div>
 
@@ -396,7 +398,7 @@ export default function DeliveryAdmin() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex flex-wrap gap-3">
+          <div className="grid grid-cols-1 sm:flex sm:flex-wrap gap-2 sm:gap-3">
             {activeZones.map((zone, index) => {
               const colors = [
                 "bg-green-500",
@@ -409,20 +411,20 @@ export default function DeliveryAdmin() {
               return (
                 <div
                   key={zone.id}
-                  className="flex items-center gap-2 px-3 py-2 rounded-lg border"
+                  className="flex items-center gap-2 px-3 py-2.5 sm:py-2 rounded-lg border active:bg-muted/50"
                 >
-                  <div className={`w-3 h-3 rounded-full ${color}`} />
-                  <div>
-                    <p className="text-sm font-medium">{zone.name}</p>
+                  <div className={`w-3 h-3 rounded-full ${color} shrink-0`} />
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium truncate">{zone.name}</p>
                     <p className="text-xs text-muted-foreground">
-                      {zone.minDistance}-{zone.maxDistance}km | ${zone.price.toFixed(2)}
+                      {zone.minDistance}-{zone.maxDistance}km · ${zone.price.toFixed(2)}
                     </p>
                   </div>
                 </div>
               );
             })}
             {activeZones.length === 0 && (
-              <p className="text-sm text-muted-foreground">
+              <p className="text-sm text-muted-foreground col-span-full py-4">
                 No hay zonas activas. Activa alguna zona en la tabla de arriba.
               </p>
             )}
@@ -452,7 +454,7 @@ export default function DeliveryAdmin() {
               />
             </Field>
 
-            <div className="grid gap-4 grid-cols-2">
+            <div className="grid gap-4 grid-cols-1 sm:grid-cols-2">
               <Field>
                 <FieldLabel htmlFor="minDistance">Distancia mínima (km)</FieldLabel>
                 <Input
@@ -489,7 +491,7 @@ export default function DeliveryAdmin() {
               </Field>
             </div>
 
-            <div className="grid gap-4 grid-cols-2">
+            <div className="grid gap-4 grid-cols-1 sm:grid-cols-2">
               <Field>
                 <FieldLabel htmlFor="price">Precio ($)</FieldLabel>
                 <Input

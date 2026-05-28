@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next'
 // import { Poppins, Playfair_Display } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
 import { AuthProvider } from '@/components/auth-provider'
+import { ServiceWorkerRegister } from '@/components/service-worker-register'
 import './globals.css'
 
 // const poppins = Poppins({
@@ -21,6 +22,13 @@ export const metadata: Metadata = {
   description: 'Discover the freshest fruits and agricultural products delivered straight to your doorstep. Farm-to-table quality with convenient home delivery.',
   keywords: ['fruits', 'farm products', 'organic', 'delivery', 'fresh produce'],
   generator: 'v0.app',
+  applicationName: 'La Fruta',
+  appleWebApp: {
+    capable: true,
+    title: 'La Fruta',
+    statusBarStyle: 'default',
+  },
+  manifest: '/manifest.json',
   icons: {
     icon: [
       {
@@ -57,6 +65,7 @@ export default function RootLayout({
         <AuthProvider>
           {children}
         </AuthProvider>
+        <ServiceWorkerRegister />
         {process.env.NODE_ENV === 'production' && <Analytics />}
       </body>
     </html>

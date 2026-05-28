@@ -184,8 +184,8 @@ const data = await withTimeout(getAdminData(token), 15000);
 
   addProduct: async (product) => {
     const token = getAuthToken();
-    await addProductAction(product, token);
-    set({ products: [...get().products, product] });
+    const created = await addProductAction(product, token);
+    set({ products: [...get().products, created as Product] });
   },
   updateProduct: async (id, data) => {
     const token = getAuthToken();

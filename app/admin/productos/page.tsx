@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useState, useEffect } from "react";
+import { Suspense, useState, useEffect, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
 import { useAdminStore } from "@/lib/admin-store";
 import { Product, Unit } from "@/lib/store";
@@ -79,14 +79,21 @@ function ProductsAdmin() {
   const [formData, setFormData] = useState(emptyProduct);
   const [productToDelete, setProductToDelete] = useState<string | null>(null);
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [imageUploaded, setImageUploaded] = useState(false);
+
+  const handleNewProduct = useCallback(() => {
+    setEditingProduct(null);
+    setFormData(emptyProduct);
+    setDialogOpen(true);
+  }, []);
 
   useEffect(() => {
     if (searchParams.get("action") === "new") {
       handleNewProduct();
     }
-  }, [searchParams]);
+  }, [searchParams, handleNewProduct]);
 
   const filteredProducts = products.filter((product) => {
     const matchesSearch =
@@ -96,12 +103,6 @@ function ProductsAdmin() {
       categoryFilter === "all" || product.category === categoryFilter;
     return matchesSearch && matchesCategory;
   });
-
-  const handleNewProduct = () => {
-    setEditingProduct(null);
-    setFormData(emptyProduct);
-    setDialogOpen(true);
-  };
 
   // const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
   //   const file = e.target.files?.[0];
@@ -486,7 +487,6 @@ const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
                     placeholder="https://... o sube una imagen"
                     className="flex-1"
                     disabled={imageUploaded}
-                    className="flex-1"
                   />
                   <Input
                     type="file"

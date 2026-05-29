@@ -42,27 +42,36 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const pathname = usePathname();
   const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [hydrated, setHydrated] = useState(false);
   const isLoginPage = pathname === "/admin/login";
 
-  // ✅ Obtener estado de autenticación general
   const { isAuthenticated, user, logout } = useAuthStore();
 
-  // ✅ Redirigir si no está autenticado o no es admin (role_id === 2)
+  // Esperar a que zustand persist rehidrate desde localStorage
   useEffect(() => {
-    if (!isLoginPage && !isAuthenticated) {
-      router.push("/auth/login"); // o /admin/login si prefieres mantener esa ruta
-    } else if (!isLoginPage && user && user.role_id !== 2) {
-      router.push("/"); // acceso denegado, enviar a home
+    if (useAuthStore.persist.hasHydrated()) {
+      setHydrated(true);
+    } else {
+      const unsub = useAuthStore.persist.onFinishHydration(() => setHydrated(true));
+      return unsub;
     }
-  }, [isAuthenticated, user, isLoginPage, router]);
+  }, []);
 
-  // Si está en página de login o aún verificando, no renderizar el layout
+  // Redirigir solo después de saber el estado real de autenticación
+  useEffect(() => {
+    if (!hydrated) return;
+    if (!isLoginPage && !isAuthenticated) {
+      router.push("/auth/login");
+    } else if (!isLoginPage && user && user.role_id !== 2) {
+      router.push("/");
+    }
+  }, [hydrated, isAuthenticated, user, isLoginPage, router]);
+
   if (isLoginPage) {
     return <>{children}</>;
   }
 
-  // No mostrar nada mientras verifica (evita flash)
-  if (!isAuthenticated || !user || user.role_id !== 2) {
+  if (!hydrated || !isAuthenticated || !user || user.role_id !== 2) {
     return null;
   }
 

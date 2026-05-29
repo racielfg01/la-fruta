@@ -135,16 +135,17 @@ function ProductsAdmin() {
         const imageUrl = result.url;
         setFormData((prev) => ({ ...prev, image: imageUrl }));
         setImageUploaded(true);
-        setPreviewImage(null);
       } else {
         console.error("Error al subir imagen:", result.error);
         setPreviewImage(null);
+        URL.revokeObjectURL(localPreview);
       }
     } catch (error) {
       console.error("Error en la subida:", error);
+      setPreviewImage(null);
+      URL.revokeObjectURL(localPreview);
     } finally {
       setUploadingImage(false);
-      URL.revokeObjectURL(localPreview);
     }
   };
 
@@ -565,9 +566,21 @@ function ProductsAdmin() {
             {(formData.image || previewImage) && (
               <div className="rounded-lg overflow-hidden border">
                 <img
-                  src={previewImage || formData.image || '/placeholder.svg'}
+                  src={previewImage || formData.image}
                   alt="Preview"
                   className="h-32 w-full object-cover"
+                  onLoad={() => {
+                    if (previewImage && formData.image) {
+                      URL.revokeObjectURL(previewImage);
+                      setPreviewImage(null);
+                    }
+                  }}
+                  onError={() => {
+                    if (formData.image && !previewImage) {
+                      setFormData((prev) => ({ ...prev, image: "" }));
+                      setImageUploaded(false);
+                    }
+                  }}
                 />
               </div>
             )}

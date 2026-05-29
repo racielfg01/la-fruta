@@ -43,9 +43,9 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Field, FieldLabel } from "@/components/ui/field";
-import { Plus, Pencil, Trash2, Search, Package, Loader2 } from "lucide-react";
+import { Plus, Pencil, Trash2, Search, Package } from "lucide-react";
 import Link from "next/link";
-import { uploadImage } from "@/app/actions/upload-image";
+import { ImageUpload } from "@/components/upload-button";
 import { usePagination } from "@/lib/use-pagination";
 import { PaginationBar } from "@/components/pagination-bar";
 
@@ -80,17 +80,13 @@ function ProductsAdmin() {
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [formData, setFormData] = useState(emptyProduct);
   const [productToDelete, setProductToDelete] = useState<string | null>(null);
-  const [uploadingImage, setUploadingImage] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [imageUploaded, setImageUploaded] = useState(false);
 
   const handleNewProduct = useCallback(() => {
     setEditingProduct(null);
     setFormData(emptyProduct);
     setImageUploaded(false);
-    setUploadingImage(false);
-    setPreviewImage(null);
     setDialogOpen(true);
   }, []);
 
@@ -118,35 +114,9 @@ function ProductsAdmin() {
     changePerPage,
   } = usePagination(filteredProducts, 10);
 
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    const localPreview = URL.createObjectURL(file);
-    setPreviewImage(localPreview);
-    setUploadingImage(true);
-
-    const uploadFormData = new FormData();
-    uploadFormData.append("file", file);
-
-    try {
-      const result = await uploadImage(uploadFormData);
-      if (result.success && result.url) {
-        const imageUrl = result.url;
-        setFormData((prev) => ({ ...prev, image: imageUrl }));
-        setImageUploaded(true);
-      } else {
-        console.error("Error al subir imagen:", result.error);
-        setPreviewImage(null);
-        URL.revokeObjectURL(localPreview);
-      }
-    } catch (error) {
-      console.error("Error en la subida:", error);
-      setPreviewImage(null);
-      URL.revokeObjectURL(localPreview);
-    } finally {
-      setUploadingImage(false);
-    }
+  const handleImageUpload = (url: string) => {
+    setFormData((prev) => ({ ...prev, image: url }));
+    setImageUploaded(true);
   };
 
   const handleImageUrlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -167,8 +137,6 @@ function ProductsAdmin() {
       inStock: product.inStock,
     });
     setImageUploaded(false);
-    setUploadingImage(false);
-    setPreviewImage(null);
     setDialogOpen(true);
   };
 
@@ -203,7 +171,6 @@ function ProductsAdmin() {
       setFormData(emptyProduct);
       setEditingProduct(null);
       setImageUploaded(false);
-      setPreviewImage(null);
     } catch (err) {
       console.error('Error al guardar producto:', err);
       alert('Error al guardar el producto. Intenta de nuevo.');
@@ -539,20 +506,12 @@ function ProductsAdmin() {
                     className="flex-1"
                     disabled={imageUploaded}
                   />
-                  <Input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleImageUpload}
-                    className="w-auto"
-                    disabled={uploadingImage}
+                  <ImageUpload
+                    endpoint="productImage"
+                    onUploadComplete={handleImageUpload}
+                    disabled={imageUploaded}
                   />
                 </div>
-                {uploadingImage && (
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    Subiendo imagen...
-                  </div>
-                )}
                 {imageUploaded && (
                   <div className="text-sm text-green-600">
                     ✅ Imagen subida correctamente. No es necesario ingresar una
@@ -562,25 +521,12 @@ function ProductsAdmin() {
               </div>
             </Field>
 
-            {/* Previsualización */}
-            {(formData.image || previewImage) && (
+            {formData.image && (
               <div className="rounded-lg overflow-hidden border">
                 <img
-                  src={previewImage || formData.image}
+                  src={formData.image}
                   alt="Preview"
                   className="h-32 w-full object-cover"
-                  onLoad={() => {
-                    if (previewImage && formData.image) {
-                      URL.revokeObjectURL(previewImage);
-                      setPreviewImage(null);
-                    }
-                  }}
-                  onError={() => {
-                    if (formData.image && !previewImage) {
-                      setFormData((prev) => ({ ...prev, image: "" }));
-                      setImageUploaded(false);
-                    }
-                  }}
                 />
               </div>
             )}
@@ -604,7 +550,7 @@ function ProductsAdmin() {
                   Cancelar
                 </Button>
               </DialogClose>
-              <Button type="submit" disabled={uploadingImage || isLoading}>
+              <Button type="submit" disabled={isLoading}>
                 {isLoading ? "Guardando..." : editingProduct ? "Guardar Cambios" : "Crear Producto"}
               </Button>
             </DialogFooter>

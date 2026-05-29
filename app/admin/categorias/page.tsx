@@ -26,7 +26,8 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Field, FieldLabel } from "@/components/ui/field";
-import { Plus, Pencil, Trash2, Tags, Package } from "lucide-react";
+import { Plus, Pencil, Trash2, Tags, Package, Loader2 } from "lucide-react";
+import { ImageUpload } from "@/components/upload-button";
 
 const emptyCategory: Omit<Category, "id"> = {
   name: "",
@@ -52,6 +53,7 @@ function CategoriesAdmin() {
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [formData, setFormData] = useState(emptyCategory);
   const [categoryToDelete, setCategoryToDelete] = useState<string | null>(null);
+  const [imageUploaded, setImageUploaded] = useState(false);
 
   useEffect(() => {
     if (searchParams.get("action") === "new") {
@@ -63,9 +65,20 @@ function CategoriesAdmin() {
     return products.filter((p) => p.category === categoryName).length;
   };
 
+  const handleImageUpload = (url: string) => {
+    setFormData((prev) => ({ ...prev, image: url }));
+    setImageUploaded(true);
+  };
+
+  const handleImageUrlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFormData({ ...formData, image: e.target.value });
+    setImageUploaded(false);
+  };
+
   const handleNewCategory = () => {
     setEditingCategory(null);
     setFormData(emptyCategory);
+    setImageUploaded(false);
     setDialogOpen(true);
   };
 
@@ -76,6 +89,7 @@ function CategoriesAdmin() {
       description: category.description,
       image: category.image,
     });
+    setImageUploaded(false);
     setDialogOpen(true);
   };
 
@@ -266,17 +280,31 @@ function CategoriesAdmin() {
             </Field>
 
             <Field>
-              <FieldLabel htmlFor="image">URL de la imagen</FieldLabel>
-              <Input
-                id="image"
-                type="url"
-                value={formData.image}
-                onChange={(e) =>
-                  setFormData({ ...formData, image: e.target.value })
-                }
-                placeholder="https://..."
-                required
-              />
+              <FieldLabel htmlFor="image">Imagen de la categoría</FieldLabel>
+              <div className="flex flex-col gap-3">
+                <div className="flex gap-2">
+                  <Input
+                    id="image"
+                    type="url"
+                    value={formData.image}
+                    onChange={handleImageUrlChange}
+                    placeholder="https://... o sube una imagen"
+                    className="flex-1"
+                    disabled={imageUploaded}
+                    required
+                  />
+                  <ImageUpload
+                    endpoint="categoryImage"
+                    onUploadComplete={handleImageUpload}
+                    disabled={imageUploaded}
+                  />
+                </div>
+                {imageUploaded && (
+                  <div className="text-sm text-green-600">
+                    ✅ Imagen subida correctamente. No es necesario ingresar una URL manual.
+                  </div>
+                )}
+              </div>
             </Field>
 
             {formData.image && (

@@ -248,7 +248,7 @@ function ProductsAdmin() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Todas las categorías</SelectItem>
-                {uniqueCategories.map((cat) => (
+                {uniqueCategories.filter((cat) => cat).map((cat) => (
                   <SelectItem key={cat} value={cat}>
                     {cat}
                   </SelectItem>
@@ -461,7 +461,7 @@ function ProductsAdmin() {
                     <SelectValue placeholder="Seleccionar categoría" />
                   </SelectTrigger>
                   <SelectContent>
-                    {categories.map((cat) => (
+                    {categories.filter((cat) => cat.name).map((cat) => (
                       <SelectItem key={cat.id} value={cat.name}>
                         {cat.name}
                       </SelectItem>

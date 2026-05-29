@@ -67,6 +67,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     }
   }, [hydrated, isAuthenticated, user, isLoginPage, router]);
 
+  // Cerrar sidebar al navegar
+  useEffect(() => {
+    setSidebarOpen(false);
+  }, [pathname]);
+
   if (isLoginPage) {
     return <>{children}</>;
   }

@@ -94,8 +94,8 @@ export async function addProductAction(product: Omit<Product, 'id'>, token: stri
   await verifyAdminAndGetUserId(token);
   const id = crypto.randomUUID();
   await sql`
-    INSERT INTO products (id, name, description, price, unit, image, category, origin, in_stock)
-    VALUES (${id}, ${product.name}, ${product.description}, ${product.price}, ${product.unit}, ${product.image}, ${product.category}, ${product.origin}, ${product.inStock})
+    INSERT INTO products (id, name, description, price, unit, image, category, origin, in_stock, is_visible)
+    VALUES (${id}, ${product.name}, ${product.description}, ${product.price}, ${product.unit}, ${product.image}, ${product.category}, ${product.origin}, ${product.inStock}, ${product.visible})
   `;
   return { id, ...product };
 }
@@ -113,6 +113,7 @@ export async function editProductAction(id: string, data: Partial<Product>, toke
   if (data.category !== undefined) { updates.push(`category = $${idx++}`); values.push(data.category); }
   if (data.origin !== undefined) { updates.push(`origin = $${idx++}`); values.push(data.origin); }
   if (data.inStock !== undefined) { updates.push(`in_stock = $${idx++}`); values.push(data.inStock); }
+  if (data.visible !== undefined) { updates.push(`is_visible = $${idx++}`); values.push(data.visible); }
   if (updates.length === 0) return;
   values.push(id);
   await sql.query(`UPDATE products SET ${updates.join(', ')} WHERE id = $${idx}`, values);

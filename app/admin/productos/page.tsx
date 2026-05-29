@@ -58,6 +58,7 @@ const emptyProduct: Omit<Product, "id"> = {
   category: "",
   origin: "",
   inStock: true,
+  visible: true,
 };
 
 export default function ProductsAdminPage() {
@@ -135,6 +136,7 @@ function ProductsAdmin() {
       category: product.category,
       origin: product.origin,
       inStock: product.inStock,
+      visible: product.visible,
     });
     setImageUploaded(false);
     setDialogOpen(true);
@@ -230,7 +232,7 @@ function ProductsAdmin() {
       {/* Mobile: Product Cards */}
       <div className="block md:hidden space-y-3">
         {paginatedProducts.map((product) => (
-          <Card key={product.id}>
+          <Card key={product.id} className={!product.inStock ? "opacity-60" : ""}>
             <CardContent className="p-4">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0 flex-1">
@@ -305,7 +307,7 @@ function ProductsAdmin() {
               </TableHeader>
               <TableBody>
                 {paginatedProducts.map((product) => (
-                  <TableRow key={product.id}>
+                  <TableRow key={product.id} className={!product.inStock ? "opacity-60" : ""}>
                     <TableCell>
                       <Link
                         href={`/admin/productos/${product.id}`}
@@ -398,7 +400,7 @@ function ProductsAdmin() {
 
       {/* Product Form Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>
               {editingProduct ? "Editar Producto" : "Nuevo Producto"}
@@ -541,6 +543,19 @@ function ProductsAdmin() {
               />
               <label htmlFor="inStock" className="text-sm font-medium">
                 Producto disponible
+              </label>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <Switch
+                id="visible"
+                checked={formData.visible}
+                onCheckedChange={(checked) =>
+                  setFormData({ ...formData, visible: checked })
+                }
+              />
+              <label htmlFor="visible" className="text-sm font-medium">
+                Visible en la tienda
               </label>
             </div>
 

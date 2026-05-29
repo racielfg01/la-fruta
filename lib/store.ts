@@ -15,6 +15,7 @@ export interface Product {
   category: string;
   origin: string;
   inStock: boolean;
+  visible: boolean;
 }
 
 export interface CartItem {

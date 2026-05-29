@@ -12,6 +12,7 @@ export const products: Product[] = [
     category: "Fruits",
     origin: "Washington Valley Farms",
     inStock: true,
+    visible: true,
   },
   {
     id: "2",
@@ -24,6 +25,7 @@ export const products: Product[] = [
     category: "Citrus",
     origin: "California Sun Orchards",
     inStock: true,
+    visible: true,
   },
   {
     id: "3",
@@ -36,6 +38,7 @@ export const products: Product[] = [
     category: "Berries",
     origin: "Green Valley Farms",
     inStock: true,
+    visible: true,
   },
   {
     id: "4",
@@ -48,6 +51,7 @@ export const products: Product[] = [
     category: "Tropical",
     origin: "Costa Rica Plantations",
     inStock: true,
+    visible: true,
   },
   {
     id: "5",
@@ -60,6 +64,7 @@ export const products: Product[] = [
     category: "Berries",
     origin: "Maine Berry Farms",
     inStock: true,
+    visible: true,
   },
   {
     id: "6",
@@ -72,6 +77,7 @@ export const products: Product[] = [
     category: "Tropical",
     origin: "Mexican Tropical Farms",
     inStock: true,
+    visible: true,
   },
   {
     id: "7",
@@ -84,6 +90,7 @@ export const products: Product[] = [
     category: "Fruits",
     origin: "Napa Valley Vineyards",
     inStock: true,
+    visible: true,
   },
   {
     id: "8",
@@ -96,6 +103,7 @@ export const products: Product[] = [
     category: "Fruits",
     origin: "California Avocado Farms",
     inStock: true,
+    visible: true,
   },
   {
     id: "9",
@@ -108,6 +116,7 @@ export const products: Product[] = [
     category: "Citrus",
     origin: "Mediterranean Citrus Co.",
     inStock: true,
+    visible: true,
   },
   {
     id: "10",
@@ -120,6 +129,7 @@ export const products: Product[] = [
     category: "Melons",
     origin: "Georgia Melon Farms",
     inStock: true,
+    visible: true,
   },
   {
     id: "11",
@@ -144,6 +154,7 @@ export const products: Product[] = [
     category: "Fruits",
     origin: "Oregon Orchard Co.",
     inStock: true,
+    visible: true,
   },
 ];
 

@@ -46,6 +46,7 @@ export async function getPublicProducts() {
         origin, 
         in_stock as "inStock"
       FROM products
+      WHERE is_visible = true
       ORDER BY name ASC
     `;
     // console.log("Productos obtenidos:", products); // ← log

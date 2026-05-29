@@ -53,7 +53,8 @@ async function migrate() {
       image TEXT NOT NULL DEFAULT '',
       category TEXT NOT NULL DEFAULT '',
       origin TEXT NOT NULL DEFAULT '',
-      in_stock BOOLEAN NOT NULL DEFAULT true
+      in_stock BOOLEAN NOT NULL DEFAULT true,
+      is_visible BOOLEAN NOT NULL DEFAULT true
     )`;
 
   await sql`
@@ -184,8 +185,8 @@ async function migrate() {
     ];
     for (const p of products) {
       await sql`
-        INSERT INTO products (id, name, description, price, unit, image, category, origin, in_stock)
-        VALUES (${p.id}, ${p.name}, ${p.description}, ${p.price}, ${p.unit}, ${p.image}, ${p.category}, ${p.origin}, true)
+        INSERT INTO products (id, name, description, price, unit, image, category, origin, in_stock, is_visible)
+        VALUES (${p.id}, ${p.name}, ${p.description}, ${p.price}, ${p.unit}, ${p.image}, ${p.category}, ${p.origin}, true, true)
       `;
     }
     console.log("Seeded products.");

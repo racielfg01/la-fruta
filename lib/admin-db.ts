@@ -36,7 +36,7 @@ export async function deleteCategory(id: string) {
 
 export async function getProducts(): Promise<Product[]> {
   const rows = await sql`
-    SELECT id, name, description, price::float AS price, unit, image, category, origin, in_stock AS "inStock"
+    SELECT id, name, description, price::float AS price, unit, image, category, origin, in_stock AS "inStock", is_visible AS "visible"
     FROM products ORDER BY name
   `;
   return rows as unknown as Product[];
@@ -44,8 +44,8 @@ export async function getProducts(): Promise<Product[]> {
 
 export async function createProduct(product: Product) {
   await sql`
-    INSERT INTO products (id, name, description, price, unit, image, category, origin, in_stock)
-    VALUES (${product.id}, ${product.name}, ${product.description}, ${product.price}, ${product.unit}, ${product.image}, ${product.category}, ${product.origin}, ${product.inStock})
+    INSERT INTO products (id, name, description, price, unit, image, category, origin, in_stock, is_visible)
+    VALUES (${product.id}, ${product.name}, ${product.description}, ${product.price}, ${product.unit}, ${product.image}, ${product.category}, ${product.origin}, ${product.inStock}, ${product.visible})
   `;
 }
 
@@ -60,6 +60,7 @@ export async function updateProduct(id: string, data: Partial<Product>) {
   if (data.category !== undefined) { fields.push("category"); values.push(data.category); }
   if (data.origin !== undefined) { fields.push("origin"); values.push(data.origin); }
   if (data.inStock !== undefined) { fields.push("in_stock"); values.push(data.inStock); }
+  if (data.visible !== undefined) { fields.push("is_visible"); values.push(data.visible); }
   if (fields.length === 0) return;
   await sql`
     UPDATE products SET ${sql(fields.join(", "), ...values)} WHERE id = ${id}

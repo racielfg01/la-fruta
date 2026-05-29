@@ -146,7 +146,7 @@ function CategoriesAdmin() {
             <Card key={category.id} className="overflow-hidden">
               <div className="aspect-video relative overflow-hidden">
                 <img
-                  src={category.image}
+                  src={category.image || '/placeholder.svg'}
                   alt={category.name}
                   className="h-full w-full object-cover"
                 />

@@ -1,4 +1,21 @@
-import { getPB, getEphemeralPB } from './pocketbase';
+import { getEphemeralPB, getAdminPB, getAllRecords } from './pocketbase';
+
+let _roleIdsCache: { admin: string; client: string } | null = null;
+
+export async function getRoleIds(): Promise<{ admin: string; client: string }> {
+  if (_roleIdsCache) return _roleIdsCache;
+  try {
+    const adminPb = await getAdminPB();
+    const roles = await getAllRecords(adminPb, 'roles');
+    _roleIdsCache = {
+      admin: roles.find((r: any) => r.name === 'admin')?.id || '',
+      client: roles.find((r: any) => r.name === 'client')?.id || '',
+    };
+    return _roleIdsCache;
+  } catch {
+    return { admin: '', client: '' };
+  }
+}
 
 export interface User {
   id: string;
@@ -46,15 +63,18 @@ export function decodePocketBaseToken(token: string): { userId: string; email: s
   }
 }
 
-function mapUser(record: any): User {
-  const roleName = record.expand?.role_id?.name || 'user';
+function mapUser(record: any, roleIds?: { admin: string; client: string }): User {
+  const roleName = record.expand?.role_id?.name || 'client';
+  const isAdmin = roleIds?.admin
+    ? record.role_id === roleIds.admin
+    : roleName === 'admin';
   return {
     id: record.id,
     name: record.name,
     email: record.email,
     phone: record.phone || '',
     address: record.address || '',
-    role_id: roleName === 'admin' ? 2 : 1,
+    role_id: isAdmin ? 2 : 1,
     status: record.status || 'active',
     created_at: record.created,
     total_orders: record.total_orders || 0,
@@ -65,7 +85,7 @@ function mapUser(record: any): User {
 
 export async function getUserByIdentifier(identifier: string): Promise<User | null> {
   try {
-    const pb = getPB();
+    const pb = await getAdminPB();
     const records = await pb.collection('users').getList(1, 1, {
       filter: `phone = "${identifier}" || email = "${identifier}"`,
       expand: 'role_id',
@@ -79,7 +99,7 @@ export async function getUserByIdentifier(identifier: string): Promise<User | nu
 
 export async function getUserByPhone(phone: string): Promise<User | null> {
   try {
-    const pb = getPB();
+    const pb = await getAdminPB();
     const records = await pb.collection('users').getList(1, 1, {
       filter: `phone = "${phone}"`,
       expand: 'role_id',
@@ -93,7 +113,7 @@ export async function getUserByPhone(phone: string): Promise<User | null> {
 
 export async function getUserByEmail(email: string): Promise<User | null> {
   try {
-    const pb = getPB();
+    const pb = await getAdminPB();
     const records = await pb.collection('users').getList(1, 1, {
       filter: `email = "${email}"`,
       expand: 'role_id',
@@ -108,22 +128,25 @@ export async function getUserByEmail(email: string): Promise<User | null> {
 export async function createUser(data: SignupData): Promise<User | null> {
   try {
     const pb = getEphemeralPB();
-    const roles = await getPB().collection('roles').getFullList({ filter: 'name = "user"' });
-    const userRoleId = roles[0]?.id || '';
+    const roleIds = await getRoleIds();
 
-    const record = await pb.collection('users').create({
+    const payload: Record<string, any> = {
       name: data.name,
       email: data.email,
       phone: data.phone,
       address: '',
-      role_id: userRoleId,
       status: 'active',
       total_orders: 0,
       total_spent: 0,
       password: data.password,
       passwordConfirm: data.confirmPassword,
       gender: data.gender,
-    });
+    };
+    if (roleIds.client) {
+      payload.role_id = roleIds.client;
+    }
+
+    const record = await pb.collection('users').create(payload);
     return mapUser(record);
   } catch (error) {
     console.error('Error creating user:', error);
@@ -140,14 +163,15 @@ export async function verifyUserCredentials(identifier: string, password: string
     if (isEmail) {
       authData = await pb.collection('users').authWithPassword(identifier, password);
     } else {
-      const users = await getPB().collection('users').getList(1, 1, {
+      const adminPb = await getAdminPB();
+      const users = await adminPb.collection('users').getList(1, 1, {
         filter: `phone = "${identifier}"`,
       });
       if (users.items.length === 0) return null;
       authData = await pb.collection('users').authWithPassword(users.items[0].email, password);
     }
 
-    const userWithRole = await getPB().collection('users').getOne(authData.record.id, {
+    const userWithRole = await pb.collection('users').getOne(authData.record.id, {
       expand: 'role_id',
     });
 
@@ -157,3 +181,4 @@ export async function verifyUserCredentials(identifier: string, password: string
     return null;
   }
 }
+

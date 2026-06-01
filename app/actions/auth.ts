@@ -1,7 +1,7 @@
 'use server';
 
-import { createUser, SignupData } from '@/lib/auth';
-import { getPB, getEphemeralPB } from '@/lib/pocketbase';
+import { createUser, SignupData, getRoleIds } from '@/lib/auth';
+import { getAdminPB, getEphemeralPB } from '@/lib/pocketbase';
 
 export interface AuthResponse {
   success: boolean;
@@ -27,17 +27,17 @@ function validateEmail(email: string): { valid: boolean; error?: string } {
 }
 
 function validatePhone(phone: string): { valid: boolean; error?: string } {
-  const phoneRegex = /^[0-9]{8,10}$/;
+  const phoneRegex = /^[0-9]{7,15}$/;
   if (!phone) return { valid: false, error: 'El teléfono es requerido' };
   if (!phoneRegex.test(phone.replace(/\D/g, ''))) {
-    return { valid: false, error: 'El teléfono debe contener entre 10 y 15 dígitos' };
+    return { valid: false, error: 'El teléfono debe contener entre 7 y 15 dígitos' };
   }
   return { valid: true };
 }
 
 function validatePassword(password: string): { valid: boolean; error?: string } {
   if (!password) return { valid: false, error: 'La contraseña es requerida' };
-  if (password.length < 6) return { valid: false, error: 'La contraseña debe tener al menos 6 caracteres' };
+  if (password.length < 8) return { valid: false, error: 'La contraseña debe tener al menos 8 caracteres' };
   if (!/[a-z]/.test(password) || !/[A-Z]/.test(password) || !/[0-9]/.test(password)) {
     return { valid: false, error: 'La contraseña debe contener mayúsculas, minúsculas y números' };
   }
@@ -79,17 +79,22 @@ export async function signupAction(data: SignupData): Promise<AuthResponse> {
       return { success: false, message: '', error: 'Las contraseñas no coinciden' };
     }
 
-    const existingPhone = await getPB().collection('users').getList(1, 1, {
-      filter: `phone = "${data.phone}"`,
-    });
-    if (existingPhone.items.length > 0) {
-      return { success: false, message: '', error: 'El teléfono ya está registrado' };
-    }
-    const existingEmail = await getPB().collection('users').getList(1, 1, {
-      filter: `email = "${data.email}"`,
-    });
-    if (existingEmail.items.length > 0) {
-      return { success: false, message: '', error: 'El correo electrónico ya está registrado' };
+    try {
+      const adminPb = await getAdminPB();
+      const existingPhone = await adminPb.collection('users').getList(1, 1, {
+        filter: `phone = "${data.phone}"`,
+      });
+      if (existingPhone.items.length > 0) {
+        return { success: false, message: '', error: 'El teléfono ya está registrado' };
+      }
+      const existingEmail = await adminPb.collection('users').getList(1, 1, {
+        filter: `email = "${data.email}"`,
+      });
+      if (existingEmail.items.length > 0) {
+        return { success: false, message: '', error: 'El correo electrónico ya está registrado' };
+      }
+    } catch (e) {
+      console.warn('Could not check duplicates, proceeding — PB will enforce uniqueness', e);
     }
 
     const newUser = await createUser(data);
@@ -110,13 +115,23 @@ export async function signupAction(data: SignupData): Promise<AuthResponse> {
         phone: newUser.phone,
         address: newUser.address,
         gender: newUser.gender || '',
-        role_id: newUser.role_id,
+        role_id: newUser.role_id || 1,
       },
       token: authData.token,
     };
-  } catch (error) {
+  } catch (error: any) {
     console.error('Signup error:', error);
-    return { success: false, message: '', error: 'Error al registrar. Intenta más tarde.' };
+    const isConnectionError =
+      error?.originalError?.cause?.code === 'UND_ERR_CONNECT_TIMEOUT' ||
+      error?.originalError?.cause?.code === 'EAI_AGAIN' ||
+      error?.cause?.code === 'UND_ERR_CONNECT_TIMEOUT' ||
+      error?.cause?.code === 'EAI_AGAIN' ||
+      error?.message?.includes?.('fetch failed');
+    if (isConnectionError) {
+      return { success: false, message: '', error: 'Error de conexión. Verifica tu internet o intenta más tarde.' };
+    }
+    const msg = error?.response?.message || error?.message || 'Error al registrar. Intenta más tarde.';
+    return { success: false, message: '', error: msg };
   }
 }
 
@@ -131,26 +146,31 @@ export async function loginAction(credentials: { identifier: string; password: s
     }
 
     const pb = getEphemeralPB();
-    const isEmail = identifier.includes('@');
 
     let authData;
-    if (isEmail) {
+    if (identifier.includes('@')) {
       authData = await pb.collection('users').authWithPassword(identifier, password);
     } else {
-      const users = await getPB().collection('users').getList(1, 1, {
-        filter: `phone = "${identifier}"`,
-      });
-      if (users.items.length === 0) {
-        return { success: false, message: '', error: 'Correo/Teléfono o contraseña incorrectos' };
+      let email = identifier;
+      try {
+        const adminPb = await getAdminPB();
+        const users = await adminPb.collection('users').getList(1, 1, {
+          filter: `phone = "${identifier}"`,
+        });
+        if (users.items.length > 0) {
+          email = users.items[0].email;
+        }
+      } catch {
+        console.warn('Admin lookup failed for phone login, trying identifier as email');
       }
-      authData = await pb.collection('users').authWithPassword(users.items[0].email, password);
+      authData = await pb.collection('users').authWithPassword(email, password);
     }
 
-    const userWithRole = await getPB().collection('users').getOne(authData.record.id, {
+    const userWithRole = await pb.collection('users').getOne(authData.record.id, {
       expand: 'role_id',
     });
 
-    const roleName = (userWithRole as any).expand?.role_id?.name || 'user';
+    const roleIds = await getRoleIds();
 
     return {
       success: true,
@@ -162,12 +182,21 @@ export async function loginAction(credentials: { identifier: string; password: s
         phone: authData.record.phone || '',
         address: authData.record.address || '',
         gender: authData.record.gender || '',
-        role_id: roleName === 'admin' ? 2 : 1,
+        role_id: roleIds.admin && userWithRole.role_id === roleIds.admin ? 2 : 1,
       },
       token: authData.token,
     };
-  } catch (error) {
+  } catch (error: any) {
     console.error('Login error:', error);
+    const isConnectionError =
+      error?.originalError?.cause?.code === 'UND_ERR_CONNECT_TIMEOUT' ||
+      error?.originalError?.cause?.code === 'EAI_AGAIN' ||
+      error?.cause?.code === 'UND_ERR_CONNECT_TIMEOUT' ||
+      error?.cause?.code === 'EAI_AGAIN' ||
+      error?.message?.includes?.('fetch failed');
+    if (isConnectionError) {
+      return { success: false, message: '', error: 'Error de conexión. Verifica tu internet o intenta más tarde.' };
+    }
     return { success: false, message: '', error: 'Correo/Teléfono o contraseña incorrectos' };
   }
 }

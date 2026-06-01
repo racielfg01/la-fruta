@@ -1,7 +1,7 @@
 "use server";
 
 import { decodePocketBaseToken } from "@/lib/auth";
-import { getAdminPB } from "@/lib/pocketbase";
+import { getAdminPB, getAllRecords } from "@/lib/pocketbase";
 
 export interface CreateOrderInput {
   userId: string;
@@ -75,30 +75,31 @@ export async function getUserOrders(token: string) {
   if (!payload) throw new Error("No autorizado");
 
   const pb = await getAdminPB();
-  const orders = await pb.collection('orders').getFullList({
+  const orders = await getAllRecords(pb, 'orders', {
     filter: `user_id = "${payload.userId}"`,
-    sort: '-created',
+    sort: '-created_at',
   });
 
   return await Promise.all(
     orders.map(async (order: any) => {
-      const items = await pb.collection('order_items').getFullList({
+      const items = await getAllRecords(pb, 'order_items', {
         filter: `order_id = "${order.id}"`,
       });
       return {
         id: order.id,
-        user_name: order.user_name,
-        user_email: order.user_email,
+        userId: order.user_id,
+        userName: order.user_name,
+        userEmail: order.user_email,
         subtotal: Number(order.subtotal),
-        delivery_fee: Number(order.delivery_fee),
+        deliveryFee: Number(order.delivery_fee),
         total: Number(order.total),
         status: order.status,
-        payment_method: order.payment_method,
-        payment_status: order.payment_status,
-        delivery_address: order.delivery_address,
-        delivery_notes: order.delivery_notes,
-        created_at: order.created,
-        updated_at: order.updated,
+        paymentMethod: order.payment_method,
+        paymentStatus: order.payment_status,
+        deliveryAddress: order.delivery_address,
+        deliveryNotes: order.delivery_notes || '',
+        createdAt: order.created,
+        updatedAt: order.updated,
         items: items.map((i: any) => ({
           productId: i.product_id,
           productName: i.product_name,

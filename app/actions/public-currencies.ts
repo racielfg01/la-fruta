@@ -1,6 +1,6 @@
 'use server';
 
-import { getPB } from '@/lib/pocketbase';
+import { getPB, getAllRecords } from '@/lib/pocketbase';
 
 export interface Currency {
   id: string;
@@ -14,7 +14,7 @@ export interface Currency {
 export async function getPublicCurrencies() {
   try {
     const pb = getPB();
-    const currencies = await pb.collection('currencies').getFullList({
+    const currencies = await getAllRecords(pb, 'currencies', {
       filter: 'is_active = true',
       sort: '-is_default,code',
     });

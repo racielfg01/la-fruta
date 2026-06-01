@@ -1,6 +1,6 @@
 'use server';
 
-import { getPB } from '@/lib/pocketbase';
+import { getPB, getAllRecords } from '@/lib/pocketbase';
 
 function mapProduct(p: any) {
   return {
@@ -46,7 +46,7 @@ export async function getPublicProducts() {
     let products: any[];
     try {
       products = await loadWithRetry(() =>
-        pb.collection('products').getFullList({
+        getAllRecords(pb, 'products', {
           filter: 'is_visible = true',
           sort: 'name',
           expand: 'category',
@@ -54,14 +54,14 @@ export async function getPublicProducts() {
       );
     } catch {
       products = await loadWithRetry(() =>
-        pb.collection('products').getFullList({
+        getAllRecords(pb, 'products', {
           sort: 'name',
           expand: 'category',
         })
       );
     }
     const categories = await loadWithRetry(() =>
-      pb.collection('categories').getFullList({ sort: 'name' })
+      getAllRecords(pb, 'categories', { sort: 'name' })
     );
     return {
       products: products.map(mapProduct),

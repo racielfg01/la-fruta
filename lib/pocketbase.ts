@@ -1,7 +1,29 @@
 import PocketBase from 'pocketbase'
 
 let pb: PocketBase | null = null
-let adminToken: { email: string; password: string } | null = null
+
+export async function getAllRecords<T = Record<string, any>>(
+  pb: PocketBase,
+  collectionName: string,
+  options: { sort?: string; filter?: string; expand?: string; batch?: number } = {}
+): Promise<T[]> {
+  const batchSize = options.batch || 500
+  const result: T[] = []
+  let page = 1
+
+  while (true) {
+    const records = await pb.collection(collectionName).getList<T>(page, batchSize, {
+      sort: options.sort,
+      filter: options.filter,
+      expand: options.expand,
+    })
+    result.push(...records.items)
+    if (records.items.length < batchSize) break
+    page++
+  }
+
+  return result
+}
 
 export function getPB(): PocketBase {
   if (!pb) {
@@ -16,11 +38,8 @@ export function getPB(): PocketBase {
 
 export async function getAdminPB(): Promise<PocketBase> {
   const client = getPB()
-  if (
-    !client.authStore.isValid ||
-    !client.authStore.isAdmin
-  ) {
-    await client.admins.authWithPassword(
+  if (!client.authStore.isValid) {
+    await client.collection('_superusers').authWithPassword(
       process.env.POCKETBASE_ADMIN_EMAIL!,
       process.env.POCKETBASE_ADMIN_PASSWORD!
     )

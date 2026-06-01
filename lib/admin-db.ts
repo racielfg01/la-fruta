@@ -1,4 +1,4 @@
-import { getAdminPB } from './pocketbase';
+import { getAdminPB, getAllRecords } from './pocketbase';
 import { Product } from './store';
 
 function mapProduct(p: any): Product {
@@ -20,7 +20,7 @@ function mapProduct(p: any): Product {
 
 export async function getCategories() {
   const pb = await getAdminPB();
-  return pb.collection('categories').getFullList({ sort: 'name' });
+  return getAllRecords(pb, 'categories', { sort: 'name' });
 }
 
 export async function createCategory(cat: { id: string; name: string; description: string; image: string }) {
@@ -51,7 +51,7 @@ export async function deleteCategory(id: string) {
 
 export async function getProducts(): Promise<Product[]> {
   const pb = await getAdminPB();
-  const rows = await pb.collection('products').getFullList({ sort: 'name' });
+  const rows = await getAllRecords(pb, 'products', { sort: 'name' });
   return rows.map(mapProduct);
 }
 
@@ -95,7 +95,7 @@ export async function deleteProduct(id: string) {
 
 export async function getDeliveryZones() {
   const pb = await getAdminPB();
-  const rows = await pb.collection('delivery_zones').getFullList({ sort: 'min_distance' });
+  const rows = await getAllRecords(pb, 'delivery_zones', { sort: 'min_distance' });
   return rows.map((z: any) => ({
     id: z.id,
     name: z.name,
@@ -141,7 +141,7 @@ export async function deleteDeliveryZone(id: string) {
 
 export async function getAdminUsers() {
   const pb = await getAdminPB();
-  const rows = await pb.collection('users').getFullList({
+  const rows = await getAllRecords(pb, 'users', {
     sort: '-created',
   });
   return rows.map((u: any) => ({
@@ -197,10 +197,10 @@ export async function deleteAdminUser(id: string) {
 
 export async function getOrders() {
   const pb = await getAdminPB();
-  const rows = await pb.collection('orders').getFullList({ sort: '-created' });
+  const rows = await getAllRecords(pb, 'orders', { sort: '-created_at' });
   return await Promise.all(
     rows.map(async (order: any) => {
-      const items = await pb.collection('order_items').getFullList({
+      const items = await getAllRecords(pb, 'order_items', {
         filter: `order_id = "${order.id}"`,
       });
       return {
@@ -243,7 +243,7 @@ export async function updatePaymentStatus(id: string, paymentStatus: string) {
 
 export async function getCurrencies() {
   const pb = await getAdminPB();
-  const rows = await pb.collection('currencies').getFullList({ sort: '-is_default,code' });
+  const rows = await getAllRecords(pb, 'currencies', { sort: '-is_default,code' });
   return rows.map((c: any) => ({
     id: c.id,
     code: c.code,
@@ -287,7 +287,7 @@ export async function deleteCurrency(id: string) {
 
 export async function setDefaultCurrency(id: string) {
   const pb = await getAdminPB();
-  const defaults = await pb.collection('currencies').getFullList({
+  const defaults = await getAllRecords(pb, 'currencies', {
     filter: 'is_default = true',
   });
   await Promise.all(defaults.map((c: any) =>

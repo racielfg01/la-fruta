@@ -1,7 +1,7 @@
 'use server';
 
-import { decodePocketBaseToken } from '@/lib/auth';
-import { getAdminPB, getPB } from '@/lib/pocketbase';
+import { decodePocketBaseToken, getRoleIds } from '@/lib/auth';
+import { getAdminPB, getPB, getAllRecords } from '@/lib/pocketbase';
 import { Product } from '@/lib/store';
 import { Category, DeliveryZone, User, Order, Currency } from '@/lib/admin-store';
 
@@ -10,9 +10,9 @@ async function verifyAdminAndGetUserId(token: string): Promise<string> {
   if (!payload) throw new Error('No autorizado: token inválido o expirado');
 
   const pb = await getAdminPB();
-  const user = await pb.collection('users').getOne(payload.userId, { expand: 'role_id' });
-  const roleName = (user as any).expand?.role_id?.name || '';
-  if (roleName !== 'admin') {
+  const user = await pb.collection('users').getOne(payload.userId);
+  const roleIds = await getRoleIds();
+  if (!roleIds.admin || user.role_id !== roleIds.admin) {
     throw new Error('Acceso denegado: se requieren privilegios de administrador');
   }
   return payload.userId;
@@ -20,13 +20,13 @@ async function verifyAdminAndGetUserId(token: string): Promise<string> {
 
 async function getRoleIdByName(name: string): Promise<string> {
   const pb = await getAdminPB();
-  const roles = await pb.collection('roles').getFullList({ filter: `name = "${name}"` });
+  const roles = await getAllRecords(pb, 'roles', { filter: `name = "${name}"` });
   return roles[0]?.id || '';
 }
 
 async function getCategoryIdByName(name: string): Promise<string> {
   const pb = await getAdminPB();
-  const cats = await pb.collection('categories').getFullList({ filter: `name = "${name}"` });
+  const cats = await getAllRecords(pb, 'categories', { filter: `name = "${name}"` });
   return cats[0]?.id || '';
 }
 
@@ -51,10 +51,20 @@ function mapDeliveryZone(z: any) {
 
 function mapOrder(o: any) {
   return {
-    ...o,
+    id: o.id,
+    userId: o.user_id,
+    userName: o.user_name,
+    userEmail: o.user_email,
     subtotal: Number(o.subtotal),
     deliveryFee: Number(o.delivery_fee),
     total: Number(o.total),
+    status: o.status,
+    paymentMethod: o.payment_method,
+    paymentStatus: o.payment_status,
+    deliveryAddress: o.delivery_address,
+    deliveryNotes: o.delivery_notes || '',
+    createdAt: o.created,
+    updatedAt: o.updated,
   };
 }
 
@@ -64,30 +74,32 @@ export async function getAdminData(token: string) {
   const pb = await getAdminPB();
 
   const [products, categories, deliveryZones, users, orders, currencies] = await Promise.all([
-    pb.collection('products').getFullList({ sort: 'name', expand: 'category' }),
-    pb.collection('categories').getFullList({ sort: 'name' }),
-    pb.collection('delivery_zones').getFullList({ sort: 'min_distance' }),
-    pb.collection('users').getFullList({ sort: '-created', expand: 'role_id' }),
-    pb.collection('orders').getFullList({ sort: '-created' }),
-    pb.collection('currencies').getFullList({ sort: 'code' }),
+    getAllRecords(pb, 'products', { sort: 'name', expand: 'category' }),
+    getAllRecords(pb, 'categories', { sort: 'name' }),
+    getAllRecords(pb, 'delivery_zones', { sort: 'min_distance' }),
+    getAllRecords(pb, 'users', { sort: '-created', expand: 'role_id' }),
+    getAllRecords(pb, 'orders', { sort: '-created_at' }),
+    getAllRecords(pb, 'currencies', { sort: 'code' }),
   ]);
+
+  const roleIds = await getRoleIds();
 
   const ordersFixed = await Promise.all(
     orders.map(async (order: any) => {
-      const items = await pb.collection('order_items').getFullList({
+      const items = await getAllRecords(pb, 'order_items', {
         filter: `order_id = "${order.id}"`,
       });
-      return {
-        ...mapOrder(order),
-        items: items.map((item: any) => ({
-          productId: item.product_id,
-          productName: item.product_name,
-          quantity: item.quantity,
-          price: Number(item.price),
-        })),
-      };
-    })
-  );
+    return {
+      ...mapOrder(order),
+      items: items.map((item: any) => ({
+        productId: item.product_id,
+        productName: item.product_name,
+        quantity: item.quantity,
+        price: Number(item.price),
+      })),
+    };
+  })
+);
 
   return {
     products: products.map(mapProduct),
@@ -95,10 +107,18 @@ export async function getAdminData(token: string) {
     deliveryZones: deliveryZones.map(mapDeliveryZone),
     users: users.map((u: any) => ({
       ...u,
-      role_id: (u.expand?.role_id?.name === 'admin' ? 2 : 1),
+      role_id: roleIds.admin && u.role_id === roleIds.admin ? 2 : 1,
     })),
     orders: ordersFixed,
-    currencies,
+    currencies: currencies.map((c: any) => ({
+      id: c.id,
+      code: c.code,
+      name: c.name,
+      symbol: c.symbol,
+      exchangeRate: Number(c.exchange_rate) || 1,
+      isDefault: c.is_default === true,
+      isActive: c.is_active !== false,
+    })),
   };
 }
 
@@ -203,16 +223,32 @@ export async function removeDeliveryZoneAction(id: string, token: string) {
   await pb.collection('delivery_zones').delete(id);
 }
 
+function generatePassword(): string {
+  const upper = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  const lower = 'abcdefghijklmnopqrstuvwxyz';
+  const digits = '0123456789';
+  const all = upper + lower + digits;
+  let pw = '';
+  pw += upper[Math.floor(Math.random() * upper.length)];
+  pw += lower[Math.floor(Math.random() * lower.length)];
+  pw += digits[Math.floor(Math.random() * digits.length)];
+  for (let i = 0; i < 8; i++) pw += all[Math.floor(Math.random() * all.length)];
+  return pw.split('').sort(() => Math.random() - 0.5).join('');
+}
+
 export async function addUserAction(user: Omit<User, 'id'>, token: string) {
   await verifyAdminAndGetUserId(token);
   const pb = await getAdminPB();
-  const roleId = await getRoleIdByName(user.role_id === 2 ? 'admin' : 'user');
+  const roleId = await getRoleIdByName(user.role_id === 2 ? 'admin' : 'client');
+  const password = generatePassword();
   const record = await pb.collection('users').create({
     name: user.name,
     email: user.email,
     phone: user.phone,
     address: user.address,
     role_id: roleId,
+    password,
+    passwordConfirm: password,
     status: user.status,
     total_orders: 0,
     total_spent: 0,
@@ -228,7 +264,7 @@ export async function editUserAction(id: string, data: Partial<User>, token: str
   if (data.email !== undefined) updateData.email = data.email;
   if (data.phone !== undefined) updateData.phone = data.phone;
   if (data.address !== undefined) updateData.address = data.address;
-  if (data.role_id !== undefined) updateData.role_id = await getRoleIdByName(data.role_id === 2 ? 'admin' : 'user');
+  if (data.role_id !== undefined) updateData.role_id = await getRoleIdByName(data.role_id === 2 ? 'admin' : 'client');
   if (data.status !== undefined) updateData.status = data.status;
   if (Object.keys(updateData).length === 0) return;
   await pb.collection('users').update(id, updateData);
@@ -289,7 +325,7 @@ export async function removeCurrencyAction(id: string, token: string) {
 export async function setDefaultCurrencyAction(id: string, token: string) {
   await verifyAdminAndGetUserId(token);
   const pb = await getAdminPB();
-  await pb.collection('currencies').getFullList({
+  await getAllRecords(pb, 'currencies', {
     filter: 'is_default = true',
   }).then((currencies: any) =>
     Promise.all(currencies.map((c: any) =>

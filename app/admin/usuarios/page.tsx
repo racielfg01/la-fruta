@@ -951,6 +951,14 @@ export default function UsersPage() {
         {paginatedUsers.length === 0 && (
           <p className="text-center text-muted-foreground py-8">No se encontraron usuarios</p>
         )}
+        <PaginationBar
+          currentPage={currentPage}
+          totalPages={totalPages}
+          totalItems={filteredUsers.length}
+          perPage={perPage}
+          onPageChange={goToPage}
+          onPerPageChange={changePerPage}
+        />
       </div>
 
       {/* Desktop: Users Table */}

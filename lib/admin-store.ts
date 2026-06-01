@@ -199,8 +199,8 @@ const data = await withTimeout(getAdminData(token), 15000);
 
   addCategory: async (category) => {
     const token = getAuthToken();
-    await addCategoryAction(category, token);
-    set({ categories: [...get().categories, category] });
+    const created = await addCategoryAction(category, token);
+    set({ categories: [...get().categories, created as Category] });
   },
   updateCategory: async (id, data) => {
     const token = getAuthToken();
@@ -215,8 +215,8 @@ const data = await withTimeout(getAdminData(token), 15000);
 
   addDeliveryZone: async (zone) => {
     const token = getAuthToken();
-    await addDeliveryZoneAction(zone, token);
-    set({ deliveryZones: [...get().deliveryZones, zone] });
+    const created = await addDeliveryZoneAction(zone, token);
+    set({ deliveryZones: [...get().deliveryZones, created as DeliveryZone] });
   },
   updateDeliveryZone: async (id, data) => {
     const token = getAuthToken();

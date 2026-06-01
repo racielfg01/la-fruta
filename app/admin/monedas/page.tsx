@@ -384,6 +384,14 @@ export default function CurrenciesPage() {
         {paginatedCurrencies.length === 0 && (
           <p className="text-center text-muted-foreground py-8">No se encontraron monedas</p>
         )}
+        <PaginationBar
+          currentPage={currentPage}
+          totalPages={totalPages}
+          totalItems={filteredCurrencies.length}
+          perPage={perPage}
+          onPageChange={goToPage}
+          onPerPageChange={changePerPage}
+        />
       </div>
 
       {/* Desktop: Currencies Table */}

@@ -275,7 +275,6 @@ function CategoriesAdmin() {
                 }
                 placeholder="Describe brevemente esta categoría..."
                 rows={3}
-                required
               />
             </Field>
 
@@ -291,7 +290,6 @@ function CategoriesAdmin() {
                     placeholder="https://... o sube una imagen"
                     className="flex-1"
                     disabled={imageUploaded}
-                    required
                   />
                   <ImageUpload
                     endpoint="categoryImage"

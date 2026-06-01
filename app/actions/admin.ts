@@ -122,11 +122,12 @@ export async function getAdminData(token: string) {
   };
 }
 
-export async function addProductAction(product: Omit<Product, 'id'>, token: string) {
+export async function addProductAction(product: Product, token: string) {
   await verifyAdminAndGetUserId(token);
   const pb = await getAdminPB();
   const categoryId = await getCategoryIdByName(product.category);
   const record = await pb.collection('products').create({
+    id: product.id,
     name: product.name,
     description: product.description,
     price: product.price,
@@ -137,7 +138,7 @@ export async function addProductAction(product: Omit<Product, 'id'>, token: stri
     in_stock: product.inStock,
     is_visible: product.visible,
   });
-  return { id: record.id, ...product };
+  return { ...product, id: record.id };
 }
 
 export async function editProductAction(id: string, data: Partial<Product>, token: string) {
@@ -163,15 +164,16 @@ export async function removeProductAction(id: string, token: string) {
   await pb.collection('products').delete(id);
 }
 
-export async function addCategoryAction(category: Omit<Category, 'id'>, token: string) {
+export async function addCategoryAction(category: Category, token: string) {
   await verifyAdminAndGetUserId(token);
   const pb = await getAdminPB();
   const record = await pb.collection('categories').create({
+    id: category.id,
     name: category.name,
     description: category.description,
     image: category.image,
   });
-  return { id: record.id, ...category };
+  return { ...category, id: record.id };
 }
 
 export async function editCategoryAction(id: string, data: Partial<Category>, token: string) {
@@ -191,17 +193,18 @@ export async function removeCategoryAction(id: string, token: string) {
   await pb.collection('categories').delete(id);
 }
 
-export async function addDeliveryZoneAction(zone: Omit<DeliveryZone, 'id'>, token: string) {
+export async function addDeliveryZoneAction(zone: DeliveryZone, token: string) {
   await verifyAdminAndGetUserId(token);
   const pb = await getAdminPB();
   const record = await pb.collection('delivery_zones').create({
+    id: zone.id,
     name: zone.name,
     min_distance: zone.minDistance,
     max_distance: zone.maxDistance,
     price: zone.price,
     estimated_time: zone.estimatedTime,
   });
-  return { id: record.id, ...zone };
+  return { ...zone, id: record.id };
 }
 
 export async function editDeliveryZoneAction(id: string, data: Partial<DeliveryZone>, token: string) {

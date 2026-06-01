@@ -277,6 +277,14 @@ export default function DeliveryAdmin() {
         {paginatedZones.length === 0 && (
           <p className="text-center text-muted-foreground py-6 sm:py-8">No hay zonas de envío configuradas.</p>
         )}
+        <PaginationBar
+          currentPage={currentPage}
+          totalPages={totalPages}
+          totalItems={sortedZones.length}
+          perPage={perPage}
+          onPageChange={goToPage}
+          onPerPageChange={changePerPage}
+        />
       </div>
 
       {/* Desktop: Delivery Zones Table */}

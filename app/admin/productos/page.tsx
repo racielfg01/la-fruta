@@ -282,6 +282,14 @@ function ProductsAdmin() {
         {paginatedProducts.length === 0 && (
           <p className="text-center text-muted-foreground py-8">No se encontraron productos</p>
         )}
+        <PaginationBar
+          currentPage={currentPage}
+          totalPages={totalPages}
+          totalItems={filteredProducts.length}
+          perPage={perPage}
+          onPageChange={goToPage}
+          onPerPageChange={changePerPage}
+        />
       </div>
 
       {/* Desktop: Products Table */}

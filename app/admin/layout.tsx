@@ -67,14 +67,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     }
   }, [hydrated, isAuthenticated, user, isLoginPage, router]);
 
-  const closeSidebar = useCallback(() => {
-    setSidebarOpen(false);
-  }, []);
+  const closeSidebar = useCallback(() => setSidebarOpen(false), []);
 
-  // Cerrar sidebar al navegar
-  useEffect(() => {
-    closeSidebar();
-  }, [pathname, closeSidebar]);
+  useEffect(() => { setSidebarOpen(false); }, [pathname]);
 
   if (isLoginPage) {
     return <>{children}</>;
@@ -96,15 +91,15 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       {sidebarOpen && (
         <div
           className="fixed inset-0 z-40 bg-background/80 backdrop-blur-sm lg:hidden"
-          onClick={closeSidebar}
+          onPointerDown={closeSidebar}
         />
       )}
 
       {/* Sidebar */}
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-50 w-64 transform bg-card border-r border-border transition-transform duration-300 lg:translate-x-0",
-          sidebarOpen ? "translate-x-0" : "-translate-x-full"
+          "fixed inset-y-0 left-0 z-50 w-64 transform bg-card border-r border-border transition-transform duration-300 lg:translate-x-0 overflow-y-auto",
+          sidebarOpen ? "translate-x-0" : "-translate-x-full invisible lg:visible"
         )}
       >
         <div className="flex h-16 items-center gap-2 border-b border-border px-6">
@@ -115,7 +110,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             variant="ghost"
             size="icon"
             className="ml-auto lg:hidden"
-            onClick={closeSidebar}
+            onClick={(e) => { e.stopPropagation(); closeSidebar(); }}
           >
             <X className="h-5 w-5" />
           </Button>

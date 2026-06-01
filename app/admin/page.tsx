@@ -23,7 +23,7 @@ export default function AdminDashboard() {
     useAdminStore();
 
   const totalProducts = products.length;
-  const inStockProducts = products.filter((p) => p.inStock).length;
+  const inStockProducts = products.filter((p) => p.stock > 0).length;
   const outOfStockProducts = totalProducts - inStockProducts;
   const totalCategories = categories.length;
   const avgDeliveryPrice =
@@ -54,7 +54,7 @@ export default function AdminDashboard() {
       title: "Total Productos",
       value: totalProducts,
       icon: Package,
-      description: `${inStockProducts} disponibles`,
+      description: `${inStockProducts} con stock`,
       href: "/admin/productos",
       color: "text-primary",
     },

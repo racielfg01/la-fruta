@@ -75,6 +75,7 @@ async function setup() {
     { name: 'image', type: 'text' },
     { name: 'category', type: 'text' },
     { name: 'origin', type: 'text' },
+    { name: 'stock', type: 'number' },
     { name: 'in_stock', type: 'bool' },
     { name: 'is_visible', type: 'bool' },
   ])

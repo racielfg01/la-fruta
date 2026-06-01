@@ -12,7 +12,8 @@ function mapProduct(p: any) {
     image: p.image || '',
     category: p.expand?.category?.name || p.category || '',
     origin: p.origin || '',
-    inStock: p.in_stock ?? true,
+    stock: p.stock ?? 0,
+    inStock: p.in_stock ?? (p.stock ?? 0) > 0,
     visible: p.is_visible ?? true,
   };
 }

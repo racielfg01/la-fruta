@@ -34,7 +34,8 @@ function mapProduct(p: any) {
   return {
     ...p,
     price: Number(p.price),
-    inStock: p.in_stock ?? true,
+    stock: p.stock ?? 0,
+    inStock: p.in_stock ?? (p.stock ?? 0) > 0,
     visible: p.is_visible ?? true,
     category: p.expand?.category?.name || p.category || '',
   };
@@ -135,7 +136,8 @@ export async function addProductAction(product: Product, token: string) {
     image: product.image,
     category: categoryId,
     origin: product.origin,
-    in_stock: product.inStock,
+    stock: product.stock,
+    in_stock: product.stock > 0,
     is_visible: product.visible,
   });
   return { ...product, id: record.id };
@@ -152,7 +154,10 @@ export async function editProductAction(id: string, data: Partial<Product>, toke
   if (data.image !== undefined) updateData.image = data.image;
   if (data.category !== undefined) updateData.category = await getCategoryIdByName(data.category);
   if (data.origin !== undefined) updateData.origin = data.origin;
-  if (data.inStock !== undefined) updateData.in_stock = data.inStock;
+  if (data.stock !== undefined) {
+    updateData.stock = data.stock;
+    updateData.in_stock = data.stock > 0;
+  }
   if (data.visible !== undefined) updateData.is_visible = data.visible;
   if (Object.keys(updateData).length === 0) return;
   await pb.collection('products').update(id, updateData);

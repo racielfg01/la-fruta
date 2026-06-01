@@ -14,6 +14,7 @@ export interface Product {
   image: string;
   category: string;
   origin: string;
+  stock: number;
   inStock: boolean;
   visible: boolean;
 }

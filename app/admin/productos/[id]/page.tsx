@@ -118,13 +118,13 @@ export default function ProductDetailAdmin() {
             <div className="p-4">
               <div className="flex items-center justify-between">
                 <Badge
-                  variant={product.inStock ? "default" : "destructive"}
+                  variant={product.stock > 0 ? "default" : "destructive"}
                   className="text-sm"
                 >
-                  {product.inStock ? (
+                  {product.stock > 0 ? (
                     <>
                       <CheckCircle className="mr-1 h-3 w-3" />
-                      Disponible
+                      {product.stock} en stock
                     </>
                   ) : (
                     <>
@@ -196,7 +196,7 @@ export default function ProductDetailAdmin() {
                 </div>
               </div>
               <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/50">
-                {product.inStock ? (
+                {product.stock > 0 ? (
                   <CheckCircle className="h-5 w-5 text-primary mt-0.5" />
                 ) : (
                   <XCircle className="h-5 w-5 text-destructive mt-0.5" />
@@ -204,7 +204,7 @@ export default function ProductDetailAdmin() {
                 <div>
                   <p className="text-sm text-muted-foreground">Disponibilidad</p>
                   <p className="font-medium">
-                    {product.inStock ? "En stock" : "Sin stock"}
+                    {product.stock > 0 ? `${product.stock} en stock` : "Sin stock"}
                   </p>
                 </div>
               </div>
@@ -240,8 +240,8 @@ export default function ProductDetailAdmin() {
               <p className="text-sm text-muted-foreground line-clamp-2 mb-3">
                 {product.description}
               </p>
-              <Button className="w-full" size="sm" disabled={!product.inStock}>
-                {product.inStock ? "Agregar al Carrito" : "Sin Stock"}
+              <Button className="w-full" size="sm" disabled={product.stock <= 0}>
+                {product.stock > 0 ? "Agregar al Carrito" : "Sin Stock"}
               </Button>
             </div>
           </div>

@@ -43,7 +43,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Field, FieldLabel } from "@/components/ui/field";
-import { Plus, Pencil, Trash2, Search, Package } from "lucide-react";
+import { Plus, Pencil, Trash2, Search, Package, Check } from "lucide-react";
 import Link from "next/link";
 import { ImageUpload } from "@/components/upload-button";
 import { usePagination } from "@/lib/use-pagination";
@@ -57,7 +57,8 @@ const emptyProduct: Omit<Product, "id"> = {
   image: "",
   category: "",
   origin: "",
-  inStock: true,
+  stock: 0,
+  inStock: false,
   visible: true,
 };
 
@@ -83,11 +84,13 @@ function ProductsAdmin() {
   const [productToDelete, setProductToDelete] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [imageUploaded, setImageUploaded] = useState(false);
+  const [step, setStep] = useState(1);
 
   const handleNewProduct = useCallback(() => {
     setEditingProduct(null);
     setFormData(emptyProduct);
     setImageUploaded(false);
+    setStep(1);
     setDialogOpen(true);
   }, []);
 
@@ -135,10 +138,12 @@ function ProductsAdmin() {
       image: product.image,
       category: product.category,
       origin: product.origin,
-      inStock: product.inStock,
+      stock: product.stock,
+      inStock: product.stock > 0,
       visible: product.visible,
     });
     setImageUploaded(false);
+    setStep(1);
     setDialogOpen(true);
   };
 
@@ -159,12 +164,14 @@ function ProductsAdmin() {
     e.preventDefault();
     setIsLoading(true);
 
+    const data = { ...formData, inStock: formData.stock > 0 };
+
     try {
       if (editingProduct) {
-        await updateProduct(editingProduct.id, formData);
+        await updateProduct(editingProduct.id, data);
       } else {
         const newProduct: Product = {
-          ...formData,
+          ...data,
           id: Date.now().toString(),
         };
         await addProduct(newProduct);
@@ -173,6 +180,7 @@ function ProductsAdmin() {
       setFormData(emptyProduct);
       setEditingProduct(null);
       setImageUploaded(false);
+      setStep(1);
     } catch (err) {
       console.error('Error al guardar producto:', err);
       alert('Error al guardar el producto. Intenta de nuevo.');
@@ -232,7 +240,7 @@ function ProductsAdmin() {
       {/* Mobile: Product Cards */}
       <div className="block md:hidden space-y-3">
         {paginatedProducts.map((product) => (
-          <Card key={product.id} className={!product.inStock ? "opacity-60" : ""}>
+          <Card key={product.id} className={product.stock <= 0 ? "opacity-60" : ""}>
             <CardContent className="p-4">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0 flex-1">
@@ -253,12 +261,12 @@ function ProductsAdmin() {
                     </span>
                     <span
                       className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                        product.inStock
+                        product.stock > 0
                           ? "bg-primary/10 text-primary"
                           : "bg-destructive/10 text-destructive"
                       }`}
                     >
-                      {product.inStock ? "Disponible" : "Agotado"}
+                      {product.stock > 0 ? `${product.stock} en stock` : "Agotado"}
                     </span>
                   </div>
                   <p className="text-xs text-muted-foreground mt-1">
@@ -315,7 +323,7 @@ function ProductsAdmin() {
               </TableHeader>
               <TableBody>
                 {paginatedProducts.map((product) => (
-                  <TableRow key={product.id} className={!product.inStock ? "opacity-60" : ""}>
+                  <TableRow key={product.id} className={product.stock <= 0 ? "opacity-60" : ""}>
                     <TableCell>
                       <Link
                         href={`/admin/productos/${product.id}`}
@@ -353,12 +361,12 @@ function ProductsAdmin() {
                     <TableCell>
                       <span
                         className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                          product.inStock
+                          product.stock > 0
                             ? "bg-primary/10 text-primary"
                             : "bg-destructive/10 text-destructive"
                         }`}
                       >
-                        {product.inStock ? "Disponible" : "Agotado"}
+                        {product.stock > 0 ? `${product.stock} en stock` : "Agotado"}
                       </span>
                     </TableCell>
                     <TableCell className="text-right">
@@ -414,168 +422,229 @@ function ProductsAdmin() {
               {editingProduct ? "Editar Producto" : "Nuevo Producto"}
             </DialogTitle>
           </DialogHeader>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid gap-4 sm:grid-cols-2">
-              <Field>
-                <FieldLabel htmlFor="name">Nombre del producto</FieldLabel>
-                <Input
-                  id="name"
-                  value={formData.name}
-                  onChange={(e) =>
-                    setFormData({ ...formData, name: e.target.value })
-                  }
-                  required
-                />
-              </Field>
-              <Field>
-                <FieldLabel htmlFor="category">Categoría</FieldLabel>
-                <Select
-                  value={formData.category}
-                  onValueChange={(value) =>
-                    setFormData({ ...formData, category: value })
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Seleccionar categoría" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {categories.filter((cat) => cat.name).map((cat) => (
-                      <SelectItem key={cat.id} value={cat.name}>
-                        {cat.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </Field>
-            </div>
 
-            <Field>
-              <FieldLabel htmlFor="description">Descripción</FieldLabel>
-              <Textarea
-                id="description"
-                value={formData.description}
-                onChange={(e) =>
-                  setFormData({ ...formData, description: e.target.value })
-                }
-                rows={3}
-                required
-              />
-            </Field>
-
-            <div className="grid gap-4 sm:grid-cols-3">
-              <Field>
-                <FieldLabel htmlFor="price">Precio ($)</FieldLabel>
-                <Input
-                  id="price"
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  value={formData.price}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      price: parseFloat(e.target.value) || 0,
-                    })
-                  }
-                  required
-                />
-              </Field>
-              <Field>
-                <FieldLabel htmlFor="unit">Unidad</FieldLabel>
-                <Select
-                  value={formData.unit}
-                  onValueChange={(value) =>
-                    setFormData({ ...formData, unit: value as Unit })
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="por lb">por lb</SelectItem>
-                    <SelectItem value="por kg">por kg</SelectItem>
-                    <SelectItem value="c/u">c/u</SelectItem>
-                    <SelectItem value="por pinta">por pinta</SelectItem>
-                    <SelectItem value="por docena">por docena</SelectItem>
-                  </SelectContent>
-                </Select>
-              </Field>
-            </div>
-
-            {/* Campo de imagen mejorado */}
-            <Field>
-              <FieldLabel htmlFor="image">Imagen del producto</FieldLabel>
-              <div className="flex flex-col gap-3">
-                <div className="flex gap-2">
-                  <Input
-                    id="image"
-                    type="url"
-                    value={formData.image}
-                    onChange={handleImageUrlChange}
-                    placeholder="https://... o sube una imagen"
-                    className="flex-1"
-                    disabled={imageUploaded}
-                  />
-                  <ImageUpload
-                    endpoint="productImage"
-                    onUploadComplete={handleImageUpload}
-                    disabled={imageUploaded}
-                  />
-                </div>
-                {imageUploaded && (
-                  <div className="text-sm text-green-600">
-                    ✅ Imagen subida correctamente. No es necesario ingresar una
-                    URL manual.
-                  </div>
-                )}
+          {/* Step indicator */}
+          <div className="flex items-center gap-2">
+            <div className={`flex items-center gap-2 ${step === 1 ? "text-primary" : "text-muted-foreground"}`}>
+              <div className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-medium ${
+                step === 1 ? "bg-primary text-primary-foreground" : "bg-muted"
+              }`}>
+                {step > 1 ? <Check className="h-3.5 w-3.5" /> : "1"}
               </div>
-            </Field>
+              <span className="text-sm font-medium hidden sm:inline">Info</span>
+            </div>
+            <div className="h-px flex-1 bg-border" />
+            <div className={`flex items-center gap-2 ${step === 2 ? "text-primary" : "text-muted-foreground"}`}>
+              <div className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-medium ${
+                step === 2 ? "bg-primary text-primary-foreground" : "bg-muted"
+              }`}>2</div>
+              <span className="text-sm font-medium hidden sm:inline">Media & Stock</span>
+            </div>
+          </div>
 
-            {formData.image && (
-              <div className="rounded-lg overflow-hidden border">
-                <img
-                  src={formData.image}
-                  alt="Preview"
-                  className="h-32 w-full object-cover"
-                />
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {/* Step 1: Basic Info */}
+            {step === 1 && (
+              <div className="space-y-4">
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <Field>
+                    <FieldLabel htmlFor="name">Nombre del producto</FieldLabel>
+                    <Input
+                      id="name"
+                      value={formData.name}
+                      onChange={(e) =>
+                        setFormData({ ...formData, name: e.target.value })
+                      }
+                      required
+                    />
+                  </Field>
+                  <Field>
+                    <FieldLabel htmlFor="category">Categoría</FieldLabel>
+                    <Select
+                      value={formData.category}
+                      onValueChange={(value) =>
+                        setFormData({ ...formData, category: value })
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Seleccionar categoría" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {categories.filter((cat) => cat.name).map((cat) => (
+                          <SelectItem key={cat.id} value={cat.name}>
+                            {cat.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </Field>
+                </div>
+
+                <Field>
+                  <FieldLabel htmlFor="description">Descripción</FieldLabel>
+                  <Textarea
+                    id="description"
+                    value={formData.description}
+                    onChange={(e) =>
+                      setFormData({ ...formData, description: e.target.value })
+                    }
+                    rows={3}
+                    required
+                  />
+                </Field>
+
+                <div className="grid gap-4 sm:grid-cols-3">
+                  <Field>
+                    <FieldLabel htmlFor="price">Precio ($)</FieldLabel>
+                    <Input
+                      id="price"
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={formData.price}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          price: parseFloat(e.target.value) || 0,
+                        })
+                      }
+                      required
+                    />
+                  </Field>
+                  <Field>
+                    <FieldLabel htmlFor="unit">Unidad</FieldLabel>
+                    <Select
+                      value={formData.unit}
+                      onValueChange={(value) =>
+                        setFormData({ ...formData, unit: value as Unit })
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="por lb">por lb</SelectItem>
+                        <SelectItem value="por kg">por kg</SelectItem>
+                        <SelectItem value="c/u">c/u</SelectItem>
+                        <SelectItem value="por pinta">por pinta</SelectItem>
+                        <SelectItem value="por docena">por docena</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </Field>
+                  <Field>
+                    <FieldLabel htmlFor="origin">Origen</FieldLabel>
+                    <Input
+                      id="origin"
+                      value={formData.origin}
+                      onChange={(e) =>
+                        setFormData({ ...formData, origin: e.target.value })
+                      }
+                      placeholder="Ej: Villa Clara"
+                    />
+                  </Field>
+                </div>
               </div>
             )}
 
-            <div className="flex items-center gap-3">
-              <Switch
-                id="inStock"
-                checked={formData.inStock}
-                onCheckedChange={(checked) =>
-                  setFormData({ ...formData, inStock: checked })
-                }
-              />
-              <label htmlFor="inStock" className="text-sm font-medium">
-                Producto disponible
-              </label>
-            </div>
+            {/* Step 2: Media & Stock */}
+            {step === 2 && (
+              <div className="space-y-4">
+                <Field>
+                  <FieldLabel htmlFor="image">Imagen del producto</FieldLabel>
+                  <div className="flex flex-col gap-3">
+                    <div className="flex gap-2">
+                      <Input
+                        id="image"
+                        type="url"
+                        value={formData.image}
+                        onChange={handleImageUrlChange}
+                        placeholder="https://... o sube una imagen"
+                        className="flex-1"
+                        disabled={imageUploaded}
+                      />
+                      <ImageUpload
+                        endpoint="productImage"
+                        onUploadComplete={handleImageUpload}
+                        disabled={imageUploaded}
+                      />
+                    </div>
+                    {imageUploaded && (
+                      <div className="text-sm text-green-600">
+                        ✅ Imagen subida correctamente. No es necesario ingresar una URL manual.
+                      </div>
+                    )}
+                  </div>
+                </Field>
 
-            <div className="flex items-center gap-3">
-              <Switch
-                id="visible"
-                checked={formData.visible}
-                onCheckedChange={(checked) =>
-                  setFormData({ ...formData, visible: checked })
-                }
-              />
-              <label htmlFor="visible" className="text-sm font-medium">
-                Visible en la tienda
-              </label>
-            </div>
+                {formData.image && (
+                  <div className="rounded-lg overflow-hidden border">
+                    <img
+                      src={formData.image}
+                      alt="Preview"
+                      className="h-32 w-full object-cover"
+                    />
+                  </div>
+                )}
 
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <Field>
+                    <FieldLabel htmlFor="stock">Stock disponible</FieldLabel>
+                    <Input
+                      id="stock"
+                      type="number"
+                      min="0"
+                      step="1"
+                      value={formData.stock}
+                      onChange={(e) => {
+                        const stock = parseInt(e.target.value) || 0;
+                        setFormData({ ...formData, stock, inStock: stock > 0 });
+                      }}
+                      required
+                    />
+                  </Field>
+                  <Field>
+                    <FieldLabel htmlFor="visible">Visible en la tienda</FieldLabel>
+                    <div className="flex h-10 items-center">
+                      <Switch
+                        id="visible"
+                        checked={formData.visible}
+                        onCheckedChange={(checked) =>
+                          setFormData({ ...formData, visible: checked })
+                        }
+                      />
+                      <label htmlFor="visible" className="text-sm font-medium ml-3">
+                        {formData.visible ? "Visible" : "Oculto"}
+                      </label>
+                    </div>
+                  </Field>
+                </div>
+              </div>
+            )}
+
+            {/* Footer */}
             <DialogFooter className="gap-2">
-              <DialogClose asChild>
-                <Button type="button" variant="outline">
-                  Cancelar
-                </Button>
-              </DialogClose>
-              <Button type="submit" disabled={isLoading}>
-                {isLoading ? "Guardando..." : editingProduct ? "Guardar Cambios" : "Crear Producto"}
-              </Button>
+              {step === 1 && (
+                <>
+                  <DialogClose asChild>
+                    <Button type="button" variant="outline">
+                      Cancelar
+                    </Button>
+                  </DialogClose>
+                  <Button type="button" onClick={() => setStep(2)}>
+                    Siguiente
+                  </Button>
+                </>
+              )}
+              {step === 2 && (
+                <>
+                  <Button type="button" variant="outline" onClick={() => setStep(1)}>
+                    Anterior
+                  </Button>
+                  <Button type="submit" disabled={isLoading}>
+                    {isLoading ? "Guardando..." : editingProduct ? "Guardar Cambios" : "Crear Producto"}
+                  </Button>
+                </>
+              )}
             </DialogFooter>
           </form>
         </DialogContent>

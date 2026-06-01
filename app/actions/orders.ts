@@ -1,10 +1,7 @@
 "use server";
 
-import { neon } from "@neondatabase/serverless";
-import { revalidatePath } from "next/cache";
-import { verifyAdminToken } from "@/lib/jwt";
-
-const sql = neon(process.env.DATABASE_URL!);
+import { decodePocketBaseToken } from "@/lib/auth";
+import { getAdminPB } from "@/lib/pocketbase";
 
 export interface CreateOrderInput {
   userId: string;
@@ -26,68 +23,45 @@ export interface CreateOrderInput {
 }
 
 export async function createOrderAction(orderData: CreateOrderInput, token: string) {
-  // Verificar token (opcional, pero recomendado)
-  const payload = await verifyAdminToken(token);
+  const payload = decodePocketBaseToken(token);
   if (!payload) {
     return { success: false, error: "No autorizado" };
   }
 
   try {
-    // 1. Insertar la orden
-    const [orderResult] = await sql`
-      INSERT INTO orders (
-        id, user_id, user_name, user_email, subtotal, delivery_fee, total,
-        status, payment_method, payment_status, delivery_address, delivery_notes,
-        created_at, updated_at
-      )
-      VALUES (
-        gen_random_uuid(),
-        ${orderData.userId},
-        ${orderData.userName},
-        ${orderData.userEmail},
-        ${orderData.subtotal},
-        ${orderData.deliveryFee},
-        ${orderData.total},
-        'pending',
-        ${orderData.paymentMethod},
-        'pending',
-        ${orderData.deliveryAddress},
-        ${orderData.deliveryNotes || ''},
-        NOW(),
-        NOW()
-      )
-      RETURNING id
-    `;
+    const pb = await getAdminPB();
 
-    const orderId = orderResult.id;
+    const order = await pb.collection('orders').create({
+      user_id: orderData.userId,
+      user_name: orderData.userName,
+      user_email: orderData.userEmail,
+      subtotal: orderData.subtotal,
+      delivery_fee: orderData.deliveryFee,
+      total: orderData.total,
+      status: 'pending',
+      payment_method: orderData.paymentMethod,
+      payment_status: 'pending',
+      delivery_address: orderData.deliveryAddress,
+      delivery_notes: orderData.deliveryNotes || '',
+    });
 
-    // 2. Insertar cada item de la orden
+    const orderId = order.id;
+
     for (const item of orderData.items) {
-      await sql`
-        INSERT INTO order_items (
-          order_id, product_id, product_name, quantity, price
-        )
-        VALUES (
-          ${orderId},
-          ${item.productId},
-          ${item.productName},
-          ${item.quantity},
-          ${item.price}
-        )
-      `;
+      await pb.collection('order_items').create({
+        order_id: orderId,
+        product_id: item.productId,
+        product_name: item.productName,
+        quantity: item.quantity,
+        price: item.price,
+      });
     }
 
-    // Opcional: Actualizar total_orders y total_spent en la tabla users
-    // (lo puedes hacer con un trigger o aquí mismo)
-    await sql`
-      UPDATE users
-      SET total_orders = total_orders + 1,
-          total_spent = total_spent + ${orderData.total}
-      WHERE id = ${orderData.userId}
-    `;
-
-    revalidatePath("/admin/ordenes");
-    revalidatePath("/mis-pedidos");
+    const user = await pb.collection('users').getOne(orderData.userId);
+    await pb.collection('users').update(orderData.userId, {
+      total_orders: ((user as any).total_orders || 0) + 1,
+      total_spent: Number((user as any).total_spent || 0) + orderData.total,
+    });
 
     return { success: true, orderId };
   } catch (error) {
@@ -96,71 +70,61 @@ export async function createOrderAction(orderData: CreateOrderInput, token: stri
   }
 }
 
-
-
-// Obtener órdenes del usuario autenticado
 export async function getUserOrders(token: string) {
-  const payload = await verifyAdminToken(token);
+  const payload = decodePocketBaseToken(token);
   if (!payload) throw new Error("No autorizado");
 
-  const userId = payload.userId;
+  const pb = await getAdminPB();
+  const orders = await pb.collection('orders').getFullList({
+    filter: `user_id = "${payload.userId}"`,
+    sort: '-created',
+  });
 
-  const orders = await sql`
-    SELECT 
-      o.id, 
-      o.user_name, 
-      o.user_email, 
-      o.subtotal, 
-      o.delivery_fee, 
-      o.total, 
-      o.status, 
-      o.payment_method, 
-      o.payment_status, 
-      o.delivery_address, 
-      o.delivery_notes,
-      o.created_at,
-      o.updated_at,
-      COALESCE(
-        json_agg(
-          json_build_object(
-            'productId', oi.product_id,
-            'productName', oi.product_name,
-            'quantity', oi.quantity,
-            'price', oi.price
-          )
-        ) FILTER (WHERE oi.id IS NOT NULL), '[]'
-      ) as items
-    FROM orders o
-    LEFT JOIN order_items oi ON o.id = oi.order_id
-    WHERE o.user_id = ${userId}
-    GROUP BY o.id
-    ORDER BY o.created_at DESC
-  `;
-
-  return orders;
+  return await Promise.all(
+    orders.map(async (order: any) => {
+      const items = await pb.collection('order_items').getFullList({
+        filter: `order_id = "${order.id}"`,
+      });
+      return {
+        id: order.id,
+        user_name: order.user_name,
+        user_email: order.user_email,
+        subtotal: Number(order.subtotal),
+        delivery_fee: Number(order.delivery_fee),
+        total: Number(order.total),
+        status: order.status,
+        payment_method: order.payment_method,
+        payment_status: order.payment_status,
+        delivery_address: order.delivery_address,
+        delivery_notes: order.delivery_notes,
+        created_at: order.created,
+        updated_at: order.updated,
+        items: items.map((i: any) => ({
+          productId: i.product_id,
+          productName: i.product_name,
+          quantity: i.quantity,
+          price: Number(i.price),
+        })),
+      };
+    })
+  );
 }
 
-// Actualizar perfil del usuario
 export async function updateUserProfile(
   data: { name: string; email: string; phone: string; address: string; gender: string },
   token: string
 ) {
-  const payload = await verifyAdminToken(token);
+  const payload = decodePocketBaseToken(token);
   if (!payload) throw new Error("No autorizado");
 
-  const userId = payload.userId;
-
-  const [updatedUser] = await sql`
-    UPDATE users
-    SET 
-      name = ${data.name},
-      email = ${data.email},
-      phone = ${data.phone},
-      address = ${data.address},
-      gender = ${data.gender}
-    WHERE id = ${userId}
-    RETURNING id, name, email, phone, address, gender, created_at, role_id
-  `;
+  const pb = await getAdminPB();
+  const updatedUser = await pb.collection('users').update(payload.userId, {
+    name: data.name,
+    email: data.email,
+    phone: data.phone,
+    address: data.address,
+    gender: data.gender,
+  });
 
   return { success: true, user: updatedUser };
 }

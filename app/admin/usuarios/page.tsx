@@ -763,7 +763,6 @@ export default function UsersPage() {
         created_at: new Date().toISOString(),
         total_orders: 0,
         total_spent: 0,
-        password_hash: "", // se generará en el backend
         gender: null,
       };
       addUser(newUser);

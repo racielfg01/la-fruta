@@ -1,277 +1,300 @@
-// app/actions/admin.ts
 'use server';
 
-import { neon } from '@neondatabase/serverless';
-import { verifyAdminToken } from '@/lib/jwt'; // tu función
+import { decodePocketBaseToken } from '@/lib/auth';
+import { getAdminPB, getPB } from '@/lib/pocketbase';
 import { Product } from '@/lib/store';
 import { Category, DeliveryZone, User, Order, Currency } from '@/lib/admin-store';
 
-const sql = neon(process.env.DATABASE_URL!);
-
-// Helper: verifica token y además que el usuario sea administrador (role_id = 2)
 async function verifyAdminAndGetUserId(token: string): Promise<string> {
-  const payload = await verifyAdminToken(token);
+  const payload = decodePocketBaseToken(token);
   if (!payload) throw new Error('No autorizado: token inválido o expirado');
-  
-  const [user] = await sql`SELECT role_id FROM users WHERE id = ${payload.userId}`;
-  if (!user || user.role_id !== 2) {
+
+  const pb = await getAdminPB();
+  const user = await pb.collection('users').getOne(payload.userId, { expand: 'role_id' });
+  const roleName = (user as any).expand?.role_id?.name || '';
+  if (roleName !== 'admin') {
     throw new Error('Acceso denegado: se requieren privilegios de administrador');
   }
   return payload.userId;
 }
 
-// -------------------------------
-// 1. Obtener todos los datos del panel
-// -------------------------------
+async function getRoleIdByName(name: string): Promise<string> {
+  const pb = await getAdminPB();
+  const roles = await pb.collection('roles').getFullList({ filter: `name = "${name}"` });
+  return roles[0]?.id || '';
+}
 
-// app/actions/admin.ts (fragmento)
-export async function getAdminData(token: string) {
-  await verifyAdminAndGetUserId(token);
-  
-  const [products, categories, deliveryZones, users, orders, currencies] = await Promise.all([
-    sql`SELECT * FROM products ORDER BY name ASC`,
-    sql`SELECT * FROM categories ORDER BY name ASC`,
-    sql`SELECT * FROM delivery_zones ORDER BY min_distance ASC`,
-    sql`SELECT id, name, email, phone, address, role_id, status, created_at, total_orders, total_spent FROM users ORDER BY created_at DESC`,
-    sql`
-      SELECT 
-        o.*,
-        COALESCE(
-          (SELECT json_agg(json_build_object(
-            'productId', oi.product_id,
-            'productName', oi.product_name,
-            'quantity', oi.quantity,
-            'price', oi.price
-          )) FROM order_items oi WHERE oi.order_id = o.id),
-          '[]'::json
-        ) as items
-      FROM orders o
-      ORDER BY o.created_at DESC
-    `,
-    sql`SELECT * FROM currencies ORDER BY code ASC`,
-  ]);
-  
-  // Convertir productos (precio)
-  const productsFixed = products.map((p: any) => ({
+async function getCategoryIdByName(name: string): Promise<string> {
+  const pb = await getAdminPB();
+  const cats = await pb.collection('categories').getFullList({ filter: `name = "${name}"` });
+  return cats[0]?.id || '';
+}
+
+function mapProduct(p: any) {
+  return {
     ...p,
     price: Number(p.price),
-  }));
+    inStock: p.in_stock ?? true,
+    visible: p.is_visible ?? true,
+    category: p.expand?.category?.name || p.category || '',
+  };
+}
 
-  // Convertir zonas de envío (precio)
-  const deliveryZonesFixed = deliveryZones.map((z: any) => ({
+function mapDeliveryZone(z: any) {
+  return {
     ...z,
     price: Number(z.price),
     minDistance: Number(z.min_distance),
     maxDistance: Number(z.max_distance),
-  }));
+  };
+}
 
-  // Convertir órdenes y sus items
-  const ordersFixed = orders.map((order: any) => ({
-    ...order,
-    subtotal: Number(order.subtotal),
-    deliveryFee: Number(order.delivery_fee),
-    total: Number(order.total),
-    items: order.items.map((item: any) => ({
-      ...item,
-      price: Number(item.price),
-    })),
-  }));
+function mapOrder(o: any) {
+  return {
+    ...o,
+    subtotal: Number(o.subtotal),
+    deliveryFee: Number(o.delivery_fee),
+    total: Number(o.total),
+  };
+}
+
+export async function getAdminData(token: string) {
+  await verifyAdminAndGetUserId(token);
+
+  const pb = await getAdminPB();
+
+  const [products, categories, deliveryZones, users, orders, currencies] = await Promise.all([
+    pb.collection('products').getFullList({ sort: 'name', expand: 'category' }),
+    pb.collection('categories').getFullList({ sort: 'name' }),
+    pb.collection('delivery_zones').getFullList({ sort: 'min_distance' }),
+    pb.collection('users').getFullList({ sort: '-created', expand: 'role_id' }),
+    pb.collection('orders').getFullList({ sort: '-created' }),
+    pb.collection('currencies').getFullList({ sort: 'code' }),
+  ]);
+
+  const ordersFixed = await Promise.all(
+    orders.map(async (order: any) => {
+      const items = await pb.collection('order_items').getFullList({
+        filter: `order_id = "${order.id}"`,
+      });
+      return {
+        ...mapOrder(order),
+        items: items.map((item: any) => ({
+          productId: item.product_id,
+          productName: item.product_name,
+          quantity: item.quantity,
+          price: Number(item.price),
+        })),
+      };
+    })
+  );
 
   return {
-    products: productsFixed,
+    products: products.map(mapProduct),
     categories,
-    deliveryZones: deliveryZonesFixed,
-    users,
+    deliveryZones: deliveryZones.map(mapDeliveryZone),
+    users: users.map((u: any) => ({
+      ...u,
+      role_id: (u.expand?.role_id?.name === 'admin' ? 2 : 1),
+    })),
     orders: ordersFixed,
     currencies,
   };
 }
 
-// -------------------------------
-// 2. Productos
-// -------------------------------
 export async function addProductAction(product: Omit<Product, 'id'>, token: string) {
   await verifyAdminAndGetUserId(token);
-  const id = crypto.randomUUID();
-  await sql`
-    INSERT INTO products (id, name, description, price, unit, image, category, origin, in_stock, is_visible)
-    VALUES (${id}, ${product.name}, ${product.description}, ${product.price}, ${product.unit}, ${product.image}, ${product.category}, ${product.origin}, ${product.inStock}, ${product.visible})
-  `;
-  return { id, ...product };
+  const pb = await getAdminPB();
+  const categoryId = await getCategoryIdByName(product.category);
+  const record = await pb.collection('products').create({
+    name: product.name,
+    description: product.description,
+    price: product.price,
+    unit: product.unit,
+    image: product.image,
+    category: categoryId,
+    origin: product.origin,
+    in_stock: product.inStock,
+    is_visible: product.visible,
+  });
+  return { id: record.id, ...product };
 }
 
 export async function editProductAction(id: string, data: Partial<Product>, token: string) {
   await verifyAdminAndGetUserId(token);
-  const updates: string[] = [];
-  const values: any[] = [];
-  let idx = 1;
-  if (data.name !== undefined) { updates.push(`name = $${idx++}`); values.push(data.name); }
-  if (data.description !== undefined) { updates.push(`description = $${idx++}`); values.push(data.description); }
-  if (data.price !== undefined) { updates.push(`price = $${idx++}`); values.push(data.price); }
-  if (data.unit !== undefined) { updates.push(`unit = $${idx++}`); values.push(data.unit); }
-  if (data.image !== undefined) { updates.push(`image = $${idx++}`); values.push(data.image); }
-  if (data.category !== undefined) { updates.push(`category = $${idx++}`); values.push(data.category); }
-  if (data.origin !== undefined) { updates.push(`origin = $${idx++}`); values.push(data.origin); }
-  if (data.inStock !== undefined) { updates.push(`in_stock = $${idx++}`); values.push(data.inStock); }
-  if (data.visible !== undefined) { updates.push(`is_visible = $${idx++}`); values.push(data.visible); }
-  if (updates.length === 0) return;
-  values.push(id);
-  await sql.query(`UPDATE products SET ${updates.join(', ')} WHERE id = $${idx}`, values);
+  const pb = await getAdminPB();
+  const updateData: any = {};
+  if (data.name !== undefined) updateData.name = data.name;
+  if (data.description !== undefined) updateData.description = data.description;
+  if (data.price !== undefined) updateData.price = data.price;
+  if (data.unit !== undefined) updateData.unit = data.unit;
+  if (data.image !== undefined) updateData.image = data.image;
+  if (data.category !== undefined) updateData.category = await getCategoryIdByName(data.category);
+  if (data.origin !== undefined) updateData.origin = data.origin;
+  if (data.inStock !== undefined) updateData.in_stock = data.inStock;
+  if (data.visible !== undefined) updateData.is_visible = data.visible;
+  if (Object.keys(updateData).length === 0) return;
+  await pb.collection('products').update(id, updateData);
 }
 
 export async function removeProductAction(id: string, token: string) {
   await verifyAdminAndGetUserId(token);
-  await sql`DELETE FROM products WHERE id = ${id}`;
+  const pb = await getAdminPB();
+  await pb.collection('products').delete(id);
 }
 
-// -------------------------------
-// 3. Categorías
-// -------------------------------
 export async function addCategoryAction(category: Omit<Category, 'id'>, token: string) {
   await verifyAdminAndGetUserId(token);
-  const id = crypto.randomUUID();
-  await sql`
-    INSERT INTO categories (id, name, description, image)
-    VALUES (${id}, ${category.name}, ${category.description}, ${category.image})
-  `;
-  return { id, ...category };
+  const pb = await getAdminPB();
+  const record = await pb.collection('categories').create({
+    name: category.name,
+    description: category.description,
+    image: category.image,
+  });
+  return { id: record.id, ...category };
 }
 
 export async function editCategoryAction(id: string, data: Partial<Category>, token: string) {
   await verifyAdminAndGetUserId(token);
-  const updates: string[] = [];
-  const values: any[] = [];
-  let idx = 1;
-  if (data.name !== undefined) { updates.push(`name = $${idx++}`); values.push(data.name); }
-  if (data.description !== undefined) { updates.push(`description = $${idx++}`); values.push(data.description); }
-  if (data.image !== undefined) { updates.push(`image = $${idx++}`); values.push(data.image); }
-  if (updates.length === 0) return;
-  values.push(id);
-  await sql.query(`UPDATE categories SET ${updates.join(', ')} WHERE id = $${idx}`, values);
+  const pb = await getAdminPB();
+  const updateData: any = {};
+  if (data.name !== undefined) updateData.name = data.name;
+  if (data.description !== undefined) updateData.description = data.description;
+  if (data.image !== undefined) updateData.image = data.image;
+  if (Object.keys(updateData).length === 0) return;
+  await pb.collection('categories').update(id, updateData);
 }
 
 export async function removeCategoryAction(id: string, token: string) {
   await verifyAdminAndGetUserId(token);
-  await sql`DELETE FROM categories WHERE id = ${id}`;
+  const pb = await getAdminPB();
+  await pb.collection('categories').delete(id);
 }
 
-// -------------------------------
-// 4. Zonas de envío
-// -------------------------------
 export async function addDeliveryZoneAction(zone: Omit<DeliveryZone, 'id'>, token: string) {
   await verifyAdminAndGetUserId(token);
-  const id = crypto.randomUUID();
-  await sql`
-    INSERT INTO delivery_zones (id, name, min_distance, max_distance, price, estimated_time)
-    VALUES (${id}, ${zone.name}, ${zone.minDistance}, ${zone.maxDistance}, ${zone.price}, ${zone.estimatedTime})
-  `;
-  return { id, ...zone };
+  const pb = await getAdminPB();
+  const record = await pb.collection('delivery_zones').create({
+    name: zone.name,
+    min_distance: zone.minDistance,
+    max_distance: zone.maxDistance,
+    price: zone.price,
+    estimated_time: zone.estimatedTime,
+  });
+  return { id: record.id, ...zone };
 }
 
 export async function editDeliveryZoneAction(id: string, data: Partial<DeliveryZone>, token: string) {
   await verifyAdminAndGetUserId(token);
-  const updates: string[] = [];
-  const values: any[] = [];
-  let idx = 1;
-  if (data.name !== undefined) { updates.push(`name = $${idx++}`); values.push(data.name); }
-  if (data.minDistance !== undefined) { updates.push(`min_distance = $${idx++}`); values.push(data.minDistance); }
-  if (data.maxDistance !== undefined) { updates.push(`max_distance = $${idx++}`); values.push(data.maxDistance); }
-  if (data.price !== undefined) { updates.push(`price = $${idx++}`); values.push(data.price); }
-  if (data.estimatedTime !== undefined) { updates.push(`estimated_time = $${idx++}`); values.push(data.estimatedTime); }
-  if (updates.length === 0) return;
-  values.push(id);
-  await sql.query(`UPDATE delivery_zones SET ${updates.join(', ')} WHERE id = $${idx}`, values);
+  const pb = await getAdminPB();
+  const updateData: any = {};
+  if (data.name !== undefined) updateData.name = data.name;
+  if (data.minDistance !== undefined) updateData.min_distance = data.minDistance;
+  if (data.maxDistance !== undefined) updateData.max_distance = data.maxDistance;
+  if (data.price !== undefined) updateData.price = data.price;
+  if (data.estimatedTime !== undefined) updateData.estimated_time = data.estimatedTime;
+  if (Object.keys(updateData).length === 0) return;
+  await pb.collection('delivery_zones').update(id, updateData);
 }
 
 export async function removeDeliveryZoneAction(id: string, token: string) {
   await verifyAdminAndGetUserId(token);
-  await sql`DELETE FROM delivery_zones WHERE id = ${id}`;
+  const pb = await getAdminPB();
+  await pb.collection('delivery_zones').delete(id);
 }
 
-// -------------------------------
-// 5. Usuarios
-// -------------------------------
 export async function addUserAction(user: Omit<User, 'id'>, token: string) {
   await verifyAdminAndGetUserId(token);
-  const id = crypto.randomUUID();
-  await sql`
-    INSERT INTO users (id, name, email, phone, address, role_id, status, created_at, total_orders, total_spent)
-    VALUES (${id}, ${user.name}, ${user.email}, ${user.phone}, ${user.address}, ${user.role_id}, ${user.status}, NOW(), 0, 0)
-  `;
-  return { id, ...user };
+  const pb = await getAdminPB();
+  const roleId = await getRoleIdByName(user.role_id === 2 ? 'admin' : 'user');
+  const record = await pb.collection('users').create({
+    name: user.name,
+    email: user.email,
+    phone: user.phone,
+    address: user.address,
+    role_id: roleId,
+    status: user.status,
+    total_orders: 0,
+    total_spent: 0,
+  });
+  return { id: record.id, ...user };
 }
 
 export async function editUserAction(id: string, data: Partial<User>, token: string) {
   await verifyAdminAndGetUserId(token);
-  const updates: string[] = [];
-  const values: any[] = [];
-  let idx = 1;
-  if (data.name !== undefined) { updates.push(`name = $${idx++}`); values.push(data.name); }
-  if (data.email !== undefined) { updates.push(`email = $${idx++}`); values.push(data.email); }
-  if (data.phone !== undefined) { updates.push(`phone = $${idx++}`); values.push(data.phone); }
-  if (data.address !== undefined) { updates.push(`address = $${idx++}`); values.push(data.address); }
-  if (data.role_id !== undefined) { updates.push(`role_id = $${idx++}`); values.push(data.role_id); }
-  if (data.status !== undefined) { updates.push(`status = $${idx++}`); values.push(data.status); }
-  if (updates.length === 0) return;
-  values.push(id);
-  await sql.query(`UPDATE users SET ${updates.join(', ')} WHERE id = $${idx}`, values);
+  const pb = await getAdminPB();
+  const updateData: any = {};
+  if (data.name !== undefined) updateData.name = data.name;
+  if (data.email !== undefined) updateData.email = data.email;
+  if (data.phone !== undefined) updateData.phone = data.phone;
+  if (data.address !== undefined) updateData.address = data.address;
+  if (data.role_id !== undefined) updateData.role_id = await getRoleIdByName(data.role_id === 2 ? 'admin' : 'user');
+  if (data.status !== undefined) updateData.status = data.status;
+  if (Object.keys(updateData).length === 0) return;
+  await pb.collection('users').update(id, updateData);
 }
 
 export async function removeUserAction(id: string, token: string) {
   await verifyAdminAndGetUserId(token);
-  // Opcional: evitar borrar el último administrador
-  await sql`DELETE FROM users WHERE id = ${id}`;
+  const pb = await getAdminPB();
+  await pb.collection('users').delete(id);
 }
 
-// -------------------------------
-// 6. Órdenes
-// -------------------------------
 export async function setOrderStatusAction(orderId: string, status: Order['status'], token: string) {
   await verifyAdminAndGetUserId(token);
-  await sql`UPDATE orders SET status = ${status}, updated_at = NOW() WHERE id = ${orderId}`;
+  const pb = await getAdminPB();
+  await pb.collection('orders').update(orderId, { status });
 }
 
 export async function setPaymentStatusAction(orderId: string, paymentStatus: Order['paymentStatus'], token: string) {
   await verifyAdminAndGetUserId(token);
-  await sql`UPDATE orders SET payment_status = ${paymentStatus}, updated_at = NOW() WHERE id = ${orderId}`;
+  const pb = await getAdminPB();
+  await pb.collection('orders').update(orderId, { payment_status: paymentStatus });
 }
 
-// -------------------------------
-// 7. Monedas
-// -------------------------------
 export async function addCurrencyAction(currency: Omit<Currency, 'id'>, token: string) {
   await verifyAdminAndGetUserId(token);
-  const id = crypto.randomUUID();
-  await sql`
-    INSERT INTO currencies (id, code, name, symbol, exchange_rate, is_default, is_active)
-    VALUES (${id}, ${currency.code}, ${currency.name}, ${currency.symbol}, ${currency.exchangeRate}, ${currency.isDefault}, ${currency.isActive})
-  `;
-  return { id, ...currency };
+  const pb = await getAdminPB();
+  const record = await pb.collection('currencies').create({
+    code: currency.code,
+    name: currency.name,
+    symbol: currency.symbol,
+    exchange_rate: currency.exchangeRate,
+    is_default: currency.isDefault || false,
+    is_active: currency.isActive !== false,
+  });
+  return { id: record.id, ...currency };
 }
 
 export async function editCurrencyAction(id: string, data: Partial<Currency>, token: string) {
   await verifyAdminAndGetUserId(token);
-  const updates: string[] = [];
-  const values: any[] = [];
-  let idx = 1;
-  if (data.code !== undefined) { updates.push(`code = $${idx++}`); values.push(data.code); }
-  if (data.name !== undefined) { updates.push(`name = $${idx++}`); values.push(data.name); }
-  if (data.symbol !== undefined) { updates.push(`symbol = $${idx++}`); values.push(data.symbol); }
-  if (data.exchangeRate !== undefined) { updates.push(`exchange_rate = $${idx++}`); values.push(data.exchangeRate); }
-  if (data.isDefault !== undefined) { updates.push(`is_default = $${idx++}`); values.push(data.isDefault); }
-  if (data.isActive !== undefined) { updates.push(`is_active = $${idx++}`); values.push(data.isActive); }
-  if (updates.length === 0) return;
-  values.push(id);
-  await sql.query(`UPDATE currencies SET ${updates.join(', ')} WHERE id = $${idx}`, values);
+  const pb = await getAdminPB();
+  const updateData: any = {};
+  if (data.code !== undefined) updateData.code = data.code;
+  if (data.name !== undefined) updateData.name = data.name;
+  if (data.symbol !== undefined) updateData.symbol = data.symbol;
+  if (data.exchangeRate !== undefined) updateData.exchange_rate = data.exchangeRate;
+  if (data.isDefault !== undefined) updateData.is_default = data.isDefault;
+  if (data.isActive !== undefined) updateData.is_active = data.isActive;
+  if (Object.keys(updateData).length === 0) return;
+  await pb.collection('currencies').update(id, updateData);
 }
 
 export async function removeCurrencyAction(id: string, token: string) {
   await verifyAdminAndGetUserId(token);
-  await sql`DELETE FROM currencies WHERE id = ${id}`;
+  const pb = await getAdminPB();
+  await pb.collection('currencies').delete(id);
 }
 
 export async function setDefaultCurrencyAction(id: string, token: string) {
   await verifyAdminAndGetUserId(token);
-  await sql`UPDATE currencies SET is_default = false WHERE is_default = true`;
-  await sql`UPDATE currencies SET is_default = true WHERE id = ${id}`;
+  const pb = await getAdminPB();
+  await pb.collection('currencies').getFullList({
+    filter: 'is_default = true',
+  }).then((currencies: any) =>
+    Promise.all(currencies.map((c: any) =>
+      pb.collection('currencies').update(c.id, { is_default: false })
+    ))
+  );
+  await pb.collection('currencies').update(id, { is_default: true });
 }

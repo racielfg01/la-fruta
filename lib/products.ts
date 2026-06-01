@@ -142,6 +142,7 @@ export const products: Product[] = [
     category: "Berries",
     origin: "Pacific Northwest Farms",
     inStock: false,
+    visible: true,
   },
   {
     id: "12",

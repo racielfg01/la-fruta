@@ -1,51 +1,36 @@
-// app/actions/public-products.ts
 'use server';
 
-import { neon } from '@neondatabase/serverless';
+import { getPB } from '@/lib/pocketbase';
 
-const sql = neon(process.env.DATABASE_URL!);
+function mapProduct(p: any) {
+  return {
+    id: p.id,
+    name: p.name,
+    description: p.description || '',
+    price: Number(p.price),
+    unit: p.unit || '',
+    image: p.image || '',
+    category: p.expand?.category?.name || p.category || '',
+    origin: p.origin || '',
+    inStock: p.in_stock ?? true,
+    visible: p.is_visible ?? true,
+  };
+}
 
-// export async function getPublicProducts() {
-//   try {
-//     const products = await sql`
-//       SELECT 
-//         id, 
-//         name, 
-//         description, 
-//         price, 
-//         unit, 
-//         image, 
-//         category, 
-//         origin, 
-//         in_stock as "inStock"
-//       FROM products
-//       ORDER BY name ASC
-//     `;
-//     const categories = await sql`
-//       SELECT name, id FROM categories ORDER BY name ASC
-//     `;
-//     return { products, categories: categories.map(c => c.name) };
-//   } catch (error) {
-//     console.error('Error fetching public products:', error);
-//     return { products: [], categories: [] };
-//   }
-// }
-
-// app/actions/public-products.ts
-async function queryWithRetry(sqlQuery: () => Promise<any>, retries = 3, delayMs = 2000): Promise<any> {
+async function loadWithRetry(fn: () => Promise<any>, retries = 4, delayMs = 3000): Promise<any> {
   for (let i = 0; i < retries; i++) {
     try {
-      return await sqlQuery();
+      return await fn();
     } catch (error: any) {
       const isConnectionError =
         error?.message?.includes?.('fetch failed') ||
         error?.message?.includes?.('ETIMEDOUT') ||
         error?.message?.includes?.('EAI_AGAIN') ||
+        error?.message?.includes?.('failed to fetch') ||
         error?.code === 'ETIMEDOUT' ||
-        error?.code === 'UND_ERR_CONNECT_TIMEOUT' ||
-        error?.sourceError?.code === 'ETIMEDOUT';
+        error?.code === 'UND_ERR_CONNECT_TIMEOUT';
       if (isConnectionError && i < retries - 1) {
-        console.log(`DB connection attempt ${i + 1} failed, retrying in ${delayMs}ms...`);
+        console.log(`PB connection attempt ${i + 1} failed, retrying in ${delayMs}ms...`);
         await new Promise(r => setTimeout(r, delayMs));
         delayMs *= 2;
         continue;
@@ -57,44 +42,30 @@ async function queryWithRetry(sqlQuery: () => Promise<any>, retries = 3, delayMs
 
 export async function getPublicProducts() {
   try {
-    let products;
+    const pb = getPB();
+    let products: any[];
     try {
-      products = await queryWithRetry(() => sql`
-        SELECT 
-          id, 
-          name, 
-          description, 
-          price, 
-          unit, 
-          image, 
-          category, 
-          origin, 
-          in_stock as "inStock"
-        FROM products
-        WHERE is_visible = true
-        ORDER BY name ASC
-      `);
+      products = await loadWithRetry(() =>
+        pb.collection('products').getFullList({
+          filter: 'is_visible = true',
+          sort: 'name',
+          expand: 'category',
+        })
+      );
     } catch {
-      // Si la columna is_visible no existe (DB sin migrar), obtener sin filtro
-      products = await queryWithRetry(() => sql`
-        SELECT 
-          id, 
-          name, 
-          description, 
-          price, 
-          unit, 
-          image, 
-          category, 
-          origin, 
-          in_stock as "inStock"
-        FROM products
-        ORDER BY name ASC
-      `);
+      products = await loadWithRetry(() =>
+        pb.collection('products').getFullList({
+          sort: 'name',
+          expand: 'category',
+        })
+      );
     }
-    const categories = await queryWithRetry(() => sql`SELECT name FROM categories ORDER BY name ASC`);
-    return { 
-      products: products.map(p => ({ ...p, price: Number(p.price) })),
-      categories: categories.map(c => c.name) 
+    const categories = await loadWithRetry(() =>
+      pb.collection('categories').getFullList({ sort: 'name' })
+    );
+    return {
+      products: products.map(mapProduct),
+      categories: categories.map((c: any) => c.name),
     };
   } catch (error) {
     console.error('Error fetching public products:', error);

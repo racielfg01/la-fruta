@@ -1,230 +1,299 @@
-import { neon } from "@neondatabase/serverless";
-import { Product } from "./store";
+import { getAdminPB } from './pocketbase';
+import { Product } from './store';
 
-const sql = neon(process.env.DATABASE_URL!);
+function mapProduct(p: any): Product {
+  return {
+    id: p.id,
+    name: p.name,
+    description: p.description || '',
+    price: Number(p.price),
+    unit: p.unit || '',
+    image: p.image || '',
+    category: p.category || '',
+    origin: p.origin || '',
+    inStock: p.in_stock ?? true,
+    visible: p.is_visible ?? true,
+  };
+}
 
 // ── Categories ──
 
 export async function getCategories() {
-  return await sql`SELECT * FROM categories ORDER BY name`;
+  const pb = await getAdminPB();
+  return pb.collection('categories').getFullList({ sort: 'name' });
 }
 
 export async function createCategory(cat: { id: string; name: string; description: string; image: string }) {
-  await sql`
-    INSERT INTO categories (id, name, description, image)
-    VALUES (${cat.id}, ${cat.name}, ${cat.description}, ${cat.image})
-  `;
+  const pb = await getAdminPB();
+  await pb.collection('categories').create({
+    name: cat.name,
+    description: cat.description,
+    image: cat.image,
+  });
 }
 
 export async function updateCategory(id: string, data: { name?: string; description?: string; image?: string }) {
-  const fields: string[] = [];
-  const values: any[] = [];
-  if (data.name !== undefined) { fields.push("name"); values.push(data.name); }
-  if (data.description !== undefined) { fields.push("description"); values.push(data.description); }
-  if (data.image !== undefined) { fields.push("image"); values.push(data.image); }
-  if (fields.length === 0) return;
-  await sql`
-    UPDATE categories SET ${sql(fields.join(", "), ...values)} WHERE id = ${id}
-  `;
+  const pb = await getAdminPB();
+  const updateData: any = {};
+  if (data.name !== undefined) updateData.name = data.name;
+  if (data.description !== undefined) updateData.description = data.description;
+  if (data.image !== undefined) updateData.image = data.image;
+  if (Object.keys(updateData).length === 0) return;
+  await pb.collection('categories').update(id, updateData);
 }
 
 export async function deleteCategory(id: string) {
-  await sql`DELETE FROM categories WHERE id = ${id}`;
+  const pb = await getAdminPB();
+  await pb.collection('categories').delete(id);
 }
 
 // ── Products ──
 
 export async function getProducts(): Promise<Product[]> {
-  const rows = await sql`
-    SELECT id, name, description, price::float AS price, unit, image, category, origin, in_stock AS "inStock", is_visible AS "visible"
-    FROM products ORDER BY name
-  `;
-  return rows as unknown as Product[];
+  const pb = await getAdminPB();
+  const rows = await pb.collection('products').getFullList({ sort: 'name' });
+  return rows.map(mapProduct);
 }
 
 export async function createProduct(product: Product) {
-  await sql`
-    INSERT INTO products (id, name, description, price, unit, image, category, origin, in_stock, is_visible)
-    VALUES (${product.id}, ${product.name}, ${product.description}, ${product.price}, ${product.unit}, ${product.image}, ${product.category}, ${product.origin}, ${product.inStock}, ${product.visible})
-  `;
+  const pb = await getAdminPB();
+  await pb.collection('products').create({
+    name: product.name,
+    description: product.description,
+    price: product.price,
+    unit: product.unit,
+    image: product.image,
+    category: product.category,
+    origin: product.origin,
+    in_stock: product.inStock,
+    is_visible: product.visible,
+  });
 }
 
 export async function updateProduct(id: string, data: Partial<Product>) {
-  const fields: string[] = [];
-  const values: any[] = [];
-  if (data.name !== undefined) { fields.push("name"); values.push(data.name); }
-  if (data.description !== undefined) { fields.push("description"); values.push(data.description); }
-  if (data.price !== undefined) { fields.push("price"); values.push(data.price); }
-  if (data.unit !== undefined) { fields.push("unit"); values.push(data.unit); }
-  if (data.image !== undefined) { fields.push("image"); values.push(data.image); }
-  if (data.category !== undefined) { fields.push("category"); values.push(data.category); }
-  if (data.origin !== undefined) { fields.push("origin"); values.push(data.origin); }
-  if (data.inStock !== undefined) { fields.push("in_stock"); values.push(data.inStock); }
-  if (data.visible !== undefined) { fields.push("is_visible"); values.push(data.visible); }
-  if (fields.length === 0) return;
-  await sql`
-    UPDATE products SET ${sql(fields.join(", "), ...values)} WHERE id = ${id}
-  `;
+  const pb = await getAdminPB();
+  const updateData: any = {};
+  if (data.name !== undefined) updateData.name = data.name;
+  if (data.description !== undefined) updateData.description = data.description;
+  if (data.price !== undefined) updateData.price = data.price;
+  if (data.unit !== undefined) updateData.unit = data.unit;
+  if (data.image !== undefined) updateData.image = data.image;
+  if (data.category !== undefined) updateData.category = data.category;
+  if (data.origin !== undefined) updateData.origin = data.origin;
+  if (data.inStock !== undefined) updateData.in_stock = data.inStock;
+  if (data.visible !== undefined) updateData.is_visible = data.visible;
+  if (Object.keys(updateData).length === 0) return;
+  await pb.collection('products').update(id, updateData);
 }
 
 export async function deleteProduct(id: string) {
-  await sql`DELETE FROM products WHERE id = ${id}`;
+  const pb = await getAdminPB();
+  await pb.collection('products').delete(id);
 }
 
 // ── Delivery Zones ──
 
 export async function getDeliveryZones() {
-  const rows = await sql`
-    SELECT id, name, min_distance::float AS "minDistance", max_distance::float AS "maxDistance", price::float AS price, estimated_time AS "estimatedTime"
-    FROM delivery_zones ORDER BY min_distance
-  `;
-  return rows as any[];
+  const pb = await getAdminPB();
+  const rows = await pb.collection('delivery_zones').getFullList({ sort: 'min_distance' });
+  return rows.map((z: any) => ({
+    id: z.id,
+    name: z.name,
+    minDistance: Number(z.min_distance),
+    maxDistance: Number(z.max_distance),
+    price: Number(z.price),
+    estimatedTime: z.estimated_time || '',
+    active: z.active ?? true,
+  }));
 }
 
 export async function createDeliveryZone(zone: any) {
-  await sql`
-    INSERT INTO delivery_zones (id, name, min_distance, max_distance, price, estimated_time)
-    VALUES (${zone.id}, ${zone.name}, ${zone.minDistance}, ${zone.maxDistance}, ${zone.price}, ${zone.estimatedTime})
-  `;
+  const pb = await getAdminPB();
+  await pb.collection('delivery_zones').create({
+    name: zone.name,
+    min_distance: zone.minDistance,
+    max_distance: zone.maxDistance,
+    price: zone.price,
+    estimated_time: zone.estimatedTime,
+    active: zone.active ?? true,
+  });
 }
 
 export async function updateDeliveryZone(id: string, data: any) {
-  const fields: string[] = [];
-  const values: any[] = [];
-  if (data.name !== undefined) { fields.push("name"); values.push(data.name); }
-  if (data.minDistance !== undefined) { fields.push("min_distance"); values.push(data.minDistance); }
-  if (data.maxDistance !== undefined) { fields.push("max_distance"); values.push(data.maxDistance); }
-  if (data.price !== undefined) { fields.push("price"); values.push(data.price); }
-  if (data.estimatedTime !== undefined) { fields.push("estimated_time"); values.push(data.estimatedTime); }
-  if (fields.length === 0) return;
-  await sql`
-    UPDATE delivery_zones SET ${sql(fields.join(", "), ...values)} WHERE id = ${id}
-  `;
+  const pb = await getAdminPB();
+  const updateData: any = {};
+  if (data.name !== undefined) updateData.name = data.name;
+  if (data.minDistance !== undefined) updateData.min_distance = data.minDistance;
+  if (data.maxDistance !== undefined) updateData.max_distance = data.maxDistance;
+  if (data.price !== undefined) updateData.price = data.price;
+  if (data.estimatedTime !== undefined) updateData.estimated_time = data.estimatedTime;
+  if (data.active !== undefined) updateData.active = data.active;
+  if (Object.keys(updateData).length === 0) return;
+  await pb.collection('delivery_zones').update(id, updateData);
 }
 
 export async function deleteDeliveryZone(id: string) {
-  await sql`DELETE FROM delivery_zones WHERE id = ${id}`;
+  const pb = await getAdminPB();
+  await pb.collection('delivery_zones').delete(id);
 }
 
 // ── Admin Users ──
 
 export async function getAdminUsers() {
-  const rows = await sql`
-    SELECT u.id, u.name, u.email, u.phone, u.address, r.name AS role, u.status,
-      u.created_at::text AS "createdAt",
-      u.total_orders AS "totalOrders",
-      u.total_spent::float AS "totalSpent"
-    FROM users u
-    LEFT JOIN roles r ON r.id = u.role_id
-    ORDER BY u.created_at DESC
-  `;
-  return rows as any[];
+  const pb = await getAdminPB();
+  const rows = await pb.collection('users').getFullList({
+    sort: '-created',
+  });
+  return rows.map((u: any) => ({
+    id: u.id,
+    name: u.name,
+    email: u.email,
+    phone: u.phone,
+    address: u.address,
+    role: u.role_id === 2 ? 'admin' : 'user',
+    status: u.status,
+    createdAt: u.created,
+    totalOrders: u.total_orders || 0,
+    totalSpent: Number(u.total_spent) || 0,
+  }));
 }
 
 export async function createAdminUser(user: any) {
-  const roleRow = await sql`SELECT id FROM roles WHERE name = ${user.role} LIMIT 1`;
-  const roleId = roleRow.length > 0 ? roleRow[0].id : 1;
-  await sql`
-    INSERT INTO users (id, name, email, phone, address, role_id, status, created_at, total_orders, total_spent)
-    VALUES (${user.id}, ${user.name}, ${user.email}, ${user.phone}, ${user.address}, ${roleId}, ${user.status}, ${user.createdAt || new Date().toISOString()}, ${user.totalOrders || 0}, ${user.totalSpent || 0})
-  `;
+  const pb = await getAdminPB();
+  const roleId = user.role === 'admin' ? 2 : 1;
+  await pb.collection('users').create({
+    name: user.name,
+    email: user.email,
+    phone: user.phone,
+    address: user.address,
+    role_id: roleId,
+    status: user.status || 'active',
+    total_orders: user.totalOrders || 0,
+    total_spent: user.totalSpent || 0,
+  });
 }
 
 export async function updateAdminUser(id: string, data: any) {
-  const fields: string[] = [];
-  const values: any[] = [];
-  if (data.name !== undefined) { fields.push("name"); values.push(data.name); }
-  if (data.email !== undefined) { fields.push("email"); values.push(data.email); }
-  if (data.phone !== undefined) { fields.push("phone"); values.push(data.phone); }
-  if (data.address !== undefined) { fields.push("address"); values.push(data.address); }
-  if (data.role !== undefined) { fields.push("role"); values.push(data.role); }
-  if (data.status !== undefined) { fields.push("status"); values.push(data.status); }
-  if (data.totalOrders !== undefined) { fields.push("total_orders"); values.push(data.totalOrders); }
-  if (data.totalSpent !== undefined) { fields.push("total_spent"); values.push(data.totalSpent); }
-  if (fields.length === 0) return;
-  await sql`
-    UPDATE users SET ${sql(fields.join(", "), ...values)} WHERE id = ${id}
-  `;
+  const pb = await getAdminPB();
+  const updateData: any = {};
+  if (data.name !== undefined) updateData.name = data.name;
+  if (data.email !== undefined) updateData.email = data.email;
+  if (data.phone !== undefined) updateData.phone = data.phone;
+  if (data.address !== undefined) updateData.address = data.address;
+  if (data.role !== undefined) updateData.role_id = data.role === 'admin' ? 2 : 1;
+  if (data.status !== undefined) updateData.status = data.status;
+  if (data.totalOrders !== undefined) updateData.total_orders = data.totalOrders;
+  if (data.totalSpent !== undefined) updateData.total_spent = data.totalSpent;
+  if (Object.keys(updateData).length === 0) return;
+  await pb.collection('users').update(id, updateData);
 }
 
 export async function deleteAdminUser(id: string) {
-  await sql`DELETE FROM users WHERE id = ${id}`;
+  const pb = await getAdminPB();
+  await pb.collection('users').delete(id);
 }
 
 // ── Orders ──
 
 export async function getOrders() {
-  const rows = await sql`
-    SELECT id, user_id AS "userId", user_name AS "userName", user_email AS "userEmail",
-      subtotal::float AS subtotal, delivery_fee::float AS "deliveryFee", total::float AS total,
-      status, payment_method AS "paymentMethod", payment_status AS "paymentStatus",
-      delivery_address AS "deliveryAddress", delivery_notes AS "deliveryNotes",
-      created_at::text AS "createdAt", updated_at::text AS "updatedAt"
-    FROM orders ORDER BY created_at DESC
-  `;
-  const orders = rows as any[];
-  for (const order of orders) {
-    const items = await sql`
-      SELECT product_id AS "productId", product_name AS "productName", quantity, price::float AS price
-      FROM order_items WHERE order_id = ${order.id}
-    `;
-    order.items = items;
-  }
-  return orders;
+  const pb = await getAdminPB();
+  const rows = await pb.collection('orders').getFullList({ sort: '-created' });
+  return await Promise.all(
+    rows.map(async (order: any) => {
+      const items = await pb.collection('order_items').getFullList({
+        filter: `order_id = "${order.id}"`,
+      });
+      return {
+        id: order.id,
+        userId: order.user_id,
+        userName: order.user_name,
+        userEmail: order.user_email,
+        subtotal: Number(order.subtotal),
+        deliveryFee: Number(order.delivery_fee),
+        total: Number(order.total),
+        status: order.status,
+        paymentMethod: order.payment_method,
+        paymentStatus: order.payment_status,
+        deliveryAddress: order.delivery_address,
+        deliveryNotes: order.delivery_notes,
+        createdAt: order.created,
+        updatedAt: order.updated,
+        items: items.map((i: any) => ({
+          productId: i.product_id,
+          productName: i.product_name,
+          quantity: i.quantity,
+          price: Number(i.price),
+        })),
+      };
+    })
+  );
 }
 
 export async function updateOrderStatus(id: string, status: string) {
-  await sql`
-    UPDATE orders SET status = ${status}, updated_at = NOW() WHERE id = ${id}
-  `;
+  const pb = await getAdminPB();
+  await pb.collection('orders').update(id, { status });
 }
 
 export async function updatePaymentStatus(id: string, paymentStatus: string) {
-  await sql`
-    UPDATE orders SET payment_status = ${paymentStatus}, updated_at = NOW() WHERE id = ${id}
-  `;
+  const pb = await getAdminPB();
+  await pb.collection('orders').update(id, { payment_status: paymentStatus });
 }
 
 // ── Currencies ──
 
 export async function getCurrencies() {
-  const rows = await sql`
-    SELECT id, code, name, symbol, exchange_rate::float AS "exchangeRate",
-      is_default AS "isDefault", is_active AS "isActive"
-    FROM currencies ORDER BY is_default DESC, code
-  `;
-  return rows as any[];
+  const pb = await getAdminPB();
+  const rows = await pb.collection('currencies').getFullList({ sort: '-is_default,code' });
+  return rows.map((c: any) => ({
+    id: c.id,
+    code: c.code,
+    name: c.name,
+    symbol: c.symbol,
+    exchangeRate: Number(c.exchange_rate),
+    isDefault: c.is_default,
+    isActive: c.is_active,
+  }));
 }
 
 export async function createCurrency(currency: any) {
-  await sql`
-    INSERT INTO currencies (id, code, name, symbol, exchange_rate, is_default, is_active)
-    VALUES (${currency.id}, ${currency.code}, ${currency.name}, ${currency.symbol}, ${currency.exchangeRate}, ${currency.isDefault || false}, ${currency.isActive !== false})
-  `;
+  const pb = await getAdminPB();
+  await pb.collection('currencies').create({
+    code: currency.code,
+    name: currency.name,
+    symbol: currency.symbol,
+    exchange_rate: currency.exchangeRate,
+    is_default: currency.isDefault || false,
+    is_active: currency.isActive !== false,
+  });
 }
 
 export async function updateCurrency(id: string, data: any) {
-  const fields: string[] = [];
-  const values: any[] = [];
-  if (data.code !== undefined) { fields.push("code"); values.push(data.code); }
-  if (data.name !== undefined) { fields.push("name"); values.push(data.name); }
-  if (data.symbol !== undefined) { fields.push("symbol"); values.push(data.symbol); }
-  if (data.exchangeRate !== undefined) { fields.push("exchange_rate"); values.push(data.exchangeRate); }
-  if (data.isDefault !== undefined) { fields.push("is_default"); values.push(data.isDefault); }
-  if (data.isActive !== undefined) { fields.push("is_active"); values.push(data.isActive); }
-  if (fields.length === 0) return;
-  await sql`
-    UPDATE currencies SET ${sql(fields.join(", "), ...values)} WHERE id = ${id}
-  `;
+  const pb = await getAdminPB();
+  const updateData: any = {};
+  if (data.code !== undefined) updateData.code = data.code;
+  if (data.name !== undefined) updateData.name = data.name;
+  if (data.symbol !== undefined) updateData.symbol = data.symbol;
+  if (data.exchangeRate !== undefined) updateData.exchange_rate = data.exchangeRate;
+  if (data.isDefault !== undefined) updateData.is_default = data.isDefault;
+  if (data.isActive !== undefined) updateData.is_active = data.isActive;
+  if (Object.keys(updateData).length === 0) return;
+  await pb.collection('currencies').update(id, updateData);
 }
 
 export async function deleteCurrency(id: string) {
-  await sql`DELETE FROM currencies WHERE id = ${id}`;
+  const pb = await getAdminPB();
+  await pb.collection('currencies').delete(id);
 }
 
 export async function setDefaultCurrency(id: string) {
-  await sql`UPDATE currencies SET is_default = false WHERE is_default = true`;
-  await sql`UPDATE currencies SET is_default = true WHERE id = ${id}`;
+  const pb = await getAdminPB();
+  const defaults = await pb.collection('currencies').getFullList({
+    filter: 'is_default = true',
+  });
+  await Promise.all(defaults.map((c: any) =>
+    pb.collection('currencies').update(c.id, { is_default: false })
+  ));
+  await pb.collection('currencies').update(id, { is_default: true });
 }
 
 // ── Initialisation: load all data ──

@@ -71,6 +71,7 @@ const categoryConfig: Record<
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 150]);
@@ -88,15 +89,22 @@ const categoryConfig: Record<
 useEffect(() => {
   const loadData = async () => {
     setLoading(true);
-    const { products: prods, categories: cats } = await getPublicProducts();
-    // Convertir price a número manteniendo todas las propiedades
-    const prodsWithNumberPrice = prods.map(p => ({
-      ...p,
-      price: Number(p.price)
-    })) as Product[];
-    setProducts(prodsWithNumberPrice);
-    setCategories(cats);
-    setLoading(false);
+    setLoadError(null);
+    try {
+      const { products: prods, categories: cats } = await getPublicProducts();
+      const prodsWithNumberPrice = prods.map(p => ({
+        ...p,
+        price: Number(p.price)
+      })) as Product[];
+      setProducts(prodsWithNumberPrice);
+      setCategories(cats);
+      if (prods.length === 0) setLoadError("No hay productos disponibles");
+    } catch (e) {
+      setLoadError("Error al cargar productos");
+      console.error("StoreView load error:", e);
+    } finally {
+      setLoading(false);
+    }
   };
   loadData();
 }, []);
@@ -195,8 +203,14 @@ useEffect(() => {
 
   if (loading) {
     return (
-      <div className="flex justify-center py-20">
+      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4 px-4">
         <Loader2 className="h-8 w-8 animate-spin" />
+        {loadError && (
+          <div className="text-center max-w-md">
+            <p className="text-sm text-destructive font-medium">{loadError}</p>
+            <p className="text-xs text-muted-foreground mt-1">Reintentando conexión...</p>
+          </div>
+        )}
       </div>
     );
   }

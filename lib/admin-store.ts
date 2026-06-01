@@ -49,12 +49,11 @@ export interface User {
   phone: string;
   address: string;
   status: "active" | "inactive" | "suspended";
-  created_at: string;       // antes createdAt
-  total_orders: number;     // antes totalOrders
-  total_spent: number;      // antes totalSpent
-  password_hash: string;
-  role_id: number;          // antes role
-  gender?: string | null;   // opcional
+  created_at: string;
+  total_orders: number;
+  total_spent: number;
+  role_id: number;
+  gender?: string | null;
 }
 
 export interface OrderItem {
@@ -163,11 +162,11 @@ export const useAdminStore = create<AdminStore>()((set, get) => ({
 const data = await withTimeout(getAdminData(token), 15000);
       set({
         products: data.products as Product[],
-        categories: data.categories as Category[],
+        categories: data.categories as unknown as Category[],
         deliveryZones: data.deliveryZones as DeliveryZone[],
         users: data.users as User[],
         orders: data.orders as Order[],
-        currencies: data.currencies as Currency[],
+        currencies: data.currencies as unknown as Currency[],
         loaded: true,
         loading: false,
       });

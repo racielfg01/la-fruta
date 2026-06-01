@@ -96,7 +96,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       {sidebarOpen && (
         <div
           className="fixed inset-0 z-40 bg-background/80 backdrop-blur-sm lg:hidden"
-          onPointerDown={closeSidebar}
+          onClick={closeSidebar}
         />
       )}
 
@@ -115,7 +115,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             variant="ghost"
             size="icon"
             className="ml-auto lg:hidden"
-            onPointerDown={closeSidebar}
+            onClick={closeSidebar}
           >
             <X className="h-5 w-5" />
           </Button>
@@ -130,9 +130,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               <Link
                 key={item.name}
                 href={item.href}
-                onPointerDown={closeSidebar}
+                onClick={closeSidebar}
                 className={cn(
-                  "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors touch-manipulation",
+                  "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
                   isActive
                     ? "bg-primary text-primary-foreground"
                     : "text-muted-foreground hover:bg-muted hover:text-foreground"
@@ -153,8 +153,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </div>
           <Link
             href="/"
-            onPointerDown={closeSidebar}
-            className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors touch-manipulation"
+            onClick={closeSidebar}
+            className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
           >
             <ChevronRight className="h-4 w-4 rotate-180" />
             Volver a la tienda

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
@@ -67,10 +67,14 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     }
   }, [hydrated, isAuthenticated, user, isLoginPage, router]);
 
+  const closeSidebar = useCallback(() => {
+    setSidebarOpen(false);
+  }, []);
+
   // Cerrar sidebar al navegar
   useEffect(() => {
-    setSidebarOpen(false);
-  }, [pathname]);
+    closeSidebar();
+  }, [pathname, closeSidebar]);
 
   if (isLoginPage) {
     return <>{children}</>;
@@ -92,7 +96,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       {sidebarOpen && (
         <div
           className="fixed inset-0 z-40 bg-background/80 backdrop-blur-sm lg:hidden"
-          onClick={() => setSidebarOpen(false)}
+          onPointerDown={closeSidebar}
         />
       )}
 
@@ -111,7 +115,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             variant="ghost"
             size="icon"
             className="ml-auto lg:hidden"
-            onClick={() => setSidebarOpen(false)}
+            onPointerDown={closeSidebar}
           >
             <X className="h-5 w-5" />
           </Button>
@@ -126,9 +130,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               <Link
                 key={item.name}
                 href={item.href}
-                onClick={() => setSidebarOpen(false)}
+                onPointerDown={closeSidebar}
                 className={cn(
-                  "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
+                  "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors touch-manipulation",
                   isActive
                     ? "bg-primary text-primary-foreground"
                     : "text-muted-foreground hover:bg-muted hover:text-foreground"
@@ -149,7 +153,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </div>
           <Link
             href="/"
-            className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+            onPointerDown={closeSidebar}
+            className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors touch-manipulation"
           >
             <ChevronRight className="h-4 w-4 rotate-180" />
             Volver a la tienda

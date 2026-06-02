@@ -1,7 +1,7 @@
 {
   "name": "MercaToma",
   "short_name": "MercaToma",
-  "description": "Fresh farm products delivered to your doorstep",
+  "description": "Productos frescos de la granja entregados en la puerta de su casa.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",

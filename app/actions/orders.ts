@@ -20,6 +20,7 @@ export interface CreateOrderInput {
   deliveryAddress: string;
   deliveryNotes?: string;
   currencyCode: string;
+  zoneId: string;
 }
 
 export async function createOrderAction(orderData: CreateOrderInput, token: string) {
@@ -43,6 +44,8 @@ export async function createOrderAction(orderData: CreateOrderInput, token: stri
       payment_status: 'pending',
       delivery_address: orderData.deliveryAddress,
       delivery_notes: orderData.deliveryNotes || '',
+      currency_code: orderData.currencyCode,
+      zone_id: orderData.zoneId,
     });
 
     const orderId = order.id;
@@ -66,7 +69,8 @@ export async function createOrderAction(orderData: CreateOrderInput, token: stri
     return { success: true, orderId };
   } catch (error) {
     console.error("Error creating order:", error);
-    return { success: false, error: "Error interno al crear la orden" };
+    const message = error instanceof Error ? error.message : "Error interno al crear la orden";
+    return { success: false, error: message };
   }
 }
 

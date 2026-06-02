@@ -45,8 +45,9 @@ function mapDeliveryZone(z: any) {
   return {
     ...z,
     price: Number(z.price),
-    minDistance: Number(z.min_distance),
-    maxDistance: Number(z.max_distance),
+    minDistance: Number(z.minDistance),
+    maxDistance: Number(z.maxDistance),
+    estimatedTime: z.estimated_time || '',
   };
 }
 
@@ -64,6 +65,8 @@ function mapOrder(o: any) {
     paymentStatus: o.payment_status,
     deliveryAddress: o.delivery_address,
     deliveryNotes: o.delivery_notes || '',
+    currencyCode: o.currency_code || 'CUP',
+    zoneId: o.zone_id || '',
     createdAt: o.created,
     updatedAt: o.updated,
   };

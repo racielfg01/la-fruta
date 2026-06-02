@@ -203,6 +203,7 @@ import { Badge } from "@/components/ui/badge";
 import { useCartStore } from "@/lib/store";
 import { useAuthStore } from "@/lib/auth-context";
 import { useState, useEffect } from "react";
+import Image from "next/image";
 
 export function Header() {
   const totalItems = useCartStore((state) => state.getTotalItems());
@@ -229,8 +230,9 @@ export function Header() {
     <header className="sticky top-0 z-50 w-full border-b bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80">
       <div className="container mx-auto flex h-16 items-center justify-between px-4">
         <Link href="/" className="flex items-center gap-2">
-          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary">
-            <Leaf className="h-5 w-5 text-primary-foreground" />
+          <div className="flex h-10 w-10 items-center justify-center rounded-full ">
+            {/* <Leaf className="h-5 w-5 text-primary-foreground" /> */}
+            <Image  className="rounded-3xl" src={"/icon-512x512.png"} alt="logo" width={56} height={56}/>
           </div>
           <span className="font-[family-name:var(--font-playfair)] text-2xl font-semibold text-foreground">
             <span className="text-primary">Merca</span><span className="text-destructive">Toma</span>

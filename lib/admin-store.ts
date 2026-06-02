@@ -77,6 +77,8 @@ export interface Order {
   paymentStatus: "pending" | "paid" | "refunded";
   deliveryAddress: string;
   deliveryNotes: string;
+  currencyCode: string;
+  zoneId: string;
   createdAt: string;
   updatedAt: string;
 }

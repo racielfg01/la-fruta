@@ -662,8 +662,8 @@ useEffect(() => {
           <div className="container mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex flex-col items-center justify-between gap-6 md:flex-row">
               <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary shadow-lg shadow-primary/20">
-                  <Leaf className="h-5 w-5 text-primary-foreground" />
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl shadow-lg shadow-primary/20">
+       <Image  className="rounded-3xl" src={"/icon-512x512.png"} alt="logo" width={56} height={56}/>
                 </div>
                 <div>
                   <span className="font-[family-name:var(--font-playfair)] text-lg font-bold">

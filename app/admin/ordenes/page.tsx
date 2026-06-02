@@ -53,7 +53,12 @@ import { cn } from "@/lib/utils";
 import { FieldGroup, Field, FieldLabel } from "@/components/ui/field";
 
 export default function OrdersPage() {
-  const { orders, updateOrderStatus, updatePaymentStatus } = useAdminStore();
+  const { orders, deliveryZones, updateOrderStatus, updatePaymentStatus } = useAdminStore();
+
+  const getZoneName = (zoneId: string) => {
+    const zone = deliveryZones.find((z) => z.id === zoneId);
+    return zone ? zone.name : zoneId || "No especificada";
+  };
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [paymentFilter, setPaymentFilter] = useState<string>("all");
@@ -270,7 +275,7 @@ export default function OrdersPage() {
           {statCards.map((card) => {
             const Icon = card.icon;
             const displayValue = card.isCurrency
-              ? `${card.value.toFixed(2)}€`
+              ? `${card.value.toFixed(2)} CUP`
               : formatNumber(card.value);
             return (
               <Card
@@ -396,13 +401,13 @@ export default function OrdersPage() {
                     <Eye className="h-4 w-4" />
                   </Button>
                 </div>
-                <div className="flex justify-between items-center">
-                  <div className="flex gap-2">
-                    {getStatusBadge(order.status)}
-                    {getPaymentBadge(order.paymentStatus)}
+                  <div className="flex justify-between items-center">
+                    <div className="flex gap-2">
+                      {getStatusBadge(order.status)}
+                      {getPaymentBadge(order.paymentStatus)}
+                    </div>
+                    <p className="font-bold text-lg">{order.total.toFixed(2)} {order.currencyCode}</p>
                   </div>
-                  <p className="font-bold text-lg">{order.total.toFixed(2)}€</p>
-                </div>
                 <div className="text-xs text-muted-foreground flex justify-between">
                   <span>{order.items.length} producto(s)</span>
                   <span>{formatDate(order.createdAt)}</span>
@@ -459,7 +464,7 @@ export default function OrdersPage() {
                           </span>
                         </TableCell>
                         <TableCell className="text-right font-medium">
-                          {order.total.toFixed(2)}€
+                          {order.total.toFixed(2)} {order.currencyCode}
                         </TableCell>
                         <TableCell>{getStatusBadge(order.status)}</TableCell>
                         <TableCell>{getPaymentBadge(order.paymentStatus)}</TableCell>
@@ -632,6 +637,10 @@ export default function OrdersPage() {
                       <p className="text-sm text-muted-foreground">Dirección</p>
                       <p className="font-medium">{viewingOrder.deliveryAddress}</p>
                     </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Zona de envío</p>
+                      <p className="font-medium">{getZoneName(viewingOrder.zoneId)}</p>
+                    </div>
                     {viewingOrder.deliveryNotes && (
                       <div>
                         <p className="text-sm text-muted-foreground">Notas</p>
@@ -659,11 +668,11 @@ export default function OrdersPage() {
                           <div>
                             <p className="font-medium">{item.productName}</p>
                             <p className="text-sm text-muted-foreground">
-                              {item.price.toFixed(2)}€ x {item.quantity}
+                              {item.price.toFixed(2)} {viewingOrder.currencyCode} x {item.quantity}
                             </p>
                           </div>
                           <p className="font-medium">
-                            {(item.price * item.quantity).toFixed(2)}€
+                            {(item.price * item.quantity).toFixed(2)} {viewingOrder.currencyCode}
                           </p>
                         </div>
                       ))}
@@ -671,15 +680,15 @@ export default function OrdersPage() {
                     <div className="mt-4 pt-4 border-t space-y-2">
                       <div className="flex justify-between text-sm">
                         <span className="text-muted-foreground">Subtotal</span>
-                        <span>{viewingOrder.subtotal.toFixed(2)}€</span>
+                        <span>{viewingOrder.subtotal.toFixed(2)} {viewingOrder.currencyCode}</span>
                       </div>
                       <div className="flex justify-between text-sm">
                         <span className="text-muted-foreground">Envío</span>
-                        <span>{viewingOrder.deliveryFee.toFixed(2)}€</span>
+                        <span>{viewingOrder.deliveryFee.toFixed(2)} {viewingOrder.currencyCode}</span>
                       </div>
                       <div className="flex justify-between font-bold text-lg pt-2 border-t">
                         <span>Total</span>
-                        <span>{viewingOrder.total.toFixed(2)}€</span>
+                        <span>{viewingOrder.total.toFixed(2)} {viewingOrder.currencyCode}</span>
                       </div>
                     </div>
                   </CardContent>
@@ -695,7 +704,8 @@ export default function OrdersPage() {
                       </CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <p className="font-medium">{viewingOrder.paymentMethod}</p>
+                      <p className="font-medium capitalize">{viewingOrder.paymentMethod === "cash" ? "Efectivo" : viewingOrder.paymentMethod === "transfer_cup" ? "Transferencia CUP" : viewingOrder.paymentMethod}</p>
+                      <p className="text-sm text-muted-foreground mt-1">Moneda: {viewingOrder.currencyCode}</p>
                       <div className="mt-2">
                         {getPaymentBadge(viewingOrder.paymentStatus)}
                       </div>

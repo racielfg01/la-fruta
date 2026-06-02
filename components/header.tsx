@@ -207,28 +207,19 @@ import Image from "next/image";
 
 export function Header() {
   const totalItems = useCartStore((state) => state.getTotalItems());
-  const { isAuthenticated, user, logout } = useAuthStore();
+  const { isAuthenticated, user, logout, isLoading } = useAuthStore();
   const router = useRouter();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
-  const [hydrated, setHydrated] = useState(false);
 
-  // Esperar a que zustand persist rehidrate desde localStorage
-  useEffect(() => {
-    if (useAuthStore.persist.hasHydrated()) {
-      setHydrated(true);
-    } else {
-      const unsub = useAuthStore.persist.onFinishHydration(() => setHydrated(true));
-      return unsub;
-    }
-  }, []);
-
-  // Evitar errores de hidratación
+  // Evitar errores de hidratación de React
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  const isAdmin = hydrated && Number(user?.role_id) === 2;
+  // Esperar a que Zustand termine de hidratar desde localStorage
+  const ready = !isLoading;
+  const isAdmin = ready && Number(user?.role_id) === 2;
 
   // No renderizar el contador hasta que esté montado en el cliente
   const cartBadge = mounted && totalItems > 0 && (
@@ -284,7 +275,7 @@ export function Header() {
             </Button>
           </Link>
 
-          {hydrated && isAuthenticated && user ? (
+            {ready && isAuthenticated && user ? (
             <div className="hidden md:flex items-center gap-2">
               <Link href="/perfil">
                 <Button variant="ghost" size="sm" className="flex items-center gap-2">
@@ -304,7 +295,7 @@ export function Header() {
                 <span className="sr-only">Cerrar sesión</span>
               </Button>
             </div>
-          ) : hydrated ? (
+          ) : ready ? (
             <div className="hidden md:flex items-center gap-2">
               <Link href="/auth/login">
                 <Button variant="ghost" size="sm">
@@ -358,7 +349,7 @@ export function Header() {
               </Link>
             )}
 
-            {hydrated && isAuthenticated && user ? (
+          {ready && isAuthenticated && user ? (
               <>
                 <Link
                   href="/perfil"
@@ -384,7 +375,7 @@ export function Header() {
                   </span>
                 </button>
               </>
-            ) : hydrated ? (
+            ) : ready ? (
               <>
                 <Link
                   href="/auth/login"

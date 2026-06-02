@@ -122,7 +122,7 @@ export default function AdminDashboard() {
       <div>
         <h2 className="text-2xl font-serif font-bold">Panel Principal</h2>
         <p className="text-muted-foreground">
-          Bienvenido al panel de administración de La Fruta
+          Bienvenido al panel de administración de MercaToma
         </p>
       </div>
 

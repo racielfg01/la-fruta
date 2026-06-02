@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 export const metadata: Metadata = {
-  title: "Sin conexión - La Fruta",
+  title: "Sin conexión - MercaToma",
 };
 
 export default function OfflinePage() {

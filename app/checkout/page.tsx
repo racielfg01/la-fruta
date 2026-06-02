@@ -79,7 +79,7 @@ const paymentMethodsConfig: PaymentMethodConfig[] = [
       bank: "Banco de Crédito y Comercio (BANDEC)",
       accountNumber: "1234567890",
       accountType: "Cuenta Corriente",
-      owner: "La Fruta S.A.",
+      owner: "MercaToma S.A.",
       ci: "123456789",
     },
   },

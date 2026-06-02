@@ -32,7 +32,7 @@ interface OnboardingProps {
 const steps = [
   {
     id: 1,
-    title: "Bienvenido a La Fruta",
+    title: "Bienvenido a MercaToma",
     subtitle: "Tu mercado de productos frescos",
     description:
       "Descubre la mejor selección de frutas y productos agrícoles frescos, directamente del campo a tu mesa. Calidad garantizada en cada entrega.",
@@ -290,7 +290,7 @@ export function Onboarding({ onComplete }: OnboardingProps) {
                   </div>
                   <div>
                     <span className="font-[family-name:var(--font-playfair)] text-xl sm:text-2xl font-bold text-foreground">
-                      La Fruta
+                      <span className="text-primary">Merca</span><span className="text-destructive">Toma</span>
                     </span>
                     <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">Del campo a tu mesa</p>
                   </div>

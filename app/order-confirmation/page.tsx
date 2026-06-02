@@ -29,7 +29,7 @@ function OrderConfirmationContent() {
         ¡Pedido Confirmado!
       </h1>
       <p className="mb-2 text-lg text-muted-foreground">
-        Gracias por comprar en La Fruta
+        Gracias por comprar en MercaToma
       </p>
       <p className="mb-8 text-sm text-muted-foreground">
         ID del pedido:{" "}

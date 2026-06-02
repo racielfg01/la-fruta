@@ -3,8 +3,8 @@ import { Leaf } from 'lucide-react';
 import Link from 'next/link';
 
 export const metadata = {
-  title: 'Autenticación | La Fruta',
-  description: 'Inicia sesión o crea una cuenta en La Fruta',
+  title: 'Autenticación | MercaToma',
+  description: 'Inicia sesión o crea una cuenta en MercaToma',
 };
 
 export default function AuthLayout({
@@ -19,7 +19,7 @@ export default function AuthLayout({
         <div className="max-w-7xl mx-auto px-4 py-4">
           <Link href="/" className="flex items-center gap-2 font-bold text-xl text-green-900 w-fit">
             <Leaf className="w-6 h-6" />
-            La Fruta
+            <span className="text-emerald-700">Merca</span><span className="text-red-600">Toma</span>
           </Link>
         </div>
       </div>

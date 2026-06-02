@@ -1,6 +1,6 @@
 {
-  "name": "La Fruta",
-  "short_name": "La Fruta",
+  "name": "MercaToma",
+  "short_name": "MercaToma",
   "description": "Fresh farm products delivered to your doorstep",
   "start_url": "/",
   "display": "standalone",

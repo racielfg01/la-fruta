@@ -667,7 +667,7 @@ useEffect(() => {
                 </div>
                 <div>
                   <span className="font-[family-name:var(--font-playfair)] text-lg font-bold">
-                    La Fruta
+                    <span className="text-primary">Merca</span><span className="text-destructive">Toma</span>
                   </span>
                   <p className="text-xs text-muted-foreground">
                     Del campo a tu mesa
@@ -695,7 +695,7 @@ useEffect(() => {
                 </Link>
               </div>
               <p className="text-sm text-muted-foreground text-center">
-                &copy; {new Date().getFullYear()} La Fruta. Todos los derechos
+                &copy; {new Date().getFullYear()} MercaToma. Todos los derechos
                 reservados.
               </p>
             </div>

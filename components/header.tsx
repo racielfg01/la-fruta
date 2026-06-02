@@ -25,7 +25,7 @@
 //             <Leaf className="h-5 w-5 text-primary-foreground" />
 //           </div>
 //           <span className="font-[family-name:var(--font-playfair)] text-2xl font-semibold text-foreground">
-//             La Fruta
+//             MercaToma
 //           </span>
 //         </Link>
 
@@ -233,7 +233,7 @@ export function Header() {
             <Leaf className="h-5 w-5 text-primary-foreground" />
           </div>
           <span className="font-[family-name:var(--font-playfair)] text-2xl font-semibold text-foreground">
-            La Fruta
+            <span className="text-primary">Merca</span><span className="text-destructive">Toma</span>
           </span>
         </Link>
 

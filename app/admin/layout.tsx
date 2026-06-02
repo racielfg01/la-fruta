@@ -104,7 +104,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       >
         <div className="flex h-16 items-center gap-2 border-b border-border px-6">
           <Leaf className="h-6 w-6 text-primary" />
-          <span className="font-serif text-xl font-bold text-primary">La Fruta</span>
+          <span className="font-serif text-xl font-bold"><span className="text-primary">Merca</span><span className="text-destructive">Toma</span></span>
           <span className="ml-1 text-xs text-muted-foreground">Admin</span>
           <Button
             variant="ghost"

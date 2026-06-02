@@ -2,8 +2,8 @@ import React from 'react';
 import SignupForm from '@/components/signup-form';
 
 export const metadata = {
-  title: 'Registrarse | La Fruta',
-  description: 'Crea tu cuenta en La Fruta',
+  title: 'Registrarse | MercaToma',
+  description: 'Crea tu cuenta en MercaToma',
 };
 
 export default function SignupPage() {

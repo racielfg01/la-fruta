@@ -33,6 +33,7 @@ export async function createOrderAction(orderData: CreateOrderInput, token: stri
     const pb = await getAdminPB();
 
     const order = await pb.collection('orders').create({
+      id: Date.now().toString(),
       user_id: orderData.userId,
       user_name: orderData.userName,
       user_email: orderData.userEmail,
@@ -67,10 +68,15 @@ export async function createOrderAction(orderData: CreateOrderInput, token: stri
     });
 
     return { success: true, orderId };
-  } catch (error) {
-    console.error("Error creating order:", error);
-    const message = error instanceof Error ? error.message : "Error interno al crear la orden";
-    return { success: false, error: message };
+  } catch (error: any) {
+    const info = {
+      message: error?.message,
+      status: error?.status,
+      data: error?.data,
+      response: error?.response,
+    };
+    console.error("Error creating order:", JSON.stringify(info, null, 2));
+    return { success: false, error: JSON.stringify(info, null, 2) };
   }
 }
 

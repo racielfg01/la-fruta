@@ -45,9 +45,10 @@ function mapDeliveryZone(z: any) {
   return {
     ...z,
     price: Number(z.price),
-    minDistance: Number(z.minDistance),
-    maxDistance: Number(z.maxDistance),
+    minDistance: Number(z.min_distance) || 0,
+    maxDistance: Number(z.max_distance) || 0,
     estimatedTime: z.estimated_time || '',
+    active: z.active !== false,
   };
 }
 
@@ -211,6 +212,7 @@ export async function addDeliveryZoneAction(zone: DeliveryZone, token: string) {
     max_distance: zone.maxDistance,
     price: zone.price,
     estimated_time: zone.estimatedTime,
+    active: zone.active,
   });
   return { ...zone, id: record.id };
 }
@@ -224,6 +226,7 @@ export async function editDeliveryZoneAction(id: string, data: Partial<DeliveryZ
   if (data.maxDistance !== undefined) updateData.max_distance = data.maxDistance;
   if (data.price !== undefined) updateData.price = data.price;
   if (data.estimatedTime !== undefined) updateData.estimated_time = data.estimatedTime;
+  if (data.active !== undefined) updateData.active = data.active;
   if (Object.keys(updateData).length === 0) return;
   await pb.collection('delivery_zones').update(id, updateData);
 }

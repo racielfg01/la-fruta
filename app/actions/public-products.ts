@@ -41,6 +41,19 @@ async function loadWithRetry(fn: () => Promise<any>, retries = 4, delayMs = 3000
   }
 }
 
+export async function getPublicProductById(id: string) {
+  try {
+    const pb = getPB();
+    const product = await loadWithRetry(() =>
+      pb.collection('products').getOne(id, { expand: 'category' })
+    );
+    return mapProduct(product);
+  } catch (error) {
+    console.error(`Error fetching product ${id}:`, error);
+    return null;
+  }
+}
+
 export async function getPublicProducts() {
   try {
     const pb = getPB();

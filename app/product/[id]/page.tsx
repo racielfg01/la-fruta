@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useState } from "react";
+import { use, useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { Header } from "@/components/header";
@@ -10,6 +10,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { getProductById, products } from "@/lib/products";
 import { useCartStore } from "@/lib/store";
 import { ProductCard } from "@/components/product-card";
+import { getPublicProductById } from "@/app/actions/public-products";
+import { Product } from "@/lib/store";
 import {
   ArrowLeft,
   Minus,
@@ -19,28 +21,50 @@ import {
   MapPin,
   Truck,
   Leaf,
+  Loader2,
 } from "lucide-react";
 
 export default function ProductPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
-  const product = getProductById(id);
+  const [product, setProduct] = useState<Product | undefined>(getProductById(id));
+  const [loading, setLoading] = useState(!product);
   const addItem = useCartStore((state) => state.addItem);
   const [quantity, setQuantity] = useState(1);
   const [added, setAdded] = useState(false);
+
+  useEffect(() => {
+    if (!product) {
+      getPublicProductById(id).then((p) => {
+        if (p) setProduct(p);
+        setLoading(false);
+      });
+    }
+  }, [id, product]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Header />
+        <main className="container mx-auto px-4 py-16 text-center">
+          <Loader2 className="mx-auto h-8 w-8 animate-spin text-primary" />
+        </main>
+      </div>
+    );
+  }
 
   if (!product) {
     return (
       <div className="min-h-screen bg-background">
         <Header />
         <main className="container mx-auto px-4 py-16 text-center">
-          <h1 className="mb-4 text-2xl font-bold text-foreground">Product Not Found</h1>
+          <h1 className="mb-4 text-2xl font-bold text-foreground">Producto no encontrado</h1>
           <p className="mb-6 text-muted-foreground">
-            The product you are looking for does not exist.
+            El producto que buscas no existe.
           </p>
           <Link href="/">
             <Button>
               <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to Home
+              Volver al inicio
             </Button>
           </Link>
         </main>
@@ -69,7 +93,7 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
           className="mb-6 inline-flex items-center text-sm text-muted-foreground hover:text-foreground"
         >
           <ArrowLeft className="mr-2 h-4 w-4" />
-          Back to Products
+          Volver a productos
         </Link>
 
         <div className="grid gap-8 lg:grid-cols-2">
@@ -85,7 +109,7 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
             {!product.inStock && (
               <div className="absolute inset-0 flex items-center justify-center bg-background/80">
                 <Badge variant="secondary" className="text-lg">
-                  Out of Stock
+                  Agotado
                 </Badge>
               </div>
             )}
@@ -110,7 +134,7 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
 
             <div className="mt-6 flex items-center gap-2 text-sm text-muted-foreground">
               <MapPin className="h-4 w-4 text-primary" />
-              <span>Origin: {product.origin}</span>
+              <span>Origen: {product.origin}</span>
             </div>
 
             <Card className="mt-6">
@@ -120,8 +144,8 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
                     <Truck className="h-5 w-5 text-primary" />
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-foreground">Fast Delivery</p>
-                    <p className="text-xs text-muted-foreground">Same day available</p>
+                    <p className="text-sm font-medium text-foreground">Entrega rápida</p>
+                    <p className="text-xs text-muted-foreground">Disponible el mismo día</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
@@ -129,8 +153,8 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
                     <Leaf className="h-5 w-5 text-primary" />
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-foreground">Farm Fresh</p>
-                    <p className="text-xs text-muted-foreground">Quality guaranteed</p>
+                    <p className="text-sm font-medium text-foreground">Fresco de la granja</p>
+                    <p className="text-xs text-muted-foreground">Calidad garantizada</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
@@ -138,8 +162,8 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
                     <Check className="h-5 w-5 text-primary" />
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-foreground">Satisfaction</p>
-                    <p className="text-xs text-muted-foreground">100% guaranteed</p>
+                    <p className="text-sm font-medium text-foreground">Satisfacción</p>
+                    <p className="text-xs text-muted-foreground">100% garantizado</p>
                   </div>
                 </div>
               </CardContent>
@@ -147,7 +171,7 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
 
             <div className="mt-8 flex flex-col gap-4 sm:flex-row sm:items-center">
               <div className="flex items-center gap-3">
-                <span className="text-sm font-medium text-foreground">Quantity:</span>
+                <span className="text-sm font-medium text-foreground">Cantidad:</span>
                 <div className="flex items-center gap-2">
                   <Button
                     variant="outline"
@@ -177,12 +201,12 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
                 {added ? (
                   <>
                     <Check className="mr-2 h-5 w-5" />
-                    Added to Cart
+                    Añadido al carrito
                   </>
                 ) : (
                   <>
                     <ShoppingCart className="mr-2 h-5 w-5" />
-                    Add to Cart - ${(product.price * quantity).toFixed(2)}
+                    Añadir al carrito - ${(product.price * quantity).toFixed(2)}
                   </>
                 )}
               </Button>
@@ -193,7 +217,7 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
         {relatedProducts.length > 0 && (
           <section className="mt-16">
             <h2 className="mb-6 font-[family-name:var(--font-playfair)] text-2xl font-bold text-foreground">
-              You May Also Like
+              También te puede interesar
             </h2>
             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
               {relatedProducts.map((p) => (

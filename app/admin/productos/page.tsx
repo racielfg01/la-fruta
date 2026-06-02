@@ -266,7 +266,7 @@ function ProductsAdmin() {
                           : "bg-destructive/10 text-destructive"
                       }`}
                     >
-                      {product.stock > 0 ? `${product.stock} en stock` : "Agotado"}
+                      {product.stock > 0 ? `${product.stock}(${product.unit}) en stock` : "Agotado"}
                     </span>
                   </div>
                   <p className="text-xs text-muted-foreground mt-1">
@@ -317,7 +317,7 @@ function ProductsAdmin() {
                   <TableHead>Categoría</TableHead>
                   <TableHead>Precio</TableHead>
                   <TableHead>Origen</TableHead>
-                  <TableHead>Estado</TableHead>
+                  <TableHead>Cantidad</TableHead>
                   <TableHead className="text-right">Acciones</TableHead>
                 </TableRow>
               </TableHeader>
@@ -366,7 +366,7 @@ function ProductsAdmin() {
                             : "bg-destructive/10 text-destructive"
                         }`}
                       >
-                        {product.stock > 0 ? `${product.stock} en stock` : "Agotado"}
+                        {product.stock > 0 ? `${product.stock}(${product.unit}) en stock` : "Agotado"}
                       </span>
                     </TableCell>
                     <TableCell className="text-right">
@@ -543,6 +543,24 @@ function ProductsAdmin() {
                     />
                   </Field>
                 </div>
+
+                  <Field>
+                    <FieldLabel htmlFor="status">Estado</FieldLabel>
+                    <Select
+                      value={formData.visible ? "visible" : "hidden"}
+                      onValueChange={(value) =>
+                        setFormData({ ...formData, visible: value === "visible" })
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="visible">Visible</SelectItem>
+                        <SelectItem value="hidden">Oculto</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </Field>
               </div>
             )}
 

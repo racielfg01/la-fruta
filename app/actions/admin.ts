@@ -12,7 +12,10 @@ async function verifyAdminAndGetUserId(token: string): Promise<string> {
   const pb = await getAdminPB();
   const user = await pb.collection('users').getOne(payload.userId);
   const roleIds = await getRoleIds();
-  if (!roleIds.admin || user.role_id !== roleIds.admin) {
+  const isAdmin = roleIds.admin
+    ? user.role_id === roleIds.admin
+    : user.expand?.role_id?.name === 'admin';
+  if (!isAdmin) {
     throw new Error('Acceso denegado: se requieren privilegios de administrador');
   }
   return payload.userId;
@@ -112,7 +115,9 @@ export async function getAdminData(token: string) {
     deliveryZones: deliveryZones.map(mapDeliveryZone),
     users: users.map((u: any) => ({
       ...u,
-      role_id: roleIds.admin && u.role_id === roleIds.admin ? 2 : 1,
+      role_id: roleIds.admin
+        ? (u.role_id === roleIds.admin ? 2 : 1)
+        : (u.expand?.role_id?.name === 'admin' ? 2 : 1),
     })),
     orders: ordersFixed,
     currencies: currencies.map((c: any) => ({

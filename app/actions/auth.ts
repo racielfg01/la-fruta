@@ -182,7 +182,9 @@ export async function loginAction(credentials: { identifier: string; password: s
         phone: authData.record.phone || '',
         address: authData.record.address || '',
         gender: authData.record.gender || '',
-        role_id: roleIds.admin && userWithRole.role_id === roleIds.admin ? 2 : 1,
+        role_id: roleIds.admin
+          ? (userWithRole.role_id === roleIds.admin ? 2 : 1)
+          : (userWithRole.expand?.role_id?.name === 'admin' ? 2 : 1),
       },
       token: authData.token,
     };

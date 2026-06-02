@@ -30,12 +30,17 @@ export const useAuthStore = create<AuthStore>()(
       user: null,
       token: null,
       isAuthenticated: false,
-      isLoading: false,
+      isLoading: true,
       setUser: (user) => set({ user, isAuthenticated: !!user }),
       setToken: (token) => set({ token }),
       setLoading: (loading) => set({ isLoading: loading }),
       logout: () => set({ user: null, token: null, isAuthenticated: false }),
     }),
-    { name: 'auth-storage' }
+    {
+      name: 'auth-storage',
+      onRehydrateStorage: () => (state) => {
+        state?.setLoading(false);
+      },
+    }
   )
 );

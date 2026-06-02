@@ -11,13 +11,21 @@ export interface Currency {
   isDefault: boolean;
 }
 
+function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
+  let timeoutId: NodeJS.Timeout;
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    timeoutId = setTimeout(() => reject(new Error(`Timeout after ${ms}ms`)), ms);
+  });
+  return Promise.race([promise, timeoutPromise]).finally(() => clearTimeout(timeoutId));
+}
+
 export async function getPublicCurrencies() {
   try {
     const pb = getPB();
-    const currencies = await getAllRecords(pb, 'currencies', {
+    const currencies = await withTimeout(getAllRecords(pb, 'currencies', {
       filter: 'is_active = true',
       sort: '-is_default,code',
-    });
+    }), 10000);
     if (currencies.length === 0) {
       return [{
         id: 'default-cup',

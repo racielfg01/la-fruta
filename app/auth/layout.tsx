@@ -19,8 +19,8 @@ export default function AuthLayout({
       <div className="border-b border-gray-200 bg-white/80 backdrop-blur-sm">
         <div className="max-w-7xl mx-auto px-4 py-4">
           <Link href="/" className="flex items-center gap-2 font-bold text-xl text-green-900 w-fit">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl shadow-lg shadow-primary/20">
-                  <Image  className="rounded-3xl" src={"/icon-512x512.png"} alt="logo" width={56} height={56} priority/>
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl shadow-lg shadow-primary/20 overflow-hidden">
+                  <Image className="object-cover" src={"/icon-512x512.png"} alt="logo" width={40} height={40} priority/>
                            </div>
             <span className="text-emerald-700">Merca</span><span className="text-red-600">Toma</span>
           </Link>

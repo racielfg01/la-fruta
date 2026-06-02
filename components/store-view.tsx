@@ -1034,15 +1034,15 @@ function MasonryCard({
             {product.name}
           </h3>
         </Link>
-
+{/* 
         <div className="mt-1 flex items-center gap-1 text-[10px] sm:text-xs text-muted-foreground">
           <MapPin className="h-2.5 w-2.5 sm:h-3 sm:w-3 flex-shrink-0" />
           <span className="truncate">{product.origin}</span>
-        </div>
+        </div> */}
 
-        <p className="mt-1.5 sm:mt-2 line-clamp-2 text-[11px] sm:text-xs md:text-sm text-muted-foreground leading-relaxed">
+        {/* <p className="mt-1.5 sm:mt-2 line-clamp-2 text-[11px] sm:text-xs md:text-sm text-muted-foreground leading-relaxed">
           {product.description}
-        </p>
+        </p> */}
 
         <div className="mt-2.5 sm:mt-3 md:mt-4 flex items-center justify-between gap-1.5 sm:gap-2">
           <div>

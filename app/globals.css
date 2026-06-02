@@ -1,6 +1,9 @@
 @import 'tailwindcss';
 @import 'tw-animate-css';
 
+@source "../app/";
+@source "../components/";
+
 @custom-variant dark (&:is(.dark *));
 
 :root {
@@ -187,4 +190,17 @@
   font-weight: 700;
   font-style: normal;
   font-display: swap;
+}
+
+@media (min-width: 48rem) {
+  .hidden.md\:block { display: block }
+  .block.md\:hidden { display: none }
+  .hidden.md\:flex { display: flex }
+}
+@media (min-width: 64rem) {
+  .hidden.lg\:block { display: block }
+  .hidden.lg\:flex { display: flex }
+}
+@media (min-width: 40rem) {
+  .hidden.sm\:flex { display: flex }
 }

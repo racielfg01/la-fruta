@@ -126,7 +126,7 @@ export default function ProfilePage() {
           address: result.user.address,
           gender: result.user.gender,
           created_at: result.user.created_at,
-          role_id: result.user.role_id,
+          role_id: user.role_id,
         };
         setUser(updatedUser);
         setEditMode(false);

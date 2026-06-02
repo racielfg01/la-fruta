@@ -217,7 +217,7 @@ export function Header() {
     setMounted(true);
   }, []);
 
-  const isAdmin = user?.role_id === 2;
+  const isAdmin = Number(user?.role_id) === 2;
 
   // No renderizar el contador hasta que esté montado en el cliente
   const cartBadge = mounted && totalItems > 0 && (

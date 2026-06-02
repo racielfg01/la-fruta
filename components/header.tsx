@@ -211,13 +211,24 @@ export function Header() {
   const router = useRouter();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [hydrated, setHydrated] = useState(false);
+
+  // Esperar a que zustand persist rehidrate desde localStorage
+  useEffect(() => {
+    if (useAuthStore.persist.hasHydrated()) {
+      setHydrated(true);
+    } else {
+      const unsub = useAuthStore.persist.onFinishHydration(() => setHydrated(true));
+      return unsub;
+    }
+  }, []);
 
   // Evitar errores de hidratación
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  const isAdmin = Number(user?.role_id) === 2;
+  const isAdmin = hydrated && Number(user?.role_id) === 2;
 
   // No renderizar el contador hasta que esté montado en el cliente
   const cartBadge = mounted && totalItems > 0 && (
@@ -273,7 +284,7 @@ export function Header() {
             </Button>
           </Link>
 
-          {isAuthenticated && user ? (
+          {hydrated && isAuthenticated && user ? (
             <div className="hidden md:flex items-center gap-2">
               <Link href="/perfil">
                 <Button variant="ghost" size="sm" className="flex items-center gap-2">
@@ -293,7 +304,7 @@ export function Header() {
                 <span className="sr-only">Cerrar sesión</span>
               </Button>
             </div>
-          ) : (
+          ) : hydrated ? (
             <div className="hidden md:flex items-center gap-2">
               <Link href="/auth/login">
                 <Button variant="ghost" size="sm">
@@ -304,7 +315,7 @@ export function Header() {
                 <Button size="sm">Registrarse</Button>
               </Link>
             </div>
-          )}
+          ) : null}
 
           <Button
             variant="ghost"
@@ -347,7 +358,7 @@ export function Header() {
               </Link>
             )}
 
-            {isAuthenticated && user ? (
+            {hydrated && isAuthenticated && user ? (
               <>
                 <Link
                   href="/perfil"
@@ -373,7 +384,7 @@ export function Header() {
                   </span>
                 </button>
               </>
-            ) : (
+            ) : hydrated ? (
               <>
                 <Link
                   href="/auth/login"
@@ -390,7 +401,7 @@ export function Header() {
                   Registrarse
                 </Link>
               </>
-            )}
+            ) : null}
           </nav>
         </div>
       )}

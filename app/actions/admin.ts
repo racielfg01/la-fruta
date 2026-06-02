@@ -1,16 +1,27 @@
 'use server';
 
 import { decodePocketBaseToken, getRoleIds } from '@/lib/auth';
-import { getAdminPB, getPB, getAllRecords } from '@/lib/pocketbase';
+import { getAdminPB, getTokenPB, getAllRecords } from '@/lib/pocketbase';
+import type PocketBase from 'pocketbase';
 import { Product } from '@/lib/store';
 import { Category, DeliveryZone, User, Order, Currency } from '@/lib/admin-store';
+
+async function getDataPB(token: string): Promise<PocketBase> {
+  try {
+    return await getAdminPB();
+  } catch {
+    return getTokenPB(token);
+  }
+}
 
 async function verifyAdminAndGetUserId(token: string): Promise<string> {
   const payload = decodePocketBaseToken(token);
   if (!payload) throw new Error('No autorizado: token inválido o expirado');
 
-  const pb = await getAdminPB();
-  const user = await pb.collection('users').getOne(payload.userId);
+  const pb = getTokenPB(token);
+  const user = await pb.collection('users').getOne(payload.userId, {
+    expand: 'role_id',
+  });
   const roleIds = await getRoleIds();
   const isAdmin = roleIds.admin
     ? user.role_id === roleIds.admin
@@ -21,14 +32,14 @@ async function verifyAdminAndGetUserId(token: string): Promise<string> {
   return payload.userId;
 }
 
-async function getRoleIdByName(name: string): Promise<string> {
-  const pb = await getAdminPB();
+async function getRoleIdByName(name: string, token: string): Promise<string> {
+  const pb = await getDataPB(token);
   const roles = await getAllRecords(pb, 'roles', { filter: `name = "${name}"` });
   return roles[0]?.id || '';
 }
 
-async function getCategoryIdByName(name: string): Promise<string> {
-  const pb = await getAdminPB();
+async function getCategoryIdByName(name: string, token: string): Promise<string> {
+  const pb = await getDataPB(token);
   const cats = await getAllRecords(pb, 'categories', { filter: `name = "${name}"` });
   return cats[0]?.id || '';
 }
@@ -79,7 +90,7 @@ function mapOrder(o: any) {
 export async function getAdminData(token: string) {
   await verifyAdminAndGetUserId(token);
 
-  const pb = await getAdminPB();
+  const pb = await getDataPB(token);
 
   const [products, categories, deliveryZones, users, orders, currencies] = await Promise.all([
     getAllRecords(pb, 'products', { sort: 'name', expand: 'category' }),
@@ -134,8 +145,8 @@ export async function getAdminData(token: string) {
 
 export async function addProductAction(product: Product, token: string) {
   await verifyAdminAndGetUserId(token);
-  const pb = await getAdminPB();
-  const categoryId = await getCategoryIdByName(product.category);
+  const pb = await getDataPB(token);
+  const categoryId = await getCategoryIdByName(product.category, token);
   const record = await pb.collection('products').create({
     id: product.id,
     name: product.name,
@@ -154,14 +165,14 @@ export async function addProductAction(product: Product, token: string) {
 
 export async function editProductAction(id: string, data: Partial<Product>, token: string) {
   await verifyAdminAndGetUserId(token);
-  const pb = await getAdminPB();
+  const pb = await getDataPB(token);
   const updateData: any = {};
   if (data.name !== undefined) updateData.name = data.name;
   if (data.description !== undefined) updateData.description = data.description;
   if (data.price !== undefined) updateData.price = data.price;
   if (data.unit !== undefined) updateData.unit = data.unit;
   if (data.image !== undefined) updateData.image = data.image;
-  if (data.category !== undefined) updateData.category = await getCategoryIdByName(data.category);
+  if (data.category !== undefined) updateData.category = await getCategoryIdByName(data.category, token);
   if (data.origin !== undefined) updateData.origin = data.origin;
   if (data.stock !== undefined) {
     updateData.stock = data.stock;
@@ -174,13 +185,13 @@ export async function editProductAction(id: string, data: Partial<Product>, toke
 
 export async function removeProductAction(id: string, token: string) {
   await verifyAdminAndGetUserId(token);
-  const pb = await getAdminPB();
+  const pb = await getDataPB(token);
   await pb.collection('products').delete(id);
 }
 
 export async function addCategoryAction(category: Category, token: string) {
   await verifyAdminAndGetUserId(token);
-  const pb = await getAdminPB();
+  const pb = await getDataPB(token);
   const record = await pb.collection('categories').create({
     id: category.id,
     name: category.name,
@@ -192,7 +203,7 @@ export async function addCategoryAction(category: Category, token: string) {
 
 export async function editCategoryAction(id: string, data: Partial<Category>, token: string) {
   await verifyAdminAndGetUserId(token);
-  const pb = await getAdminPB();
+  const pb = await getDataPB(token);
   const updateData: any = {};
   if (data.name !== undefined) updateData.name = data.name;
   if (data.description !== undefined) updateData.description = data.description;
@@ -203,13 +214,13 @@ export async function editCategoryAction(id: string, data: Partial<Category>, to
 
 export async function removeCategoryAction(id: string, token: string) {
   await verifyAdminAndGetUserId(token);
-  const pb = await getAdminPB();
+  const pb = await getDataPB(token);
   await pb.collection('categories').delete(id);
 }
 
 export async function addDeliveryZoneAction(zone: DeliveryZone, token: string) {
   await verifyAdminAndGetUserId(token);
-  const pb = await getAdminPB();
+  const pb = await getDataPB(token);
   const record = await pb.collection('delivery_zones').create({
     id: zone.id,
     name: zone.name,
@@ -224,7 +235,7 @@ export async function addDeliveryZoneAction(zone: DeliveryZone, token: string) {
 
 export async function editDeliveryZoneAction(id: string, data: Partial<DeliveryZone>, token: string) {
   await verifyAdminAndGetUserId(token);
-  const pb = await getAdminPB();
+  const pb = await getDataPB(token);
   const updateData: any = {};
   if (data.name !== undefined) updateData.name = data.name;
   if (data.minDistance !== undefined) updateData.min_distance = data.minDistance;
@@ -238,7 +249,7 @@ export async function editDeliveryZoneAction(id: string, data: Partial<DeliveryZ
 
 export async function removeDeliveryZoneAction(id: string, token: string) {
   await verifyAdminAndGetUserId(token);
-  const pb = await getAdminPB();
+  const pb = await getDataPB(token);
   await pb.collection('delivery_zones').delete(id);
 }
 
@@ -257,8 +268,8 @@ function generatePassword(): string {
 
 export async function addUserAction(user: Omit<User, 'id'>, token: string) {
   await verifyAdminAndGetUserId(token);
-  const pb = await getAdminPB();
-  const roleId = await getRoleIdByName(user.role_id === 2 ? 'admin' : 'client');
+  const pb = await getDataPB(token);
+  const roleId = await getRoleIdByName(user.role_id === 2 ? 'admin' : 'client', token);
   const password = generatePassword();
   const record = await pb.collection('users').create({
     name: user.name,
@@ -277,13 +288,13 @@ export async function addUserAction(user: Omit<User, 'id'>, token: string) {
 
 export async function editUserAction(id: string, data: Partial<User>, token: string) {
   await verifyAdminAndGetUserId(token);
-  const pb = await getAdminPB();
+  const pb = await getDataPB(token);
   const updateData: any = {};
   if (data.name !== undefined) updateData.name = data.name;
   if (data.email !== undefined) updateData.email = data.email;
   if (data.phone !== undefined) updateData.phone = data.phone;
   if (data.address !== undefined) updateData.address = data.address;
-  if (data.role_id !== undefined) updateData.role_id = await getRoleIdByName(data.role_id === 2 ? 'admin' : 'client');
+  if (data.role_id !== undefined) updateData.role_id = await getRoleIdByName(data.role_id === 2 ? 'admin' : 'client', token);
   if (data.status !== undefined) updateData.status = data.status;
   if (Object.keys(updateData).length === 0) return;
   await pb.collection('users').update(id, updateData);
@@ -291,25 +302,25 @@ export async function editUserAction(id: string, data: Partial<User>, token: str
 
 export async function removeUserAction(id: string, token: string) {
   await verifyAdminAndGetUserId(token);
-  const pb = await getAdminPB();
+  const pb = await getDataPB(token);
   await pb.collection('users').delete(id);
 }
 
 export async function setOrderStatusAction(orderId: string, status: Order['status'], token: string) {
   await verifyAdminAndGetUserId(token);
-  const pb = await getAdminPB();
+  const pb = await getDataPB(token);
   await pb.collection('orders').update(orderId, { status });
 }
 
 export async function setPaymentStatusAction(orderId: string, paymentStatus: Order['paymentStatus'], token: string) {
   await verifyAdminAndGetUserId(token);
-  const pb = await getAdminPB();
+  const pb = await getDataPB(token);
   await pb.collection('orders').update(orderId, { payment_status: paymentStatus });
 }
 
 export async function addCurrencyAction(currency: Currency, token: string) {
   await verifyAdminAndGetUserId(token);
-  const pb = await getAdminPB();
+  const pb = await getDataPB(token);
   const record = await pb.collection('currencies').create({
     id: currency.id,
     code: currency.code,
@@ -324,7 +335,7 @@ export async function addCurrencyAction(currency: Currency, token: string) {
 
 export async function editCurrencyAction(id: string, data: Partial<Currency>, token: string) {
   await verifyAdminAndGetUserId(token);
-  const pb = await getAdminPB();
+  const pb = await getDataPB(token);
   const updateData: any = {};
   if (data.code !== undefined) updateData.code = data.code;
   if (data.name !== undefined) updateData.name = data.name;
@@ -338,13 +349,13 @@ export async function editCurrencyAction(id: string, data: Partial<Currency>, to
 
 export async function removeCurrencyAction(id: string, token: string) {
   await verifyAdminAndGetUserId(token);
-  const pb = await getAdminPB();
+  const pb = await getDataPB(token);
   await pb.collection('currencies').delete(id);
 }
 
 export async function setDefaultCurrencyAction(id: string, token: string) {
   await verifyAdminAndGetUserId(token);
-  const pb = await getAdminPB();
+  const pb = await getDataPB(token);
   await getAllRecords(pb, 'currencies', {
     filter: 'is_default = true',
   }).then((currencies: any) =>

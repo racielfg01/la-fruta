@@ -232,7 +232,7 @@ export function Header() {
         <Link href="/" className="flex items-center gap-2">
           <div className="flex h-10 w-10 items-center justify-center rounded-full ">
             {/* <Leaf className="h-5 w-5 text-primary-foreground" /> */}
-            <Image  className="rounded-3xl" src={"/icon-512x512.png"} alt="logo" width={56} height={56}/>
+            <Image  className="rounded-3xl" src={"/icon-512x512.png"} alt="logo" width={56} height={56} priority/>
           </div>
           <span className="font-[family-name:var(--font-playfair)] text-2xl font-semibold text-foreground">
             <span className="text-primary">Merca</span><span className="text-destructive">Toma</span>

@@ -663,7 +663,7 @@ useEffect(() => {
             <div className="flex flex-col items-center justify-between gap-6 md:flex-row">
               <div className="flex items-center gap-3">
                 <div className="flex h-10 w-10 items-center justify-center rounded-xl shadow-lg shadow-primary/20">
-       <Image  className="rounded-3xl" src={"/icon-512x512.png"} alt="logo" width={56} height={56}/>
+       <Image  className="rounded-3xl" src={"/icon-512x512.png"} alt="logo" width={56} height={56} priority/>
                 </div>
                 <div>
                   <span className="font-[family-name:var(--font-playfair)] text-lg font-bold">

@@ -122,7 +122,7 @@ interface AdminStore {
   updateOrderStatus: (id: string, status: Order["status"]) => Promise<void>;
   updatePaymentStatus: (id: string, status: Order["paymentStatus"]) => Promise<void>;
 
-  addCurrency: (currency: Currency) => Promise<void>;
+  addCurrency: (currency: Currency) => Promise<Currency | undefined>;
   updateCurrency: (id: string, currency: Partial<Currency>) => Promise<void>;
   deleteCurrency: (id: string) => Promise<void>;
   setDefaultCurrency: (id: string) => Promise<void>;
@@ -266,8 +266,9 @@ const data = await withTimeout(getAdminData(token), 15000);
 
   addCurrency: async (currency) => {
     const token = getAuthToken();
-    await addCurrencyAction(currency, token);
-    set({ currencies: [...get().currencies, currency] });
+    const created = await addCurrencyAction(currency, token);
+    set({ currencies: [...get().currencies, created as Currency] });
+    return created;
   },
   updateCurrency: async (id, data) => {
     const token = getAuthToken();

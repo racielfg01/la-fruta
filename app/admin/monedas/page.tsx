@@ -82,6 +82,7 @@ export default function CurrenciesPage() {
     symbol: "",
     exchangeRate: 1,
     isActive: true,
+    isDefault: false,
   });
 
   // Inicializar datos al montar el componente
@@ -147,6 +148,7 @@ export default function CurrenciesPage() {
         symbol: currency.symbol,
         exchangeRate: currency.exchangeRate ?? 1,
         isActive: currency.isActive,
+        isDefault: currency.isDefault,
       });
     } else {
       setEditingCurrency(null);
@@ -156,6 +158,7 @@ export default function CurrenciesPage() {
         symbol: "",
         exchangeRate: 1,
         isActive: true,
+        isDefault: false,
       });
     }
     setIsDialogOpen(true);
@@ -164,18 +167,23 @@ export default function CurrenciesPage() {
   const handleSave = async () => {
     if (editingCurrency) {
       await updateCurrency(editingCurrency.id, formData);
+      if (formData.isDefault && !editingCurrency.isDefault) {
+        await setDefaultCurrency(editingCurrency.id);
+      }
     } else {
-      // La nueva moneda se crea con isDefault = false (el backend o store se encargará)
       const newCurrency: Currency = {
         id: Date.now().toString(),
         code: formData.code,
         name: formData.name,
         symbol: formData.symbol,
         exchangeRate: formData.exchangeRate,
-        isDefault: false,
+        isDefault: formData.isDefault,
         isActive: formData.isActive,
       };
-      await addCurrency(newCurrency);
+      const created = await addCurrency(newCurrency);
+      if (formData.isDefault && created) {
+        await setDefaultCurrency(created.id);
+      }
     }
     setIsDialogOpen(false);
   };
@@ -610,6 +618,20 @@ export default function CurrenciesPage() {
                 }
                 placeholder="1.08"
               />
+            </Field>
+            <Field>
+              <div className="flex items-center justify-between">
+                <FieldLabel>Moneda predeterminada</FieldLabel>
+                <Switch
+                  checked={formData.isDefault}
+                  onCheckedChange={(checked) =>
+                    setFormData({ ...formData, isDefault: checked })
+                  }
+                />
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Solo puede haber una moneda predeterminada. Al activarla, se desmarcará la actual.
+              </p>
             </Field>
             <Field>
               <div className="flex items-center justify-between">

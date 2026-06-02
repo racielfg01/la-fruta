@@ -296,10 +296,11 @@ export async function setPaymentStatusAction(orderId: string, paymentStatus: Ord
   await pb.collection('orders').update(orderId, { payment_status: paymentStatus });
 }
 
-export async function addCurrencyAction(currency: Omit<Currency, 'id'>, token: string) {
+export async function addCurrencyAction(currency: Currency, token: string) {
   await verifyAdminAndGetUserId(token);
   const pb = await getAdminPB();
   const record = await pb.collection('currencies').create({
+    id: currency.id,
     code: currency.code,
     name: currency.name,
     symbol: currency.symbol,
@@ -307,7 +308,7 @@ export async function addCurrencyAction(currency: Omit<Currency, 'id'>, token: s
     is_default: currency.isDefault || false,
     is_active: currency.isActive !== false,
   });
-  return { id: record.id, ...currency };
+  return { ...currency, id: record.id };
 }
 
 export async function editCurrencyAction(id: string, data: Partial<Currency>, token: string) {

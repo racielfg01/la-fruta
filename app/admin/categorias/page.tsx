@@ -26,7 +26,15 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Field, FieldLabel } from "@/components/ui/field";
-import { Plus, Pencil, Trash2, Tags, Package, Loader2 } from "lucide-react";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Plus, Pencil, Trash2, Tags, Package, ImageIcon, Loader2 } from "lucide-react";
 import { ImageUpload } from "@/components/upload-button";
 
 const emptyCategory: Omit<Category, "id"> = {
@@ -138,73 +146,157 @@ function CategoriesAdmin() {
         </Button>
       </div>
 
-      {/* Categories Grid */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {categories.map((category) => {
-          const productCount = getProductCount(category.name);
-          return (
-            <Card key={category.id} className="overflow-hidden">
-              <div className="aspect-video relative overflow-hidden">
-                <img
-                  src={category.image || '/placeholder.svg'}
-                  alt={category.name}
-                  className="h-full w-full object-cover"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-                <div className="absolute bottom-3 left-3">
-                  <h3 className="text-lg font-semibold text-white">
-                    {category.name}
-                  </h3>
-                </div>
-              </div>
-              <CardContent className="p-4">
-                <p className="text-sm text-muted-foreground mb-3 line-clamp-2">
-                  {category.description}
-                </p>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                    <Package className="h-4 w-4" />
-                    <span>{productCount} productos</span>
-                  </div>
-                  <div className="flex gap-1">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => handleEditCategory(category)}
-                    >
-                      <Pencil className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="text-destructive hover:text-destructive"
-                      onClick={() => handleDeleteClick(category.id)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+      {/* Mobile: Categories Grid */}
+      <div className="block md:hidden">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {categories.map((category) => {
+            const productCount = getProductCount(category.name);
+            return (
+              <Card key={category.id} className="overflow-hidden">
+                <div className="aspect-video relative overflow-hidden">
+                  <img
+                    src={category.image || '/placeholder.svg'}
+                    alt={category.name}
+                    className="h-full w-full object-cover"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+                  <div className="absolute bottom-3 left-3">
+                    <h3 className="text-lg font-semibold text-white">
+                      {category.name}
+                    </h3>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
-          );
-        })}
+                <CardContent className="p-4">
+                  <p className="text-sm text-muted-foreground mb-3 line-clamp-2">
+                    {category.description}
+                  </p>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                      <Package className="h-4 w-4" />
+                      <span>{productCount} productos</span>
+                    </div>
+                    <div className="flex gap-1">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleEditCategory(category)}
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="text-destructive hover:text-destructive"
+                        onClick={() => handleDeleteClick(category.id)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+
+        {categories.length === 0 && (
+          <Card>
+            <CardContent className="flex flex-col items-center justify-center py-16">
+              <Tags className="h-12 w-12 text-muted-foreground mb-4" />
+              <h3 className="text-lg font-semibold mb-2">No hay categorías</h3>
+              <p className="text-muted-foreground text-center mb-4">
+                Comienza creando tu primera categoría para organizar tus productos.
+              </p>
+              <Button onClick={handleNewCategory}>
+                <Plus className="mr-2 h-4 w-4" />
+                Crear Categoría
+              </Button>
+            </CardContent>
+          </Card>
+        )}
       </div>
 
-      {categories.length === 0 && (
-        <Card>
-          <CardContent className="flex flex-col items-center justify-center py-16">
-            <Tags className="h-12 w-12 text-muted-foreground mb-4" />
-            <h3 className="text-lg font-semibold mb-2">No hay categorías</h3>
-            <p className="text-muted-foreground text-center mb-4">
-              Comienza creando tu primera categoría para organizar tus productos.
-            </p>
-            <Button onClick={handleNewCategory}>
-              <Plus className="mr-2 h-4 w-4" />
-              Crear Categoría
-            </Button>
-          </CardContent>
-        </Card>
-      )}
+      {/* Desktop: Categories Table */}
+      <Card className="hidden md:block">
+        <CardHeader>
+          <CardTitle>Lista de Categorías ({categories.length})</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Imagen</TableHead>
+                  <TableHead>Nombre</TableHead>
+                  <TableHead>Descripción</TableHead>
+                  <TableHead className="text-center">Productos</TableHead>
+                  <TableHead className="text-right">Acciones</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {categories.map((category) => {
+                  const productCount = getProductCount(category.name);
+                  return (
+                    <TableRow key={category.id}>
+                      <TableCell>
+                        <div className="flex items-center gap-3">
+                          <div className="h-10 w-10 rounded-md overflow-hidden border shrink-0">
+                            <img
+                              src={category.image || '/placeholder.svg'}
+                              alt={category.name}
+                              className="h-full w-full object-cover"
+                            />
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <span className="font-medium">{category.name}</span>
+                      </TableCell>
+                      <TableCell>
+                        <span className="text-sm text-muted-foreground line-clamp-1">
+                          {category.description || "Sin descripción"}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <div className="flex items-center justify-center gap-1 text-sm">
+                          <Package className="h-4 w-4 text-muted-foreground" />
+                          <span>{productCount}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-1">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleEditCategory(category)}
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="text-destructive hover:text-destructive"
+                            onClick={() => handleDeleteClick(category.id)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+                {categories.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                      No hay categorías. Crea la primera para organizar tus productos.
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Category Summary */}
       <Card>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -99,9 +99,10 @@ const steps = [
 export function Onboarding({ onComplete }: OnboardingProps) {
   const [currentStep, setCurrentStep] = useState(0);
   const [isAnimating, setIsAnimating] = useState(false);
-  const [direction, setDirection] = useState<"next" | "prev">("next");
-  const [touchStart, setTouchStart] = useState<number | null>(null);
-  const [touchEnd, setTouchEnd] = useState<number | null>(null);
+  const direction = useRef<"next" | "prev">("next");
+  const touchStart = useRef<number | null>(null);
+  const touchEnd = useRef<number | null>(null);
+  const transitioning = useRef(false);
 
   const step = steps[currentStep];
   const isLastStep = currentStep === steps.length - 1;
@@ -109,143 +110,105 @@ export function Onboarding({ onComplete }: OnboardingProps) {
   const StepIcon = step.icon;
   const progress = ((currentStep + 1) / steps.length) * 100;
 
-  const minSwipeDistance = 50;
+  const goTo = useCallback((index: number) => {
+    if (transitioning.current || index < 0 || index >= steps.length) return;
+    transitioning.current = true;
+    setCurrentStep(index);
+    setTimeout(() => { transitioning.current = false; }, 350);
+  }, []);
 
   const handleNext = useCallback(() => {
-    if (isAnimating) return;
-    
-    if (isLastStep) {
-      onComplete();
-    } else {
-      setDirection("next");
-      setIsAnimating(true);
-      setTimeout(() => {
-        setCurrentStep((prev) => prev + 1);
-        setIsAnimating(false);
-      }, 300);
-    }
-  }, [isAnimating, isLastStep, onComplete]);
+    if (isLastStep) { onComplete(); return; }
+    direction.current = "next";
+    goTo(currentStep + 1);
+  }, [isLastStep, onComplete, goTo, currentStep]);
 
   const handlePrev = useCallback(() => {
-    if (isAnimating || isFirstStep) return;
-    setDirection("prev");
-    setIsAnimating(true);
-    setTimeout(() => {
-      setCurrentStep((prev) => prev - 1);
-      setIsAnimating(false);
-    }, 300);
-  }, [isAnimating, isFirstStep]);
+    if (isFirstStep) return;
+    direction.current = "prev";
+    goTo(currentStep - 1);
+  }, [isFirstStep, goTo, currentStep]);
 
-  const handleSkip = () => {
-    onComplete();
-  };
+  const handleSkip = useCallback(() => onComplete(), [onComplete]);
 
-  const goToStep = (index: number) => {
-    if (isAnimating || index === currentStep) return;
-    setDirection(index > currentStep ? "next" : "prev");
-    setIsAnimating(true);
-    setTimeout(() => {
-      setCurrentStep(index);
-      setIsAnimating(false);
-    }, 300);
-  };
+  const goToStep = useCallback((index: number) => {
+    if (index === currentStep) return;
+    direction.current = index > currentStep ? "next" : "prev";
+    goTo(index);
+  }, [currentStep, goTo]);
 
-  // Touch handlers for swipe
-  const onTouchStart = (e: React.TouchEvent) => {
-    setTouchEnd(null);
-    setTouchStart(e.targetTouches[0].clientX);
-  };
+  const minSwipeDistance = 50;
 
-  const onTouchMove = (e: React.TouchEvent) => {
-    setTouchEnd(e.targetTouches[0].clientX);
-  };
+  const onTouchStart = useCallback((e: React.TouchEvent) => {
+    touchEnd.current = null;
+    touchStart.current = e.targetTouches[0].clientX;
+  }, []);
 
-  const onTouchEnd = () => {
-    if (!touchStart || !touchEnd) return;
-    const distance = touchStart - touchEnd;
-    const isLeftSwipe = distance > minSwipeDistance;
-    const isRightSwipe = distance < -minSwipeDistance;
-    
-    if (isLeftSwipe && !isLastStep) {
-      handleNext();
-    }
-    if (isRightSwipe && !isFirstStep) {
-      handlePrev();
-    }
-  };
+  const onTouchMove = useCallback((e: React.TouchEvent) => {
+    touchEnd.current = e.targetTouches[0].clientX;
+  }, []);
+
+  const onTouchEnd = useCallback(() => {
+    if (touchStart.current === null || touchEnd.current === null) return;
+    const distance = touchStart.current - touchEnd.current;
+    if (distance > minSwipeDistance && !isLastStep) handleNext();
+    else if (distance < -minSwipeDistance && !isFirstStep) handlePrev();
+  }, [isLastStep, isFirstStep, handleNext, handlePrev]);
+
+  const isRTL = direction.current === "next"
+    ? "-translate-x-6 opacity-0"
+    : "translate-x-6 opacity-0";
 
   // Keyboard navigation
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "ArrowRight" || e.key === "Enter") {
-        handleNext();
-      } else if (e.key === "ArrowLeft") {
-        handlePrev();
-      } else if (e.key === "Escape") {
-        handleSkip();
-      }
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "ArrowRight" || e.key === "Enter") handleNext();
+      else if (e.key === "ArrowLeft") handlePrev();
+      else if (e.key === "Escape") handleSkip();
     };
-
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [handleNext, handlePrev]);
-
-  const getAnimationClass = () => {
-    if (!isAnimating) return "translate-x-0 opacity-100";
-    return direction === "next" 
-      ? "-translate-x-8 opacity-0" 
-      : "translate-x-8 opacity-0";
-  };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [handleNext, handlePrev, handleSkip]);
 
   return (
-    <div 
-      className="fixed inset-0 z-50 flex items-center justify-center bg-gradient-to-br from-primary/5 via-background to-accent/5 p-0 sm:p-4 md:p-6"
+    <div
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-gradient-to-br from-primary/5 via-background to-accent/5 p-0 sm:p-4 md:p-6"
       onTouchStart={onTouchStart}
       onTouchMove={onTouchMove}
       onTouchEnd={onTouchEnd}
     >
-      {/* Background decorations - simplified for mobile */}
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
         <div className="absolute -left-32 -top-32 h-64 w-64 sm:h-96 sm:w-96 rounded-full bg-primary/10 blur-3xl" />
         <div className="absolute -bottom-32 -right-32 h-64 w-64 sm:h-96 sm:w-96 rounded-full bg-accent/10 blur-3xl" />
       </div>
 
-      <Card className="relative w-full max-w-5xl overflow-hidden border-0 bg-card/95 shadow-2xl backdrop-blur-sm mx-auto h-full sm:h-auto rounded-none sm:rounded-xl">
-        {/* Progress Bar */}
+      <Card className="relative w-full max-w-5xl overflow-hidden border-0 bg-card/95 shadow-2xl backdrop-blur-sm mx-auto max-h-dvh sm:max-h-[90vh] rounded-t-2xl sm:rounded-xl">
         <div className="absolute left-0 right-0 top-0 z-10">
           <Progress value={progress} className="h-1 rounded-none" />
         </div>
 
-        <CardContent className="p-0 h-full">
-          <div className="flex flex-col md:grid md:grid-cols-2 h-full">
-            {/* Image Side - Hidden on mobile, shown on tablet/desktop */}
-            <div className="relative hidden md:block">
-              <div
-                className={`absolute inset-0 transition-all duration-500 ease-out ${
-                  isAnimating ? "scale-105 opacity-0" : "scale-100 opacity-100"
-                }`}
-              >
+        <CardContent className="p-0 flex flex-col h-full max-h-dvh sm:max-h-[90vh]">
+          <div className="flex flex-col md:grid md:grid-cols-2 flex-1 min-h-0">
+            {/* Image Side - Desktop */}
+            <div className="relative hidden md:block min-h-0">
+              <div className="absolute inset-0 motion-safe:transition-all motion-safe:duration-500 motion-safe:ease-out">
                 <Image
                   src={step.image}
                   alt={step.title}
                   fill
                   className="object-cover"
-                  sizes="(max-width: 768px) 100vw, 50vw"
+                  sizes="50vw"
                   priority
                 />
                 <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/30 to-transparent" />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
               </div>
-              
-              {/* Floating badge */}
               <div className="absolute left-6 top-6">
                 <Badge className={`${step.color} border-0 px-3 py-1.5 text-white shadow-lg`}>
                   <StepIcon className="mr-1.5 h-4 w-4" />
                   Paso {currentStep + 1} de {steps.length}
                 </Badge>
               </div>
-
-              {/* Tip at bottom */}
               <div className="absolute bottom-6 left-6 right-6">
                 <div className="rounded-lg bg-white/10 px-4 py-3 backdrop-blur-sm">
                   <p className="flex items-center gap-2 text-sm text-white/90">
@@ -256,159 +219,133 @@ export function Onboarding({ onComplete }: OnboardingProps) {
               </div>
             </div>
 
-            {/* Content Side - Optimized for mobile with increased padding */}
-            <div className="flex flex-col justify-between h-full">
-              {/* Mobile Image Section - Increased spacing */}
-              <div className="md:hidden">
-                <div className="relative w-full overflow-hidden">
+            {/* Content Side */}
+            <div className="flex flex-col flex-1 min-h-0">
+              {/* Mobile Image */}
+              <div className="md:hidden relative shrink-0">
+                <div className="relative w-full" style={{ aspectRatio: "16/9", maxHeight: "33vh" }}>
                   <Image
                     src={step.image}
                     alt={step.title}
-                    width={500}
-                    height={400}
-                    className="w-full h-auto object-cover"
+                    fill
+                    className="object-cover"
                     sizes="100vw"
                     priority
-                    style={{ maxHeight: "280px" }}
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
-                  <div className="absolute bottom-4 left-4">
-                    <Badge className={`${step.color} border-0 text-white shadow-lg text-sm px-3 py-1.5`}>
-                      <StepIcon className="mr-1.5 h-3.5 w-3.5" />
-                      Paso {currentStep + 1}/{steps.length}
+                  <div className="absolute bottom-3 left-3">
+                    <Badge className={`${step.color} border-0 text-white shadow-lg text-xs px-2.5 py-1`}>
+                      <StepIcon className="mr-1 h-3 w-3" />
+                      {currentStep + 1}/{steps.length}
                     </Badge>
                   </div>
                 </div>
               </div>
 
-              {/* Main Content - Increased padding for mobile */}
-              <div className="flex-1 px-5 pt-8 pb-6 sm:px-6 md:px-8 lg:px-10 overflow-y-auto">
-                {/* Logo - Increased margin bottom */}
-                <div className="mb-8 flex items-center gap-3">
-                  <div className="flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center rounded-xl bg-primary shadow-lg shadow-primary/20">
-                    <Leaf className="h-6 w-6 sm:h-7 sm:w-7 text-primary-foreground" />
+              {/* Scrollable content */}
+              <div className="flex-1 overflow-y-auto px-5 pt-6 pb-4 sm:px-6 md:px-8 lg:px-10">
+                <div className="mb-6 flex items-center gap-2.5">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary shadow-lg shadow-primary/20">
+                    <Leaf className="h-5 w-5 text-primary-foreground" />
                   </div>
                   <div>
-                    <span className="font-[family-name:var(--font-playfair)] text-xl sm:text-2xl font-bold text-foreground">
+                    <span className="font-[family-name:var(--font-playfair)] text-lg font-bold text-foreground">
                       <span className="text-primary">Merca</span><span className="text-destructive">Toma</span>
                     </span>
-                    <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">Del campo a tu mesa</p>
+                    <p className="text-xs text-muted-foreground">Del campo a tu mesa</p>
                   </div>
                 </div>
 
-                {/* Step Content - Increased spacing */}
-                <div
-                  className={`space-y-6 transition-all duration-300 ease-out ${getAnimationClass()}`}
-                >
+                <div className="space-y-5">
                   <div>
-                    <p className="text-sm font-semibold uppercase tracking-wider text-primary mb-1">
+                    <p className="text-xs font-semibold uppercase tracking-wider text-primary mb-0.5">
                       {step.subtitle}
                     </p>
-                    <h2 className="font-[family-name:var(--font-playfair)] text-3xl sm:text-4xl font-bold text-foreground text-balance leading-tight">
+                    <h2 className="font-[family-name:var(--font-playfair)] text-2xl sm:text-3xl md:text-4xl font-bold text-foreground text-balance leading-tight">
                       {step.title}
                     </h2>
                   </div>
 
-                  <p className="text-base sm:text-lg leading-relaxed text-muted-foreground">
+                  <p className="text-sm sm:text-base leading-relaxed text-muted-foreground">
                     {step.description}
                   </p>
 
-                  <div className="space-y-4 pt-2">
+                  <div className="space-y-3">
                     {step.features.map((feature, idx) => (
-                      <div 
-                        key={idx} 
-                        className="flex items-center gap-4 rounded-xl bg-muted/50 p-3 sm:p-4 transition-colors hover:bg-muted"
+                      <div
+                        key={idx}
+                        className="flex items-center gap-3 rounded-xl bg-muted/50 p-3 transition-colors hover:bg-muted"
                       >
-                        <div className={`flex h-10 w-10 sm:h-12 sm:w-12 flex-shrink-0 items-center justify-center rounded-xl bg-background shadow-sm`}>
-                          <feature.icon className={`h-5 w-5 sm:h-6 sm:w-6 ${feature.color}`} />
+                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-background shadow-sm">
+                          <feature.icon className={`h-4 w-4 sm:h-5 sm:w-5 ${feature.color}`} />
                         </div>
-                        <span className="text-sm sm:text-base font-medium text-foreground">
-                          {feature.text}
-                        </span>
+                        <span className="text-sm font-medium text-foreground">{feature.text}</span>
                       </div>
                     ))}
                   </div>
                 </div>
               </div>
 
-              {/* Navigation Section - Fixed padding and increased spacing */}
-              <div className="border-t border-border/50 px-5 py-6 sm:px-6 md:px-8">
-                <div className="space-y-5">
-                  {/* Step indicators */}
-                  <div className="flex items-center justify-center gap-3">
-                    {steps.map((s, idx) => (
-                      <button
-                        key={idx}
-                        onClick={() => goToStep(idx)}
-                        className={`group relative flex items-center justify-center transition-all duration-300 ${
-                          idx === currentStep ? "scale-110" : "hover:scale-105"
-                        }`}
-                        aria-label={`Ir al paso ${idx + 1}: ${s.title}`}
-                      >
-                        <div
-                          className={`h-2.5 rounded-full transition-all duration-300 ${
-                            idx === currentStep
-                              ? `w-10 ${s.color}`
-                              : idx < currentStep
-                                ? "w-2.5 bg-primary"
-                                : "w-2.5 bg-muted hover:bg-muted-foreground/30"
-                          }`}
-                        />
-                      </button>
-                    ))}
-                  </div>
-
-                  {/* Mobile tip - More visible */}
-                  <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground md:hidden bg-muted/30 py-2 px-3 rounded-lg">
-                    <Sparkles className="h-3.5 w-3.5 text-amber-500" />
-                    <span className="text-center">{step.tip}</span>
-                  </div>
-
-                  {/* Navigation Buttons - Increased size and spacing for mobile */}
-                  <div className="flex items-center justify-between gap-4">
-                    <Button
-                      variant="ghost"
-                      onClick={handleSkip}
-                      size="default"
-                      className="text-sm font-medium hover:bg-muted px-4 h-11"
+              {/* Navigation */}
+              <div className="shrink-0 border-t border-border/50 px-5 py-4 sm:px-6 md:px-8">
+                <div className="flex items-center justify-center gap-2.5 mb-4">
+                  {steps.map((s, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => goToStep(idx)}
+                      className="flex items-center justify-center min-h-[28px] min-w-[28px]"
+                      aria-label={`Ir al paso ${idx + 1}: ${s.title}`}
                     >
-                      Omitir
-                    </Button>
-
-                    <div className="flex gap-3">
-                      {!isFirstStep && (
-                        <Button 
-                          variant="outline" 
-                          size="default"
-                          onClick={handlePrev} 
-                          disabled={isAnimating}
-                          className="gap-2 h-11 px-5 font-medium"
-                        >
-                          <ChevronLeft className="h-4 w-4" />
-                          <span>Anterior</span>
-                        </Button>
-                      )}
-                      <Button 
-                        size="default"
-                        onClick={handleNext} 
-                        disabled={isAnimating}
-                        className={`gap-2 shadow-lg h-11 px-6 font-medium ${
-                          isLastStep ? "bg-emerald-600 hover:bg-emerald-700" : ""
+                      <div
+                        className={`rounded-full transition-all duration-300 ${
+                          idx === currentStep
+                            ? `h-2.5 w-8 ${s.color}`
+                            : idx < currentStep
+                              ? "h-2.5 w-2.5 bg-primary"
+                              : "h-2.5 w-2.5 bg-muted-foreground/20"
                         }`}
+                      />
+                    </button>
+                  ))}
+                </div>
+
+                <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground md:hidden bg-muted/30 py-2 px-3 rounded-lg mb-4">
+                  <Sparkles className="h-3 w-3 text-amber-500 shrink-0" />
+                  <span className="text-center">{step.tip}</span>
+                </div>
+
+                <div className="flex items-center justify-between gap-3">
+                  <Button
+                    variant="ghost"
+                    onClick={handleSkip}
+                    className="text-sm font-medium hover:bg-muted h-10 px-3"
+                  >
+                    Omitir
+                  </Button>
+
+                  <div className="flex gap-2">
+                    {!isFirstStep && (
+                      <Button
+                        variant="outline"
+                        onClick={handlePrev}
+                        className="gap-1.5 h-10 px-4 text-sm font-medium"
                       >
-                        {isLastStep ? (
-                          <>
-                            Comenzar
-                            <Sparkles className="h-4 w-4" />
-                          </>
-                        ) : (
-                          <>
-                            Siguiente
-                            <ChevronRight className="h-4 w-4" />
-                          </>
-                        )}
+                        <ChevronLeft className="h-4 w-4" />
+                        <span className="hidden sm:inline">Anterior</span>
                       </Button>
-                    </div>
+                    )}
+                    <Button
+                      onClick={handleNext}
+                      className={`gap-1.5 shadow-lg h-10 px-5 text-sm font-medium ${
+                        isLastStep ? "bg-emerald-600 hover:bg-emerald-700" : ""
+                      }`}
+                    >
+                      {isLastStep ? (
+                        <><Sparkles className="h-4 w-4" />Comenzar</>
+                      ) : (
+                        <><span>Siguiente</span><ChevronRight className="h-4 w-4" /></>
+                      )}
+                    </Button>
                   </div>
                 </div>
               </div>

@@ -8,6 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Product, useCartStore } from "@/lib/store";
 import { useState } from "react";
+import { useCurrency } from "@/lib/currency";
 
 interface ProductCardProps {
   product: Product;
@@ -16,6 +17,7 @@ interface ProductCardProps {
 export function ProductCard({ product }: ProductCardProps) {
   const addItem = useCartStore((state) => state.addItem);
   const [added, setAdded] = useState(false);
+  const { defaultCurrency, formatPrice } = useCurrency();
 
   const handleAddToCart = () => {
     addItem(product);
@@ -53,7 +55,7 @@ export function ProductCard({ product }: ProductCardProps) {
         <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">{product.description}</p>
         <div className="mt-3 flex items-center justify-between">
           <div>
-            <span className="text-lg font-bold text-foreground">${product.price.toFixed(2)}</span>
+            <span className="text-lg font-bold text-foreground">{formatPrice(product.price, defaultCurrency)}</span>
             <span className="ml-1 text-sm text-muted-foreground">{product.unit}</span>
           </div>
           <Button

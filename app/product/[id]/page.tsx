@@ -12,6 +12,7 @@ import { useCartStore } from "@/lib/store";
 import { ProductCard } from "@/components/product-card";
 import { getPublicProductById } from "@/app/actions/public-products";
 import { Product } from "@/lib/store";
+import { useCurrency } from "@/lib/currency";
 import {
   ArrowLeft,
   Minus,
@@ -31,6 +32,7 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
   const addItem = useCartStore((state) => state.addItem);
   const [quantity, setQuantity] = useState(1);
   const [added, setAdded] = useState(false);
+  const { defaultCurrency, formatPrice } = useCurrency();
 
   useEffect(() => {
     if (!product) {
@@ -125,9 +127,9 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
 
             <div className="mt-4 flex items-baseline gap-2">
               <span className="text-3xl font-bold text-foreground">
-                ${product.price.toFixed(2)}
+                {formatPrice(product.price, defaultCurrency)}
               </span>
-              <span className="text-muted-foreground">{product.unit}</span>
+              <span className="text-muted-foreground"> / {product.unit}</span>
             </div>
 
             <p className="mt-6 text-muted-foreground leading-relaxed">{product.description}</p>
@@ -206,7 +208,7 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
                 ) : (
                   <>
                     <ShoppingCart className="mr-2 h-5 w-5" />
-                    Añadir al carrito - ${(product.price * quantity).toFixed(2)}
+                    Añadir al carrito - {formatPrice(product.price * quantity, defaultCurrency)}
                   </>
                 )}
               </Button>

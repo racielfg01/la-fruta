@@ -30,6 +30,7 @@ import {
 } from "@/components/ui/tooltip";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useCartStore, Product } from "@/lib/store";
+import { useCurrency } from "@/lib/currency";
 import {
   Search,
   SlidersHorizontal,
@@ -940,6 +941,7 @@ function MasonryCard({
   const mobileHeights = ["h-52", "h-64", "h-56", "h-72"];
   const desktopHeights = ["h-56", "h-72", "h-64", "h-80"];
   const [imageHeight, setImageHeight] = useState(desktopHeights[heightVariant]);
+  const { defaultCurrency, formatPrice } = useCurrency();
 
   useEffect(() => {
     const isMobile = window.innerWidth < 640;
@@ -1047,10 +1049,10 @@ function MasonryCard({
         <div className="mt-2.5 sm:mt-3 md:mt-4 flex items-center justify-between gap-1.5 sm:gap-2">
           <div>
             <span className="text-base sm:text-lg md:text-xl font-bold text-foreground">
-              ${product.price.toFixed(2)}
+              {formatPrice(product.price, defaultCurrency)}
             </span>
             <span className="ml-0.5 sm:ml-1 text-[10px] sm:text-xs text-muted-foreground">
-              {product.unit}
+              / {product.unit}
             </span>
           </div>
           <Button
@@ -1099,6 +1101,7 @@ function ProductCard({
   onHover: (id: string | null) => void;
 }) {
   const config = categoryConfig[product.category] || categoryConfig.Fruits;
+  const { defaultCurrency, formatPrice } = useCurrency();
 
   return (
     <Card
@@ -1180,10 +1183,10 @@ function ProductCard({
         <div className="mt-2.5 sm:mt-3 md:mt-4 flex items-center justify-between gap-1.5 sm:gap-2">
           <div>
             <span className="text-base sm:text-lg md:text-xl font-bold text-foreground">
-              ${product.price.toFixed(2)}
+              {formatPrice(product.price, defaultCurrency)}
             </span>
             <span className="ml-0.5 sm:ml-1 text-[10px] sm:text-xs text-muted-foreground">
-              {product.unit}
+              / {product.unit}
             </span>
           </div>
           <Button
@@ -1208,6 +1211,8 @@ function ProductCard({
     </Card>
   );
 }
+
+// Empty State Component
 
 // Empty State Component
 function EmptyState({

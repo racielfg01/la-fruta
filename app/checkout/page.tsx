@@ -647,6 +647,37 @@ export default function CheckoutPage() {
                       )}
                   </div>
                 )}
+
+                {currencies.length > 1 && totalBase > 0 && (
+                  <div className="pt-4 border-t">
+                    <p className="text-sm font-medium mb-2">
+                      Precio equivalente en otras monedas:
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {currencies
+                        .filter((c) => c.id !== selectedCurrency?.id)
+                        .map((c) => {
+                          const converted = c.isDefault
+                            ? totalBase
+                            : totalBase * c.exchangeRate;
+                          return (
+                            <div
+                              key={c.id}
+                              className="flex items-center gap-1.5 rounded-lg bg-muted/50 px-3 py-1.5 text-sm"
+                            >
+                              <span className="font-medium text-muted-foreground">
+                                {c.code}:
+                              </span>
+                              <span className="font-semibold">
+                                {c.symbol}
+                                {converted.toFixed(2)}
+                              </span>
+                            </div>
+                          );
+                        })}
+                    </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>

@@ -11,6 +11,8 @@ import { Suspense } from "react";
 function OrderConfirmationContent() {
   const searchParams = useSearchParams();
   const orderId = searchParams.get("orderId") || "DESCONOCIDO";
+  const currencyCode = searchParams.get("currency") || "";
+  const amount = Number(searchParams.get("amount")) || 0;
 
   const steps = [
     { icon: CheckCircle, label: "Pedido Confirmado", status: "complete" },
@@ -31,10 +33,15 @@ function OrderConfirmationContent() {
       <p className="mb-2 text-lg text-muted-foreground">
         Gracias por comprar en MercaToma
       </p>
-      <p className="mb-8 text-sm text-muted-foreground">
+      <p className="mb-2 text-sm text-muted-foreground">
         ID del pedido:{" "}
         <span className="font-mono font-semibold text-foreground">{orderId}</span>
       </p>
+      {currencyCode && amount > 0 && (
+        <p className="mb-8 text-lg font-bold text-primary">
+          Total pagado: {currencyCode} {amount.toFixed(2)}
+        </p>
+      )}
 
       <Card className="mb-8 w-full max-w-2xl">
         <CardContent className="p-6">

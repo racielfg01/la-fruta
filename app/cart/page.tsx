@@ -161,12 +161,14 @@ import { Header } from "@/components/header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useCartStore } from "@/lib/store";
+import { useCurrency } from "@/lib/currency";
 import { Minus, Plus, Trash2, ShoppingBag, ArrowRight, Truck, Shield } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 
 export default function CartPage() {
   const { items, updateQuantity, removeItem, getTotalPrice } = useCartStore();
+  const { defaultCurrency, formatPrice, convertPrice } = useCurrency();
 
   if (items.length === 0) {
     return (
@@ -217,7 +219,7 @@ export default function CartPage() {
           {getTotalPrice() < 50 && (
             <div className="flex items-center justify-center gap-2 rounded-full bg-amber-50 px-3 py-1.5 text-xs md:text-sm text-amber-700 w-full sm:w-auto">
               <Truck className="h-3.5 w-3.5" />
-              <span>Faltan ${(50 - getTotalPrice()).toFixed(2)} para envío gratis</span>
+              <span>Faltan {formatPrice(50 - getTotalPrice(), defaultCurrency)} para envío gratis</span>
             </div>
           )}
         </div>
@@ -262,7 +264,7 @@ export default function CartPage() {
                           {item.product.origin}
                         </p>
                         <p className="text-sm md:text-base font-medium text-primary mt-1">
-                          ${item.product.price.toFixed(2)} <span className="text-xs text-muted-foreground">/{item.product.unit}</span>
+                          {formatPrice(item.product.price, defaultCurrency)} <span className="text-xs text-muted-foreground">/ {item.product.unit}</span>
                         </p>
                       </div>
                       
@@ -294,7 +296,7 @@ export default function CartPage() {
                         
                         <div className="flex items-center justify-between w-full xs:w-auto gap-4">
                           <span className="font-bold text-base md:text-lg text-foreground">
-                            ${(item.product.price * item.quantity).toFixed(2)}
+                            {formatPrice(item.product.price * item.quantity, defaultCurrency)}
                           </span>
                           <Button
                             variant="ghost"
@@ -327,7 +329,7 @@ export default function CartPage() {
                 <div className="space-y-2">
                   <div className="flex justify-between text-sm md:text-base">
                     <span className="text-muted-foreground">Subtotal</span>
-                    <span className="font-medium">${getTotalPrice().toFixed(2)}</span>
+                    <span className="font-medium">{formatPrice(getTotalPrice(), defaultCurrency)}</span>
                   </div>
                   
                   <div className="flex justify-between text-sm md:text-base">
@@ -338,7 +340,7 @@ export default function CartPage() {
                         Gratis
                       </span>
                     ) : (
-                      <span className="text-muted-foreground">${deliveryFee.toFixed(2)}</span>
+                      <span className="text-muted-foreground">{formatPrice(deliveryFee, defaultCurrency)}</span>
                     )}
                   </div>
                   
@@ -346,7 +348,7 @@ export default function CartPage() {
                     <div className="rounded-lg bg-amber-50 p-2.5 text-xs text-amber-700">
                       <p className="flex items-center gap-1.5">
                         <Truck className="h-3.5 w-3.5" />
-                        Agrega ${(50 - getTotalPrice()).toFixed(2)} más para envío gratis
+                        Agrega {formatPrice(50 - getTotalPrice(), defaultCurrency)} más para envío gratis
                       </p>
                     </div>
                   )}
@@ -357,7 +359,7 @@ export default function CartPage() {
                   <div className="flex justify-between items-baseline">
                     <span className="font-semibold text-base md:text-lg">Total</span>
                     <span className="font-bold text-xl md:text-2xl text-primary">
-                      ${totalWithDelivery.toFixed(2)}
+                      {formatPrice(totalWithDelivery, defaultCurrency)}
                     </span>
                   </div>
                   <p className="text-xs text-muted-foreground text-right">

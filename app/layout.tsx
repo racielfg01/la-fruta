@@ -21,7 +21,7 @@ export const metadata: Metadata = {
   title: 'MercaToma - Fresh Farm Products Delivered',
   description: 'Discover the freshest fruits and agricultural products delivered straight to your doorstep. Farm-to-table quality with convenient home delivery.',
   keywords: ['fruits', 'farm products', 'organic', 'delivery', 'fresh produce'],
-  generator: 'v0.app',
+  // generator: 'v0.app',
   applicationName: 'MercaToma',
   appleWebApp: {
     capable: true,

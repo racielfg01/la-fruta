@@ -48,6 +48,7 @@ import {
 } from "lucide-react";
 import { usePagination } from "@/lib/use-pagination";
 import { PaginationBar } from "@/components/pagination-bar";
+import { useCurrency } from "@/lib/currency";
 
 const emptyZone: Omit<DeliveryZone, "id"> = {
   name: "",
@@ -61,6 +62,8 @@ const emptyZone: Omit<DeliveryZone, "id"> = {
 export default function DeliveryAdmin() {
   const { deliveryZones, addDeliveryZone, updateDeliveryZone, deleteDeliveryZone } =
     useAdminStore();
+  const { defaultCurrency, currencies, formatPrice, convertPrice } = useCurrency();
+  const cupCurrency = currencies.find(c => c.code === 'CUP');
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -186,7 +189,10 @@ export default function DeliveryAdmin() {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Precio Promedio (activas)</p>
-                <p className="text-2xl font-bold">${avgPrice.toFixed(2)}</p>
+                <p className="text-2xl font-bold">{formatPrice(avgPrice, defaultCurrency)}</p>
+                {cupCurrency && cupCurrency.id !== defaultCurrency?.id && (
+                  <p className="text-xs text-muted-foreground">{formatPrice(avgPrice, cupCurrency)}</p>
+                )}
               </div>
             </div>
           </CardContent>
@@ -242,8 +248,11 @@ export default function DeliveryAdmin() {
                       {zone.minDistance} - {zone.maxDistance} km
                     </p>
                     <p className="text-sm font-semibold text-primary">
-                      ${zone.price.toFixed(2)}
+                      {formatPrice(zone.price, defaultCurrency)}
                     </p>
+                    {cupCurrency && cupCurrency.id !== defaultCurrency?.id && (
+                      <p className="text-xs text-muted-foreground">{formatPrice(zone.price, cupCurrency)}</p>
+                    )}
                     <span className="flex items-center gap-1 text-xs text-muted-foreground">
                       <Clock className="h-3 w-3" />
                       {zone.estimatedTime}
@@ -329,8 +338,11 @@ export default function DeliveryAdmin() {
                     </TableCell>
                     <TableCell>
                       <span className="font-semibold text-primary">
-                        ${zone.price.toFixed(2)}
+                        {formatPrice(zone.price, defaultCurrency)}
                       </span>
+                      {cupCurrency && cupCurrency.id !== defaultCurrency?.id && (
+                        <p className="text-xs text-muted-foreground">{formatPrice(zone.price, cupCurrency)}</p>
+                      )}
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-1 text-muted-foreground">
@@ -425,8 +437,11 @@ export default function DeliveryAdmin() {
                   <div className="min-w-0">
                     <p className="text-sm font-medium truncate">{zone.name}</p>
                     <p className="text-xs text-muted-foreground">
-                      {zone.minDistance}-{zone.maxDistance}km · ${zone.price.toFixed(2)}
+                      {zone.minDistance}-{zone.maxDistance}km · {formatPrice(zone.price, defaultCurrency)}
                     </p>
+                    {cupCurrency && cupCurrency.id !== defaultCurrency?.id && (
+                      <p className="text-[10px] text-muted-foreground">{formatPrice(zone.price, cupCurrency)}</p>
+                    )}
                   </div>
                 </div>
               );

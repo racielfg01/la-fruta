@@ -296,7 +296,7 @@ export default function CurrenciesPage() {
               Convertidor de Moneda
             </CardTitle>
             <CardDescription>
-              Conversión de ejemplo basada en 1000 {defaultCurrency.symbol} ({defaultCurrency.code})
+              Conversión de ejemplo basada en 100 {defaultCurrency.symbol} ({defaultCurrency.code})
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -318,11 +318,11 @@ export default function CurrenciesPage() {
                     <div className="text-right">
                       <p className="font-bold">
                         {currency.symbol}
-                        {convertAmount(1000, currency).toFixed(2)}
+                        {convertAmount(100, currency).toFixed(0)}
                       </p>
                       <p className="text-xs text-muted-foreground">
                         1 {defaultCurrency.code} ={" "}
-                        {(currency.exchangeRate ?? 1).toFixed(4)} {currency.code}
+                        {(currency.exchangeRate ?? 1).toFixed(0)} {currency.code}
                       </p>
                     </div>
                   </div>

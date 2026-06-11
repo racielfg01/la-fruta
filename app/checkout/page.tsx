@@ -34,6 +34,7 @@ import {
   BadgeCheck,
   AlertCircle,
 } from "lucide-react";
+import { useMemo } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { getPublicCurrencies } from "@/app/actions/public-currencies";
@@ -126,6 +127,10 @@ export default function CheckoutPage() {
   );
   const [isLoadingCurrencies, setIsLoadingCurrencies] = useState(true);
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+  const defaultCurrency = useMemo(
+    () => currencies.find((c) => c.isDefault) || currencies[0] || null,
+    [currencies],
+  );
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string>(
     paymentMethodsConfig[0].id,
   );
@@ -513,7 +518,8 @@ export default function CheckoutPage() {
                     </SelectContent>
                   </Select>
                   <p className="text-xs text-muted-foreground">
-                    Tipo de cambio: 1 CUP ={" "}
+                    Tipo de cambio: 1{" "}
+                    {defaultCurrency?.code || "CUP"} ={" "}
                     {selectedCurrency?.exchangeRate.toFixed(4)}{" "}
                     {selectedCurrency?.code}
                   </p>
@@ -745,12 +751,12 @@ export default function CheckoutPage() {
                         : "Selecciona zona"}
                     </span>
                   </div>
-                  {subtotalBase < 50 && (
+                  {/* {subtotalBase < 50 && (
                     <div className="rounded-lg bg-amber-50 p-2.5 text-xs text-amber-700">
                       🚚 Agrega {(50 - subtotalBase).toFixed(2)} CUP más para
                       envío gratis
                     </div>
-                  )}
+                  )} */}
                   <div className="flex justify-between border-t pt-3">
                     <span className="font-semibold">Total a pagar</span>
                     <span className="text-xl font-bold text-primary">

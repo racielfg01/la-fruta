@@ -516,7 +516,7 @@ export default function DeliveryAdmin() {
 
             <div className="grid gap-4 grid-cols-1 sm:grid-cols-2">
               <Field>
-                <FieldLabel htmlFor="price">Precio ($)</FieldLabel>
+                <FieldLabel htmlFor="price">Precio en CUP ($)</FieldLabel>
                 <Input
                   id="price"
                   type="number"
@@ -531,6 +531,11 @@ export default function DeliveryAdmin() {
                   }
                   required
                 />
+                {cupCurrency && defaultCurrency && cupCurrency.id !== defaultCurrency.id && (
+                  <p className="text-xs text-muted-foreground mt-1.5">
+                    Equivalente: {formatPrice(formData.price * defaultCurrency.exchangeRate, defaultCurrency)}
+                  </p>
+                )}
               </Field>
               <Field>
                 <FieldLabel htmlFor="estimatedTime">Tiempo estimado</FieldLabel>

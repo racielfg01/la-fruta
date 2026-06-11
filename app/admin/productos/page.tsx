@@ -48,6 +48,7 @@ import Link from "next/link";
 import { ImageUpload } from "@/components/upload-button";
 import { usePagination } from "@/lib/use-pagination";
 import { PaginationBar } from "@/components/pagination-bar";
+import { useCurrency } from "@/lib/currency";
 
 const emptyProduct: Omit<Product, "id"> = {
   name: "",
@@ -74,6 +75,8 @@ function ProductsAdmin() {
   const searchParams = useSearchParams();
   const { products, categories, addProduct, updateProduct, deleteProduct } =
     useAdminStore();
+  const { defaultCurrency, currencies, formatPrice } = useCurrency();
+  const cupCurrency = currencies.find(c => c.code === 'CUP');
 
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
@@ -495,7 +498,7 @@ function ProductsAdmin() {
 
                 <div className="grid gap-4 sm:grid-cols-3">
                   <Field>
-                    <FieldLabel htmlFor="price">Precio ($)</FieldLabel>
+                    <FieldLabel htmlFor="price">Precio en CUP ($)</FieldLabel>
                     <Input
                       id="price"
                       type="number"
@@ -510,6 +513,11 @@ function ProductsAdmin() {
                       }
                       required
                     />
+                    {cupCurrency && defaultCurrency && cupCurrency.id !== defaultCurrency.id && (
+                      <p className="text-xs text-muted-foreground mt-1.5">
+                        Equivalente: {formatPrice(formData.price * defaultCurrency.exchangeRate, defaultCurrency)}
+                      </p>
+                    )}
                   </Field>
                   <Field>
                     <FieldLabel htmlFor="unit">Unidad</FieldLabel>

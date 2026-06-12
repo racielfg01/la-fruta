@@ -205,7 +205,7 @@ export default function CheckoutPage() {
 
   const convertAmount = (amountInCUP: number): number => {
     if (!selectedCurrency || !cupCurrency) return amountInCUP;
-    return (amountInCUP / cupCurrency.exchangeRate) * selectedCurrency.exchangeRate;
+    return Math.round((amountInCUP / cupCurrency.exchangeRate) * selectedCurrency.exchangeRate * 100) / 100;
   };
 
   const subtotalConverted = convertAmount(subtotalBase);

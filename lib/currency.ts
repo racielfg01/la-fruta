@@ -25,7 +25,7 @@ export async function fetchCurrencies(): Promise<CurrencyInfo[]> {
 }
 
 export function convertPrice(amount: number, from: CurrencyInfo, to: CurrencyInfo): number {
-  return (amount / from.exchangeRate) * to.exchangeRate;
+  return Math.round((amount / from.exchangeRate) * to.exchangeRate * 100) / 100;
 }
 
 export function formatPrice(amount: number, currency?: CurrencyInfo | null): string {

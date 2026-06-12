@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useCartStore } from "@/lib/store";
 import { useCurrency } from "@/lib/currency";
-import { Minus, Plus, Trash2, ShoppingBag, ArrowRight, Truck, Shield } from "lucide-react";
+import { Minus, Plus, Trash2, ShoppingBag, ArrowRight, Truck, Shield, DollarSign } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 
@@ -62,8 +62,8 @@ export default function CartPage() {
           {/* Badge de envío gratis - visible en móvil */}
           {getTotalPrice() < 50 && (
             <div className="flex items-center justify-center gap-2 rounded-full bg-amber-50 px-3 py-1.5 text-xs md:text-sm text-amber-700 w-full sm:w-auto">
-              <Truck className="h-3.5 w-3.5" />
-              <span>Faltan {formatPrice(50 - getTotalPrice(), defaultCurrency)} para envío gratis</span>
+              <DollarSign className="h-3.5 w-3.5" />
+              <span>Todos los productos se pueden pagar también CUP en efectivo</span>
             </div>
           )}
         </div>
@@ -108,7 +108,9 @@ export default function CartPage() {
                           {item.product.origin}
                         </p>
                         <p className="text-sm md:text-base font-medium text-primary mt-1">
-                          {formatPrice(item.product.price, defaultCurrency)} <span className="text-xs text-muted-foreground">/ {item.product.unit}</span>
+                          {defaultCurrency
+                            ? formatPrice(convertPrice(item.product.price, defaultCurrency), defaultCurrency)
+                            : formatPrice(item.product.price)} <span className="text-xs text-muted-foreground">/ {item.product.unit}</span>
                         </p>
                       </div>
                       
@@ -140,7 +142,9 @@ export default function CartPage() {
                         
                         <div className="flex items-center justify-between w-full xs:w-auto gap-4">
                           <span className="font-bold text-base md:text-lg text-foreground">
-                            {formatPrice(item.product.price * item.quantity, defaultCurrency)}
+                            {defaultCurrency
+                              ? formatPrice(convertPrice(item.product.price * item.quantity, defaultCurrency), defaultCurrency)
+                              : formatPrice(item.product.price * item.quantity)}
                           </span>
                           <Button
                             variant="ghost"
@@ -173,7 +177,11 @@ export default function CartPage() {
                 <div className="space-y-2">
                   <div className="flex justify-between text-sm md:text-base">
                     <span className="text-muted-foreground">Subtotal</span>
-                    <span className="font-medium">{formatPrice(getTotalPrice(), defaultCurrency)}</span>
+                    <span className="font-medium">
+                      {defaultCurrency
+                        ? formatPrice(convertPrice(getTotalPrice(), defaultCurrency), defaultCurrency)
+                        : formatPrice(getTotalPrice())}
+                    </span>
                   </div>
                   
                   <div className="flex justify-between text-sm md:text-base">
@@ -192,10 +200,12 @@ export default function CartPage() {
                   <div className="flex justify-between items-baseline">
                     <span className="font-semibold text-base md:text-lg">Total</span>
                     <span className="font-bold text-xl md:text-2xl text-primary">
-                      {formatPrice(totalWithDelivery, defaultCurrency)}
+                      {defaultCurrency
+                        ? formatPrice(convertPrice(totalWithDelivery, defaultCurrency), defaultCurrency)
+                        : formatPrice(totalWithDelivery)}
                     </span>
                   </div>
-                  {cupCurrency && cupCurrency.id !== defaultCurrency?.id && (
+                  {cupCurrency && (
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Total en CUP</span>
                       <span className="font-medium">{formatPrice(totalWithDelivery, cupCurrency)}</span>

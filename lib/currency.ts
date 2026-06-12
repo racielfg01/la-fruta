@@ -25,7 +25,6 @@ export async function fetchCurrencies(): Promise<CurrencyInfo[]> {
 }
 
 export function convertPrice(amount: number, currency: CurrencyInfo): number {
-  if (currency.isDefault) return amount;
   return amount * currency.exchangeRate;
 }
 

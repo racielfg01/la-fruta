@@ -199,7 +199,7 @@ export default function CheckoutPage() {
   const totalBase = subtotalBase + deliveryFeeBase;
 
   const convertAmount = (amountInCUP: number): number => {
-    if (!selectedCurrency || selectedCurrency.isDefault) return amountInCUP;
+    if (!selectedCurrency) return amountInCUP;
     return amountInCUP * selectedCurrency.exchangeRate;
   };
 

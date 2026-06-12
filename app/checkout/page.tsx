@@ -520,7 +520,7 @@ export default function CheckoutPage() {
                   <p className="text-xs text-muted-foreground">
                     Tipo de cambio: 1{" "}
                     {defaultCurrency?.code || "CUP"} ={" "}
-                    {selectedCurrency?.exchangeRate.toFixed(4)}{" "}
+                    {selectedCurrency?.exchangeRate.toFixed(2)}{" "}
                     {selectedCurrency?.code}
                   </p>
                 </div>

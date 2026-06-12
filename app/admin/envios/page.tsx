@@ -62,7 +62,7 @@ const emptyZone: Omit<DeliveryZone, "id"> = {
 export default function DeliveryAdmin() {
   const { deliveryZones, addDeliveryZone, updateDeliveryZone, deleteDeliveryZone } =
     useAdminStore();
-  const { currencies, formatPrice, convertPrice } = useCurrency();
+  const { defaultCurrency, currencies, formatPrice, convertPrice } = useCurrency();
   const cupCurrency = currencies.find(c => c.code === 'CUP');
   const usdCurrency = currencies.find(c => c.code === 'USD');
 

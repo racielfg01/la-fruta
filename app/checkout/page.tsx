@@ -198,9 +198,14 @@ export default function CheckoutPage() {
   const deliveryFeeBase = selectedZone ? selectedZone.price : 0;
   const totalBase = subtotalBase + deliveryFeeBase;
 
+  const cupCurrency = useMemo(
+    () => currencies.find((c) => c.code === 'CUP') || null,
+    [currencies],
+  );
+
   const convertAmount = (amountInCUP: number): number => {
-    if (!selectedCurrency) return amountInCUP;
-    return amountInCUP * selectedCurrency.exchangeRate;
+    if (!selectedCurrency || !cupCurrency) return amountInCUP;
+    return (amountInCUP / cupCurrency.exchangeRate) * selectedCurrency.exchangeRate;
   };
 
   const subtotalConverted = convertAmount(subtotalBase);
@@ -395,7 +400,7 @@ export default function CheckoutPage() {
                       {activeZones.map((zone) => (
                         <SelectItem key={zone.id} value={zone.id}>
                           {zone.name} - {zone.minDistance}-{zone.maxDistance} km
-                          / ${zone.price.toFixed(2)} CUP
+                          / ${zone.price.toFixed(2)} {cupCurrency?.code || "CUP"}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -519,8 +524,8 @@ export default function CheckoutPage() {
                   </Select>
                   <p className="text-xs text-muted-foreground">
                     Tipo de cambio: 1{" "}
-                    {defaultCurrency?.code || "CUP"} ={" "}
-                    {selectedCurrency?.exchangeRate.toFixed(2)}{" "}
+                    {cupCurrency?.code || "CUP"} ={" "}
+                    {selectedCurrency?.exchangeRate.toFixed(4)}{" "}
                     {selectedCurrency?.code}
                   </p>
                 </div>

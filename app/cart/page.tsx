@@ -108,9 +108,9 @@ export default function CartPage() {
                           {item.product.origin}
                         </p>
                         <p className="text-sm md:text-base font-medium text-primary mt-1">
-                          {defaultCurrency
+                          {cupCurrency && defaultCurrency
                             ? formatPrice(convertPrice(item.product.price, cupCurrency, defaultCurrency), defaultCurrency)
-                            : formatPrice(item.product.price)} <span className="text-xs text-muted-foreground">/ {item.product.unit}</span>
+                            : formatPrice(item.product.price, cupCurrency || defaultCurrency)} <span className="text-xs text-muted-foreground">/ {item.product.unit}</span>
                         </p>
                       </div>
                       
@@ -142,9 +142,9 @@ export default function CartPage() {
                         
                         <div className="flex items-center justify-between w-full xs:w-auto gap-4">
                           <span className="font-bold text-base md:text-lg text-foreground">
-                            {defaultCurrency
-                              ? formatPrice(convertPrice(item.product.price * item.quantity, cupCurrency, defaultCurrency), defaultCurrency)
-                              : formatPrice(item.product.price * item.quantity)}
+                          {cupCurrency && defaultCurrency
+                            ? formatPrice(convertPrice(item.product.price * item.quantity, cupCurrency, defaultCurrency), defaultCurrency)
+                            : formatPrice(item.product.price * item.quantity, cupCurrency || defaultCurrency)}
                           </span>
                           <Button
                             variant="ghost"
@@ -178,9 +178,9 @@ export default function CartPage() {
                   <div className="flex justify-between text-sm md:text-base">
                     <span className="text-muted-foreground">Subtotal</span>
                     <span className="font-medium">
-                      {defaultCurrency
+                      {cupCurrency && defaultCurrency
                         ? formatPrice(convertPrice(getTotalPrice(), cupCurrency, defaultCurrency), defaultCurrency)
-                        : formatPrice(getTotalPrice())}
+                        : formatPrice(getTotalPrice(), cupCurrency || defaultCurrency)}
                     </span>
                   </div>
                   
@@ -200,9 +200,9 @@ export default function CartPage() {
                   <div className="flex justify-between items-baseline">
                     <span className="font-semibold text-base md:text-lg">Total</span>
                     <span className="font-bold text-xl md:text-2xl text-primary">
-                      {defaultCurrency
+                      {cupCurrency && defaultCurrency
                         ? formatPrice(convertPrice(totalWithDelivery, cupCurrency, defaultCurrency), defaultCurrency)
-                        : formatPrice(totalWithDelivery)}
+                        : formatPrice(totalWithDelivery, cupCurrency || defaultCurrency)}
                     </span>
                   </div>
                   {cupCurrency && (

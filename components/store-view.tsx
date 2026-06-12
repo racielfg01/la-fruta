@@ -941,7 +941,8 @@ function MasonryCard({
   const mobileHeights = ["h-52", "h-64", "h-56", "h-72"];
   const desktopHeights = ["h-56", "h-72", "h-64", "h-80"];
   const [imageHeight, setImageHeight] = useState(desktopHeights[heightVariant]);
-  const { defaultCurrency, formatPrice } = useCurrency();
+  const { defaultCurrency, currencies, formatPrice, convertPrice } = useCurrency();
+  const cupCurrency = currencies.find(c => c.code === 'CUP');
 
   useEffect(() => {
     const isMobile = window.innerWidth < 640;
@@ -1049,7 +1050,9 @@ function MasonryCard({
         <div className="mt-2.5 sm:mt-3 md:mt-4 flex items-center justify-between gap-1.5 sm:gap-2">
           <div>
             <span className="text-base sm:text-lg md:text-xl font-bold text-foreground">
-              {formatPrice(product.price, defaultCurrency)}
+              {cupCurrency && defaultCurrency
+                ? formatPrice(convertPrice(product.price, cupCurrency, defaultCurrency), defaultCurrency)
+                : formatPrice(product.price, defaultCurrency)}
             </span>
             <span className="ml-0.5 sm:ml-1 text-[10px] sm:text-xs text-muted-foreground">
               / {product.unit}
@@ -1101,7 +1104,8 @@ function ProductCard({
   onHover: (id: string | null) => void;
 }) {
   const config = categoryConfig[product.category] || categoryConfig.Fruits;
-  const { defaultCurrency, formatPrice } = useCurrency();
+  const { defaultCurrency, currencies, formatPrice, convertPrice } = useCurrency();
+  const cupCurrency = currencies.find(c => c.code === 'CUP');
 
   return (
     <Card
@@ -1183,7 +1187,9 @@ function ProductCard({
         <div className="mt-2.5 sm:mt-3 md:mt-4 flex items-center justify-between gap-1.5 sm:gap-2">
           <div>
             <span className="text-base sm:text-lg md:text-xl font-bold text-foreground">
-              {formatPrice(product.price, defaultCurrency)}
+              {cupCurrency && defaultCurrency
+                ? formatPrice(convertPrice(product.price, cupCurrency, defaultCurrency), defaultCurrency)
+                : formatPrice(product.price, defaultCurrency)}
             </span>
             <span className="ml-0.5 sm:ml-1 text-[10px] sm:text-xs text-muted-foreground">
               / {product.unit}

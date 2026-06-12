@@ -32,7 +32,8 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
   const addItem = useCartStore((state) => state.addItem);
   const [quantity, setQuantity] = useState(1);
   const [added, setAdded] = useState(false);
-  const { defaultCurrency, formatPrice } = useCurrency();
+  const { defaultCurrency, currencies, formatPrice, convertPrice } = useCurrency();
+  const cupCurrency = currencies.find(c => c.code === 'CUP');
 
   useEffect(() => {
     if (!product) {
@@ -127,7 +128,9 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
 
             <div className="mt-4 flex items-baseline gap-2">
               <span className="text-3xl font-bold text-foreground">
-                {formatPrice(product.price, defaultCurrency)}
+                {cupCurrency && defaultCurrency
+                  ? formatPrice(convertPrice(product.price, cupCurrency, defaultCurrency), defaultCurrency)
+                  : formatPrice(product.price, defaultCurrency)}
               </span>
               <span className="text-muted-foreground"> / {product.unit}</span>
             </div>
@@ -208,7 +211,9 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
                 ) : (
                   <>
                     <ShoppingCart className="mr-2 h-5 w-5" />
-                    Añadir al carrito - {formatPrice(product.price * quantity, defaultCurrency)}
+                    Añadir al carrito - {cupCurrency && defaultCurrency
+                      ? formatPrice(convertPrice(product.price * quantity, cupCurrency, defaultCurrency), defaultCurrency)
+                      : formatPrice(product.price * quantity, defaultCurrency)}
                   </>
                 )}
               </Button>

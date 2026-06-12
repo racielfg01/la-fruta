@@ -17,7 +17,8 @@ interface ProductCardProps {
 export function ProductCard({ product }: ProductCardProps) {
   const addItem = useCartStore((state) => state.addItem);
   const [added, setAdded] = useState(false);
-  const { defaultCurrency, formatPrice } = useCurrency();
+  const { defaultCurrency, currencies, formatPrice, convertPrice } = useCurrency();
+  const cupCurrency = currencies.find(c => c.code === 'CUP');
 
   const handleAddToCart = () => {
     addItem(product);
@@ -55,7 +56,9 @@ export function ProductCard({ product }: ProductCardProps) {
         <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">{product.description}</p>
         <div className="mt-3 flex items-center justify-between">
           <div>
-            <span className="text-lg font-bold text-foreground">{formatPrice(product.price, defaultCurrency)}</span>
+            <span className="text-lg font-bold text-foreground">{cupCurrency && defaultCurrency
+              ? formatPrice(convertPrice(product.price, cupCurrency, defaultCurrency), defaultCurrency)
+              : formatPrice(product.price, defaultCurrency)}</span>
             <span className="ml-1 text-sm text-muted-foreground">{product.unit}</span>
           </div>
           <Button

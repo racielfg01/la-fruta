@@ -192,7 +192,7 @@ export default function DeliveryAdmin() {
                 <p className="text-sm text-muted-foreground">Precio Promedio (activas)</p>
                 <p className="text-2xl font-bold">{formatPrice(avgPrice, cupCurrency)}</p>
                 {usdCurrency && (
-                  <p className="text-xs text-muted-foreground">Equivalente en USD: {formatPrice(convertPrice(avgPrice, usdCurrency), usdCurrency)}</p>
+                  <p className="text-xs text-muted-foreground">Equivalente en USD: {formatPrice(convertPrice(avgPrice, cupCurrency, usdCurrency), usdCurrency)}</p>
                 )}
               </div>
             </div>
@@ -252,7 +252,7 @@ export default function DeliveryAdmin() {
                       {formatPrice(zone.price, cupCurrency)}
                     </p>
                     {usdCurrency && (
-                      <p className="text-xs text-muted-foreground">USD: {formatPrice(convertPrice(zone.price, usdCurrency), usdCurrency)}</p>
+                      <p className="text-xs text-muted-foreground">USD: {formatPrice(convertPrice(zone.price, cupCurrency, usdCurrency), usdCurrency)}</p>
                     )}
                     <span className="flex items-center gap-1 text-xs text-muted-foreground">
                       <Clock className="h-3 w-3" />
@@ -342,7 +342,7 @@ export default function DeliveryAdmin() {
                         {formatPrice(zone.price, cupCurrency)}
                       </span>
                       {usdCurrency && (
-                        <p className="text-xs text-muted-foreground">USD: {formatPrice(convertPrice(zone.price, usdCurrency), usdCurrency)}</p>
+                        <p className="text-xs text-muted-foreground">USD: {formatPrice(convertPrice(zone.price, cupCurrency, usdCurrency), usdCurrency)}</p>
                       )}
                     </TableCell>
                     <TableCell>
@@ -441,7 +441,7 @@ export default function DeliveryAdmin() {
                       {zone.minDistance}-{zone.maxDistance}km · {formatPrice(zone.price, cupCurrency)}
                     </p>
                     {usdCurrency && (
-                      <p className="text-[10px] text-muted-foreground">USD: {formatPrice(convertPrice(zone.price, usdCurrency), usdCurrency)}</p>
+                      <p className="text-[10px] text-muted-foreground">USD: {formatPrice(convertPrice(zone.price, cupCurrency, usdCurrency), usdCurrency)}</p>
                     )}
                   </div>
                 </div>
@@ -534,7 +534,7 @@ export default function DeliveryAdmin() {
                 />
                 {usdCurrency && (
                   <p className="text-xs text-muted-foreground mt-1.5">
-                    Equivalente en USD: {formatPrice(convertPrice(formData.price, usdCurrency), usdCurrency)}
+                    Equivalente en USD: {formatPrice(convertPrice(formData.price, cupCurrency, usdCurrency), usdCurrency)}
                   </p>
                 )}
               </Field>

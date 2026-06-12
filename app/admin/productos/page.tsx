@@ -516,7 +516,7 @@ function ProductsAdmin() {
                     />
                     {usdCurrency && (
                       <p className="text-xs text-muted-foreground mt-1.5">
-                        Equivalente en USD: {formatPrice(convertPrice(formData.price, usdCurrency), usdCurrency)}
+                        Equivalente en USD: {formatPrice(convertPrice(formData.price, cupCurrency, usdCurrency), usdCurrency)}
                       </p>
                     )}
                   </Field>

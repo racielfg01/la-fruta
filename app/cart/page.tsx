@@ -109,7 +109,7 @@ export default function CartPage() {
                         </p>
                         <p className="text-sm md:text-base font-medium text-primary mt-1">
                           {defaultCurrency
-                            ? formatPrice(convertPrice(item.product.price, defaultCurrency), defaultCurrency)
+                            ? formatPrice(convertPrice(item.product.price, cupCurrency, defaultCurrency), defaultCurrency)
                             : formatPrice(item.product.price)} <span className="text-xs text-muted-foreground">/ {item.product.unit}</span>
                         </p>
                       </div>
@@ -143,7 +143,7 @@ export default function CartPage() {
                         <div className="flex items-center justify-between w-full xs:w-auto gap-4">
                           <span className="font-bold text-base md:text-lg text-foreground">
                             {defaultCurrency
-                              ? formatPrice(convertPrice(item.product.price * item.quantity, defaultCurrency), defaultCurrency)
+                              ? formatPrice(convertPrice(item.product.price * item.quantity, cupCurrency, defaultCurrency), defaultCurrency)
                               : formatPrice(item.product.price * item.quantity)}
                           </span>
                           <Button
@@ -179,7 +179,7 @@ export default function CartPage() {
                     <span className="text-muted-foreground">Subtotal</span>
                     <span className="font-medium">
                       {defaultCurrency
-                        ? formatPrice(convertPrice(getTotalPrice(), defaultCurrency), defaultCurrency)
+                        ? formatPrice(convertPrice(getTotalPrice(), cupCurrency, defaultCurrency), defaultCurrency)
                         : formatPrice(getTotalPrice())}
                     </span>
                   </div>
@@ -201,7 +201,7 @@ export default function CartPage() {
                     <span className="font-semibold text-base md:text-lg">Total</span>
                     <span className="font-bold text-xl md:text-2xl text-primary">
                       {defaultCurrency
-                        ? formatPrice(convertPrice(totalWithDelivery, defaultCurrency), defaultCurrency)
+                        ? formatPrice(convertPrice(totalWithDelivery, cupCurrency, defaultCurrency), defaultCurrency)
                         : formatPrice(totalWithDelivery)}
                     </span>
                   </div>

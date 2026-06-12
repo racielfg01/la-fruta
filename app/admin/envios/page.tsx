@@ -190,7 +190,7 @@ export default function DeliveryAdmin() {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Precio Promedio (activas)</p>
-                <p className="text-2xl font-bold">{formatPrice(avgPrice, defaultCurrency)}</p>
+                <p className="text-2xl font-bold">{formatPrice(avgPrice, cupCurrency)}</p>
                 {usdCurrency && (
                   <p className="text-xs text-muted-foreground">Equivalente en USD: {formatPrice(convertPrice(avgPrice, usdCurrency), usdCurrency)}</p>
                 )}
@@ -249,7 +249,7 @@ export default function DeliveryAdmin() {
                       {zone.minDistance} - {zone.maxDistance} km
                     </p>
                     <p className="text-sm font-semibold text-primary">
-                      {formatPrice(zone.price, defaultCurrency)}
+                      {formatPrice(zone.price, cupCurrency)}
                     </p>
                     {usdCurrency && (
                       <p className="text-xs text-muted-foreground">USD: {formatPrice(convertPrice(zone.price, usdCurrency), usdCurrency)}</p>
@@ -339,7 +339,7 @@ export default function DeliveryAdmin() {
                     </TableCell>
                     <TableCell>
                       <span className="font-semibold text-primary">
-                        {formatPrice(zone.price, defaultCurrency)}
+                        {formatPrice(zone.price, cupCurrency)}
                       </span>
                       {usdCurrency && (
                         <p className="text-xs text-muted-foreground">USD: {formatPrice(convertPrice(zone.price, usdCurrency), usdCurrency)}</p>
@@ -438,7 +438,7 @@ export default function DeliveryAdmin() {
                   <div className="min-w-0">
                     <p className="text-sm font-medium truncate">{zone.name}</p>
                     <p className="text-xs text-muted-foreground">
-                      {zone.minDistance}-{zone.maxDistance}km · {formatPrice(zone.price, defaultCurrency)}
+                      {zone.minDistance}-{zone.maxDistance}km · {formatPrice(zone.price, cupCurrency)}
                     </p>
                     {usdCurrency && (
                       <p className="text-[10px] text-muted-foreground">USD: {formatPrice(convertPrice(zone.price, usdCurrency), usdCurrency)}</p>

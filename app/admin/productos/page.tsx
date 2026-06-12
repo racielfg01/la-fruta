@@ -75,8 +75,9 @@ function ProductsAdmin() {
   const searchParams = useSearchParams();
   const { products, categories, addProduct, updateProduct, deleteProduct } =
     useAdminStore();
-  const { defaultCurrency, currencies, formatPrice } = useCurrency();
+  const { defaultCurrency, currencies, formatPrice, convertPrice } = useCurrency();
   const cupCurrency = currencies.find(c => c.code === 'CUP');
+  const usdCurrency = currencies.find(c => c.code === 'USD');
 
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
@@ -513,9 +514,9 @@ function ProductsAdmin() {
                       }
                       required
                     />
-                    {cupCurrency && defaultCurrency && cupCurrency.id !== defaultCurrency.id && (
+                    {usdCurrency && (
                       <p className="text-xs text-muted-foreground mt-1.5">
-                        Equivalente: {formatPrice(formData.price * defaultCurrency.exchangeRate, defaultCurrency)}
+                        Equivalente en USD: {formatPrice(convertPrice(formData.price, usdCurrency), usdCurrency)}
                       </p>
                     )}
                   </Field>

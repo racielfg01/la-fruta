@@ -62,8 +62,9 @@ const emptyZone: Omit<DeliveryZone, "id"> = {
 export default function DeliveryAdmin() {
   const { deliveryZones, addDeliveryZone, updateDeliveryZone, deleteDeliveryZone } =
     useAdminStore();
-  const { defaultCurrency, currencies, formatPrice, convertPrice } = useCurrency();
+  const { currencies, formatPrice, convertPrice } = useCurrency();
   const cupCurrency = currencies.find(c => c.code === 'CUP');
+  const usdCurrency = currencies.find(c => c.code === 'USD');
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -190,8 +191,8 @@ export default function DeliveryAdmin() {
               <div>
                 <p className="text-sm text-muted-foreground">Precio Promedio (activas)</p>
                 <p className="text-2xl font-bold">{formatPrice(avgPrice, defaultCurrency)}</p>
-                {cupCurrency && cupCurrency.id !== defaultCurrency?.id && (
-                  <p className="text-xs text-muted-foreground">{formatPrice(avgPrice, cupCurrency)}</p>
+                {usdCurrency && (
+                  <p className="text-xs text-muted-foreground">Equivalente en USD: {formatPrice(convertPrice(avgPrice, usdCurrency), usdCurrency)}</p>
                 )}
               </div>
             </div>
@@ -250,8 +251,8 @@ export default function DeliveryAdmin() {
                     <p className="text-sm font-semibold text-primary">
                       {formatPrice(zone.price, defaultCurrency)}
                     </p>
-                    {cupCurrency && cupCurrency.id !== defaultCurrency?.id && (
-                      <p className="text-xs text-muted-foreground">{formatPrice(zone.price, cupCurrency)}</p>
+                    {usdCurrency && (
+                      <p className="text-xs text-muted-foreground">USD: {formatPrice(convertPrice(zone.price, usdCurrency), usdCurrency)}</p>
                     )}
                     <span className="flex items-center gap-1 text-xs text-muted-foreground">
                       <Clock className="h-3 w-3" />
@@ -340,8 +341,8 @@ export default function DeliveryAdmin() {
                       <span className="font-semibold text-primary">
                         {formatPrice(zone.price, defaultCurrency)}
                       </span>
-                      {cupCurrency && cupCurrency.id !== defaultCurrency?.id && (
-                        <p className="text-xs text-muted-foreground">{formatPrice(zone.price, cupCurrency)}</p>
+                      {usdCurrency && (
+                        <p className="text-xs text-muted-foreground">USD: {formatPrice(convertPrice(zone.price, usdCurrency), usdCurrency)}</p>
                       )}
                     </TableCell>
                     <TableCell>
@@ -439,8 +440,8 @@ export default function DeliveryAdmin() {
                     <p className="text-xs text-muted-foreground">
                       {zone.minDistance}-{zone.maxDistance}km · {formatPrice(zone.price, defaultCurrency)}
                     </p>
-                    {cupCurrency && cupCurrency.id !== defaultCurrency?.id && (
-                      <p className="text-[10px] text-muted-foreground">{formatPrice(zone.price, cupCurrency)}</p>
+                    {usdCurrency && (
+                      <p className="text-[10px] text-muted-foreground">USD: {formatPrice(convertPrice(zone.price, usdCurrency), usdCurrency)}</p>
                     )}
                   </div>
                 </div>
@@ -531,9 +532,9 @@ export default function DeliveryAdmin() {
                   }
                   required
                 />
-                {cupCurrency && defaultCurrency && cupCurrency.id !== defaultCurrency.id && (
+                {usdCurrency && (
                   <p className="text-xs text-muted-foreground mt-1.5">
-                    Equivalente: {formatPrice(formData.price * defaultCurrency.exchangeRate, defaultCurrency)}
+                    Equivalente en USD: {formatPrice(convertPrice(formData.price, usdCurrency), usdCurrency)}
                   </p>
                 )}
               </Field>

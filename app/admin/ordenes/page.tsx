@@ -51,9 +51,12 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { FieldGroup, Field, FieldLabel } from "@/components/ui/field";
+import { useCurrency } from "@/lib/currency";
 
 export default function OrdersPage() {
   const { orders, deliveryZones, updateOrderStatus, updatePaymentStatus } = useAdminStore();
+  const { defaultCurrency, currencies, formatPrice, convertPrice } = useCurrency();
+  const cupCurrency = currencies.find(c => c.code === 'CUP');
 
   const getZoneName = (zoneId: string) => {
     const zone = deliveryZones.find((z) => z.id === zoneId);
@@ -277,6 +280,9 @@ export default function OrdersPage() {
             const displayValue = card.isCurrency
               ? `${card.value.toFixed(2)} CUP`
               : formatNumber(card.value);
+            const usdValue = card.isCurrency && cupCurrency && defaultCurrency
+              ? formatPrice(convertPrice(card.value, cupCurrency, defaultCurrency), defaultCurrency)
+              : null;
             return (
               <Card
                 key={card.key}
@@ -314,6 +320,11 @@ export default function OrdersPage() {
                     <p className="text-xl sm:text-2xl lg:text-3xl font-bold leading-tight tracking-tight">
                       {displayValue}
                     </p>
+                    {usdValue && (
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        {usdValue}
+                      </p>
+                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -407,6 +418,11 @@ export default function OrdersPage() {
                       {getPaymentBadge(order.paymentStatus)}
                     </div>
                     <p className="font-bold text-lg">{order.total.toFixed(2)} {order.currencyCode}</p>
+                    {cupCurrency && defaultCurrency && (
+                      <p className="text-xs text-muted-foreground">
+                        {formatPrice(convertPrice(order.total, cupCurrency, defaultCurrency), defaultCurrency)}
+                      </p>
+                    )}
                   </div>
                 <div className="text-xs text-muted-foreground flex justify-between">
                   <span>{order.items.length} producto(s)</span>
@@ -465,6 +481,11 @@ export default function OrdersPage() {
                         </TableCell>
                         <TableCell className="text-right font-medium">
                           {order.total.toFixed(2)} {order.currencyCode}
+                          {cupCurrency && defaultCurrency && (
+                            <p className="text-xs text-muted-foreground">
+                              {formatPrice(convertPrice(order.total, cupCurrency, defaultCurrency), defaultCurrency)}
+                            </p>
+                          )}
                         </TableCell>
                         <TableCell>{getStatusBadge(order.status)}</TableCell>
                         <TableCell>{getPaymentBadge(order.paymentStatus)}</TableCell>
@@ -680,15 +701,36 @@ export default function OrdersPage() {
                     <div className="mt-4 pt-4 border-t space-y-2">
                       <div className="flex justify-between text-sm">
                         <span className="text-muted-foreground">Subtotal</span>
-                        <span>{viewingOrder.subtotal.toFixed(2)} {viewingOrder.currencyCode}</span>
+                        <span className="text-right">
+                          <div>{viewingOrder.subtotal.toFixed(2)} {viewingOrder.currencyCode}</div>
+                          {cupCurrency && defaultCurrency && (
+                            <div className="text-xs text-muted-foreground">
+                              {formatPrice(convertPrice(viewingOrder.subtotal, cupCurrency, defaultCurrency), defaultCurrency)}
+                            </div>
+                          )}
+                        </span>
                       </div>
                       <div className="flex justify-between text-sm">
                         <span className="text-muted-foreground">Envío</span>
-                        <span>{viewingOrder.deliveryFee.toFixed(2)} {viewingOrder.currencyCode}</span>
+                        <span className="text-right">
+                          <div>{viewingOrder.deliveryFee.toFixed(2)} {viewingOrder.currencyCode}</div>
+                          {cupCurrency && defaultCurrency && (
+                            <div className="text-xs text-muted-foreground">
+                              {formatPrice(convertPrice(viewingOrder.deliveryFee, cupCurrency, defaultCurrency), defaultCurrency)}
+                            </div>
+                          )}
+                        </span>
                       </div>
                       <div className="flex justify-between font-bold text-lg pt-2 border-t">
                         <span>Total</span>
-                        <span>{viewingOrder.total.toFixed(2)} {viewingOrder.currencyCode}</span>
+                        <span className="text-right">
+                          <div>{viewingOrder.total.toFixed(2)} {viewingOrder.currencyCode}</div>
+                          {cupCurrency && defaultCurrency && (
+                            <div className="text-xs font-normal text-muted-foreground">
+                              {formatPrice(convertPrice(viewingOrder.total, cupCurrency, defaultCurrency), defaultCurrency)}
+                            </div>
+                          )}
+                        </span>
                       </div>
                     </div>
                   </CardContent>

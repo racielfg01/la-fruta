@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { loginAction } from '@/app/actions/auth';
 import { useAuthStore } from '@/lib/auth-context';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Eye, EyeOff, AlertCircle, Loader2 } from 'lucide-react';
 
 export default function LoginForm() {
@@ -55,88 +57,78 @@ export default function LoginForm() {
   return (
     <div className="w-full max-w-md mx-auto p-6 space-y-6">
       <div className="text-center">
-        <h1 className="text-3xl font-bold text-green-900">Iniciar Sesión</h1>
-        <p className="text-gray-600">Ingresa con tu correo o teléfono</p>
+        <h1 className="text-3xl font-bold text-foreground">Iniciar Sesión</h1>
+        <p className="text-muted-foreground">Ingresa con tu correo o teléfono</p>
       </div>
 
       {error && (
-        <div className="flex items-center gap-3 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
-          <AlertCircle className="w-5 h-5" />
+        <div className="flex items-center gap-3 p-4 bg-destructive/10 border border-destructive/20 rounded-lg text-destructive">
+          <AlertCircle className="w-5 h-5 shrink-0" />
           <span className="text-sm">{error}</span>
         </div>
       )}
 
       <form onSubmit={handleSubmit} className="space-y-5">
         <div className="space-y-2">
-          <label className="block text-sm font-medium text-gray-700">Correo o Teléfono</label>
-          <input
+          <label className="block text-sm font-medium text-foreground">Correo o Teléfono</label>
+          <Input
             type="text"
             name="identifier"
             value={formData.identifier}
             onChange={handleChange}
             onBlur={handleBlur}
             placeholder="ejemplo@correo.com o 3001234567"
-            className={`w-full px-4 py-2.5 border rounded-lg transition-colors ${
-              touched.identifier && !isIdentifierValid
-                ? 'border-red-500 bg-red-50'
-                : 'border-gray-300 bg-white'
-            } focus:outline-none focus:ring-2 focus:ring-green-500`}
+            className={touched.identifier && !isIdentifierValid ? 'border-destructive' : ''}
           />
           {touched.identifier && !isIdentifierValid && (
-            <div className="text-xs text-red-600">Ingresa tu correo o número de teléfono</div>
+            <div className="text-xs text-destructive">Ingresa tu correo o número de teléfono</div>
           )}
         </div>
 
         <div className="space-y-2">
           <div className="flex justify-between">
-            <label className="text-sm font-medium text-gray-700">Contraseña</label>
-            <Link href="/auth/forgot-password" className="text-xs text-green-600 hover:underline">
+            <label className="text-sm font-medium text-foreground">Contraseña</label>
+            <Link href="/auth/forgot-password" className="text-xs text-primary hover:underline">
               ¿Olvidaste tu contraseña?
             </Link>
           </div>
           <div className="relative">
-            <input
+            <Input
               type={showPassword ? 'text' : 'password'}
               name="password"
               value={formData.password}
               onChange={handleChange}
               onBlur={handleBlur}
               placeholder="••••••••"
-              className={`w-full px-4 py-2.5 border rounded-lg pr-10 ${
-                touched.password && !isPasswordValid
-                  ? 'border-red-500 bg-red-50'
-                  : 'border-gray-300 bg-white'
-              } focus:outline-none focus:ring-2 focus:ring-green-500`}
+              className={`pr-10 ${touched.password && !isPasswordValid ? 'border-destructive' : ''}`}
             />
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground cursor-pointer"
+              tabIndex={-1}
             >
               {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
             </button>
           </div>
           {touched.password && !isPasswordValid && (
-            <div className="text-xs text-red-600">Mínimo 8 caracteres</div>
+            <div className="text-xs text-destructive">Mínimo 8 caracteres</div>
           )}
         </div>
 
-        <button
+        <Button
           type="submit"
           disabled={!isFormValid || isLoading}
-          className={`w-full py-2.5 rounded-lg font-semibold flex items-center justify-center gap-2 ${
-            !isFormValid || isLoading
-              ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-              : 'bg-green-600 text-white hover:bg-green-700'
-          }`}
+          className="w-full gap-2 min-h-[44px]"
+          size="lg"
         >
           {isLoading ? <Loader2 className="animate-spin w-5 h-5" /> : 'Iniciar Sesión'}
-        </button>
+        </Button>
       </form>
 
-      <p className="text-center text-sm">
+      <p className="text-center text-sm text-muted-foreground">
         ¿No tienes cuenta?{' '}
-        <Link href="/auth/signup" className="text-green-600 font-semibold hover:underline">
+        <Link href="/auth/signup" className="text-primary font-semibold hover:underline">
           Regístrate aquí
         </Link>
       </p>

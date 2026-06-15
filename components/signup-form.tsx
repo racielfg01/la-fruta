@@ -1,12 +1,10 @@
-
-// app/auth/signup/page.tsx (o componente SignupForm)
-'use client';
-
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { signupAction } from '@/app/actions/auth';
 import { useAuthStore } from '@/lib/auth-context';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Eye, EyeOff, AlertCircle, Loader2 } from 'lucide-react';
 
 export default function SignupForm() {
@@ -77,13 +75,13 @@ export default function SignupForm() {
   return (
     <div className="w-full max-w-md mx-auto p-6 space-y-6">
       <div className="text-center">
-        <h1 className="text-3xl font-bold text-green-900">Crear Cuenta</h1>
-        <p className="text-gray-600">Únete a MercaToma</p>
+        <h1 className="text-3xl font-bold text-foreground">Crear Cuenta</h1>
+        <p className="text-muted-foreground">Únete a MercaToma</p>
       </div>
 
       {error && (
-        <div className="flex items-center gap-3 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
-          <AlertCircle className="w-5 h-5" />
+        <div className="flex items-center gap-3 p-4 bg-destructive/10 border border-destructive/20 rounded-lg text-destructive">
+          <AlertCircle className="w-5 h-5 shrink-0" />
           <span className="text-sm">{error}</span>
         </div>
       )}
@@ -91,61 +89,56 @@ export default function SignupForm() {
       <form onSubmit={handleSubmit} className="space-y-4">
         {/* Nombre */}
         <div>
-          <label className="block text-sm font-medium text-gray-700">Nombre completo</label>
-          <input
+          <label className="block text-sm font-medium text-foreground">Nombre completo</label>
+          <Input
             type="text"
             name="name"
             value={formData.name}
             onChange={handleChange}
             onBlur={handleBlur}
-            className={`w-full px-4 py-2 border rounded-lg ${
-              touched.name && !isValidName(formData.name) ? 'border-red-500' : 'border-gray-300'
-            }`}
+            className={touched.name && !isValidName(formData.name) ? 'border-destructive' : ''}
           />
-          {touched.name && !isValidName(formData.name) && <p className="text-xs text-red-600">Mínimo 2 caracteres</p>}
+          {touched.name && !isValidName(formData.name) && <p className="text-xs text-destructive">Mínimo 2 caracteres</p>}
         </div>
 
         {/* Email */}
         <div>
-          <label className="block text-sm font-medium text-gray-700">Correo electrónico</label>
-          <input
+          <label className="block text-sm font-medium text-foreground">Correo electrónico</label>
+          <Input
             type="email"
             name="email"
             value={formData.email}
             onChange={handleChange}
             onBlur={handleBlur}
-            className={`w-full px-4 py-2 border rounded-lg ${
-              touched.email && !isValidEmail(formData.email) ? 'border-red-500' : 'border-gray-300'
-            }`}
+            className={touched.email && !isValidEmail(formData.email) ? 'border-destructive' : ''}
           />
-          {touched.email && !isValidEmail(formData.email) && <p className="text-xs text-red-600">Correo inválido</p>}
+          {touched.email && !isValidEmail(formData.email) && <p className="text-xs text-destructive">Correo inválido</p>}
         </div>
 
         {/* Teléfono */}
         <div>
-          <label className="block text-sm font-medium text-gray-700">Teléfono</label>
-          <input
+          <label className="block text-sm font-medium text-foreground">Teléfono</label>
+          <Input
             type="tel"
             name="phone"
             value={formData.phone}
             onChange={handleChange}
             onBlur={handleBlur}
-            className={`w-full px-4 py-2 border rounded-lg ${
-              touched.phone && !isValidPhone(formData.phone) ? 'border-red-500' : 'border-gray-300'
-            }`}
+            inputMode="numeric"
+            className={touched.phone && !isValidPhone(formData.phone) ? 'border-destructive' : ''}
           />
-          {touched.phone && !isValidPhone(formData.phone) && <p className="text-xs text-red-600">7 a 15 dígitos</p>}
+          {touched.phone && !isValidPhone(formData.phone) && <p className="text-xs text-destructive">7 a 15 dígitos</p>}
         </div>
 
         {/* Género */}
         <div>
-          <label className="block text-sm font-medium text-gray-700">Género</label>
+          <label className="block text-sm font-medium text-foreground">Género</label>
           <select
             name="gender"
             value={formData.gender}
             onChange={handleChange}
             onBlur={handleBlur}
-            className="w-full px-4 py-2 border rounded-lg bg-white"
+            className="w-full h-11 px-3 py-2 rounded-lg border border-input bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
           >
             <option value="">Selecciona</option>
             <option value="masculino">Masculino</option>
@@ -153,69 +146,64 @@ export default function SignupForm() {
             <option value="otro">Otro</option>
             <option value="prefiero-no-decir">Prefiero no decir</option>
           </select>
-          {touched.gender && !isValidGender(formData.gender) && <p className="text-xs text-red-600">Selecciona una opción</p>}
+          {touched.gender && !isValidGender(formData.gender) && <p className="text-xs text-destructive">Selecciona una opción</p>}
         </div>
 
         {/* Contraseña */}
         <div>
-          <label className="block text-sm font-medium text-gray-700">Contraseña</label>
+          <label className="block text-sm font-medium text-foreground">Contraseña</label>
           <div className="relative">
-            <input
+            <Input
               type={showPassword ? 'text' : 'password'}
               name="password"
               value={formData.password}
               onChange={handleChange}
               onBlur={handleBlur}
-              className={`w-full px-4 py-2 border rounded-lg pr-10 ${
-                touched.password && !isValidPassword(formData.password) ? 'border-red-500' : 'border-gray-300'
-              }`}
+              className={`pr-10 ${touched.password && !isValidPassword(formData.password) ? 'border-destructive' : ''}`}
             />
-            <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2">
+            <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground cursor-pointer" tabIndex={-1}>
               {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
             </button>
           </div>
           {touched.password && !isValidPassword(formData.password) && (
-            <p className="text-xs text-red-600">Mínimo 8 caracteres, una mayúscula, una minúscula y un número</p>
+            <p className="text-xs text-destructive">Mínimo 8 caracteres, una mayúscula, una minúscula y un número</p>
           )}
         </div>
 
         {/* Confirmar contraseña */}
         <div>
-          <label className="block text-sm font-medium text-gray-700">Confirmar contraseña</label>
+          <label className="block text-sm font-medium text-foreground">Confirmar contraseña</label>
           <div className="relative">
-            <input
+            <Input
               type={showConfirmPassword ? 'text' : 'password'}
               name="confirmPassword"
               value={formData.confirmPassword}
               onChange={handleChange}
               onBlur={handleBlur}
-              className={`w-full px-4 py-2 border rounded-lg pr-10 ${
-                touched.confirmPassword && !isValidConfirm(formData.confirmPassword) ? 'border-red-500' : 'border-gray-300'
-              }`}
+              className={`pr-10 ${touched.confirmPassword && !isValidConfirm(formData.confirmPassword) ? 'border-destructive' : ''}`}
             />
-            <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="absolute right-3 top-1/2 -translate-y-1/2">
+            <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground cursor-pointer" tabIndex={-1}>
               {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
             </button>
           </div>
           {touched.confirmPassword && !isValidConfirm(formData.confirmPassword) && (
-            <p className="text-xs text-red-600">Las contraseñas no coinciden</p>
+            <p className="text-xs text-destructive">Las contraseñas no coinciden</p>
           )}
         </div>
 
-        <button
+        <Button
           type="submit"
           disabled={!isFormValid || isLoading}
-          className={`w-full py-2.5 rounded-lg font-semibold flex items-center justify-center gap-2 ${
-            !isFormValid || isLoading ? 'bg-gray-300 cursor-not-allowed' : 'bg-green-600 text-white hover:bg-green-700'
-          }`}
+          className="w-full gap-2 min-h-[44px]"
+          size="lg"
         >
           {isLoading ? <Loader2 className="animate-spin w-5 h-5" /> : 'Registrarse'}
-        </button>
+        </Button>
       </form>
 
-      <p className="text-center text-sm">
+      <p className="text-center text-sm text-muted-foreground">
         ¿Ya tienes cuenta?{' '}
-        <Link href="/auth/login" className="text-green-600 font-semibold hover:underline">
+        <Link href="/auth/login" className="text-primary font-semibold hover:underline">
           Inicia sesión
         </Link>
       </p>

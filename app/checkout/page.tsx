@@ -384,8 +384,9 @@ export default function CheckoutPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                 <div className="rounded-lg bg-green-50 p-2.5 text-xs text-green-700">
-                      🚚 Estamos incorporando nuevas zonas constantemente
+                  <div className="rounded-lg bg-muted p-2.5 text-xs text-muted-foreground">
+                      <Truck className="h-3.5 w-3.5 inline-block mr-1.5" />
+                      Estamos incorporando nuevas zonas constantemente
                     </div>
                 <div className="space-y-2">
                   <Label htmlFor="deliveryZone">Zona de envío *</Label>
@@ -789,7 +790,7 @@ export default function CheckoutPage() {
                 )}
 
                 <Button
-                  className="w-full bg-green-600 hover:bg-green-700 text-white shadow-md"
+                  className="w-full gap-2 min-h-[44px]"
                   size="lg"
                   onClick={handleSubmit}
                   disabled={!canCheckout || isProcessing}

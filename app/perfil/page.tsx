@@ -40,7 +40,10 @@ import { useCurrency } from "@/lib/currency";
 export default function ProfilePage() {
   const { user, token, isAuthenticated, setUser } = useAuthStore();
   const router = useRouter();
-  const { defaultCurrency, formatPrice, convertPrice } = useCurrency();
+  const { defaultCurrency, currencies, formatPrice, convertPrice } = useCurrency();
+  const cupCurrency = currencies.find(c => c.code === 'CUP');
+  const convertToUSD = (amount: number) =>
+    cupCurrency && defaultCurrency ? convertPrice(amount, cupCurrency, defaultCurrency) : amount;
   const [orders, setOrders] = useState<any[]>([]);
   const [filteredOrders, setFilteredOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -363,7 +366,7 @@ export default function ProfilePage() {
                                     </div>
                                   </div>
                                   <div className="text-right">
-                                    <div className="font-bold text-lg">{formatPrice(order.total, defaultCurrency)}</div>
+                                    <div className="font-bold text-lg">{formatPrice(convertToUSD(order.total), defaultCurrency)}</div>
                                     <Button variant="ghost" size="sm" className="h-8 px-2">
                                       {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                                     </Button>
@@ -387,7 +390,7 @@ export default function ProfilePage() {
                                             {item.productName} x{item.quantity}
                                           </span>
                                           <span className="font-medium">
-                                            {formatPrice(item.price * item.quantity, defaultCurrency)}
+                                            {formatPrice(convertToUSD(item.price * item.quantity), defaultCurrency)}
                                           </span>
                                         </div>
                                       ))}
@@ -397,17 +400,17 @@ export default function ProfilePage() {
                                     <div className="bg-muted/30 rounded-lg p-3 space-y-1 text-sm">
                                       <div className="flex justify-between">
                                         <span className="text-muted-foreground">Subtotal</span>
-                                        <span>{formatPrice(order.subtotal, defaultCurrency)}</span>
+                                        <span>{formatPrice(convertToUSD(order.subtotal), defaultCurrency)}</span>
                                       </div>
                                       <div className="flex justify-between">
                                         <span className="text-muted-foreground flex items-center gap-1">
                                           <Truck className="h-3 w-3" /> Envío
                                         </span>
-                                        <span>{formatPrice(order.delivery_fee, defaultCurrency)}</span>
+                                        <span>{formatPrice(convertToUSD(order.delivery_fee), defaultCurrency)}</span>
                                       </div>
                                       <div className="flex justify-between font-bold pt-1 border-t">
                                         <span>Total</span>
-                                        <span>{formatPrice(order.total, defaultCurrency)}</span>
+                                        <span>{formatPrice(convertToUSD(order.total), defaultCurrency)}</span>
                                       </div>
                                     </div>
 

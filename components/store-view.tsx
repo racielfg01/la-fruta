@@ -75,7 +75,7 @@ const categoryConfig: Record<
   const [loadError, setLoadError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
-  const [priceRange, setPriceRange] = useState<[number, number]>([0, 150]);
+  const [priceRange, setPriceRange] = useState<[number, number]>([0, 11050]);
   const [sortBy, setSortBy] = useState<SortOption>("default");
   const [showOnlyInStock, setShowOnlyInStock] = useState(false);
   const [viewMode, setViewMode] = useState<"masonry" | "grid">("masonry");

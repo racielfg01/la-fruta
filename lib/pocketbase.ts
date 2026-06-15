@@ -39,10 +39,12 @@ export function getPB(): PocketBase {
 export async function getAdminPB(): Promise<PocketBase> {
   const client = getPB()
   if (!client.authStore.isValid) {
-    await client.collection('_superusers').authWithPassword(
-      process.env.POCKETBASE_ADMIN_EMAIL!,
-      process.env.POCKETBASE_ADMIN_PASSWORD!
-    )
+    const email = process.env.POCKETBASE_ADMIN_EMAIL
+    const password = process.env.POCKETBASE_ADMIN_PASSWORD
+    if (!email || !password) {
+      throw new Error('Missing POCKETBASE_ADMIN_EMAIL or POCKETBASE_ADMIN_PASSWORD env vars')
+    }
+    await client.admins.authWithPassword(email, password)
   }
   return client
 }

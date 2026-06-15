@@ -668,9 +668,9 @@ export default function CheckoutPage() {
                       {currencies
                         .filter((c) => c.id !== selectedCurrency?.id)
                         .map((c) => {
-                          const converted = c.isDefault
-                            ? totalBase
-                            : totalBase * c.exchangeRate;
+                          const converted = cupCurrency
+                            ? Math.round((totalBase / cupCurrency.exchangeRate) * c.exchangeRate * 100) / 100
+                            : totalBase;
                           return (
                             <div
                               key={c.id}
@@ -769,6 +769,14 @@ export default function CheckoutPage() {
                       {totalConverted.toFixed(2)} {selectedCurrency?.code}
                     </span>
                   </div>
+                  {cupCurrency && selectedCurrency?.code !== 'CUP' && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Equivalente en {cupCurrency.code}</span>
+                      <span className="font-medium">
+                        {cupCurrency.symbol}{totalBase.toFixed(2)} {cupCurrency.code}
+                      </span>
+                    </div>
+                  )}
                 </div>
 
                 {address && (

@@ -75,8 +75,12 @@ const categoryConfig: Record<
   const [loadError, setLoadError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
-  const [priceRange, setPriceRange] = useState<[number, number]>([0, 11050]);
+  const [priceRange, setPriceRange] = useState<[number, number]>([0, 10]);
   const [sortBy, setSortBy] = useState<SortOption>("default");
+  const { currencies, defaultCurrency, convertPrice } = useCurrency();
+  const cupCurrency = currencies.find(c => c.code === 'CUP');
+  const toUSD = (cupPrice: number) =>
+    cupCurrency && defaultCurrency ? convertPrice(cupPrice, cupCurrency, defaultCurrency) : cupPrice;
   const [showOnlyInStock, setShowOnlyInStock] = useState(false);
   const [viewMode, setViewMode] = useState<"masonry" | "grid">("masonry");
   const [isFiltersOpen, setIsFiltersOpen] = useState(false);
@@ -110,13 +114,13 @@ useEffect(() => {
   loadData();
 }, []);
 
-  // Calcular maxPrice (depende de products)
+  // Calcular maxPrice (en USD)
   const maxPrice = useMemo(() => {
-    if (products.length === 0) return 100;
-    return Math.max(...products.map(p => p.price));
-  }, [products]);
+    if (products.length === 0) return 10;
+    return Math.max(...products.map(p => toUSD(p.price)));
+  }, [products, cupCurrency, defaultCurrency]);
 
-  // Calcular filteredProducts (depende de products y filtros)
+  // Calcular filteredProducts (en USD)
   const filteredProducts = useMemo(() => {
     let filtered = products.filter((product) => {
       const matchesSearch =
@@ -129,8 +133,9 @@ useEffect(() => {
         selectedCategories.length === 0 ||
         selectedCategories.includes(product.category);
 
+      const productPriceUSD = toUSD(product.price);
       const matchesPrice =
-        product.price >= priceRange[0] && product.price <= priceRange[1];
+        productPriceUSD >= priceRange[0] && productPriceUSD <= priceRange[1];
 
       const matchesStock = !showOnlyInStock || product.inStock;
 
@@ -139,10 +144,10 @@ useEffect(() => {
 
     switch (sortBy) {
       case "price-asc":
-        filtered = [...filtered].sort((a, b) => a.price - b.price);
+        filtered = [...filtered].sort((a, b) => toUSD(a.price) - toUSD(b.price));
         break;
       case "price-desc":
-        filtered = [...filtered].sort((a, b) => b.price - a.price);
+        filtered = [...filtered].sort((a, b) => toUSD(b.price) - toUSD(a.price));
         break;
       case "name":
         filtered = [...filtered].sort((a, b) => a.name.localeCompare(b.name));
@@ -151,7 +156,7 @@ useEffect(() => {
         break;
     }
     return filtered;
-  }, [products, searchQuery, selectedCategories, priceRange, sortBy, showOnlyInStock]);
+  }, [products, searchQuery, selectedCategories, priceRange, sortBy, showOnlyInStock, cupCurrency, defaultCurrency]);
 
   // Calcular conteo por categorías
   const categoryCounts = useMemo(() => {
@@ -251,7 +256,7 @@ useEffect(() => {
                     <Truck className="h-4 w-4 text-blue-600" />
                   </div>
                   <span className="text-sm sm:text-base">
-                    Envío gratis +$50
+                    Envío gratis +$20
                   </span>
                 </div>
                 <div className="flex items-center gap-2 text-muted-foreground">
@@ -605,7 +610,7 @@ useEffect(() => {
                     ))}
                     {(priceRange[0] > 0 || priceRange[1] < maxPrice) && (
                       <Badge variant="secondary" className="gap-1">
-                        ${priceRange[0]} - ${priceRange[1]}
+                        ${priceRange[0].toFixed(2)} - ${priceRange[1].toFixed(2)}
                       </Badge>
                     )}
                     {showOnlyInStock && (

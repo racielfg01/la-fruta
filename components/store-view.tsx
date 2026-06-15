@@ -75,7 +75,7 @@ const categoryConfig: Record<
   const [loadError, setLoadError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
-  const [priceRange, setPriceRange] = useState<[number, number]>([0, 10]);
+  const [priceRange, setPriceRange] = useState<[number, number]>([0, 100]);
   const [sortBy, setSortBy] = useState<SortOption>("default");
   const { currencies, defaultCurrency, convertPrice } = useCurrency();
   const cupCurrency = currencies.find(c => c.code === 'CUP');

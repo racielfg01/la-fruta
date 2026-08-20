@@ -54,6 +54,13 @@ import {
 import Link from "next/link";
 import Image from "next/image";
 import { getPublicProducts } from "@/app/actions/public-products";
+import { LocationSelector } from "@/components/location-selector";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 type SortOption = "default" | "price-asc" | "price-desc" | "name";
 
@@ -89,6 +96,9 @@ const categoryConfig: Record<
 
   const addItem = useCartStore((state) => state.addItem);
   const items = useCartStore((state) => state.items);
+  const userLocation = useCartStore((state) => state.userLocation);
+  const setUserLocation = useCartStore((state) => state.setUserLocation);
+  const [locationDialogOpen, setLocationDialogOpen] = useState(false);
 
   // En StoreView, modifica la carga de datos:
 useEffect(() => {
@@ -139,7 +149,12 @@ useEffect(() => {
 
       const matchesStock = !showOnlyInStock || product.inStock;
 
-      return matchesSearch && matchesCategory && matchesPrice && matchesStock;
+      const matchesZone =
+        !userLocation?.municipality ||
+        (product.availableMunicipalities || []).length === 0 ||
+        (product.availableMunicipalities || []).includes(userLocation.municipality);
+
+      return matchesSearch && matchesCategory && matchesPrice && matchesStock && matchesZone;
     });
 
     switch (sortBy) {
@@ -156,7 +171,7 @@ useEffect(() => {
         break;
     }
     return filtered;
-  }, [products, searchQuery, selectedCategories, priceRange, sortBy, showOnlyInStock, cupCurrency, defaultCurrency]);
+  }, [products, searchQuery, selectedCategories, priceRange, sortBy, showOnlyInStock, cupCurrency, defaultCurrency, userLocation]);
 
   // Calcular conteo por categorías
   const categoryCounts = useMemo(() => {
@@ -481,6 +496,19 @@ useEffect(() => {
                   })}
                 </div>
               </div>
+
+              {/* Zona de entrega */}
+              <div className="flex items-center justify-center">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setLocationDialogOpen(true)}
+                  className="rounded-full gap-1.5"
+                >
+                  <MapPin className="h-3.5 w-3.5 text-primary" />
+                  Cambiar zona de entrega
+                </Button>
+              </div>
             </div>
           </div>
         </div>
@@ -708,6 +736,22 @@ useEffect(() => {
           </div>
         </footer>
       </div>
+
+      {/* Cambiar zona de entrega */}
+      <Dialog open={locationDialogOpen} onOpenChange={setLocationDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Cambiar zona de entrega</DialogTitle>
+          </DialogHeader>
+          <LocationSelector
+            initial={userLocation || undefined}
+            onComplete={(loc) => {
+              setUserLocation(loc);
+              setLocationDialogOpen(false);
+            }}
+          />
+        </DialogContent>
+      </Dialog>
     </TooltipProvider>
   );
 }

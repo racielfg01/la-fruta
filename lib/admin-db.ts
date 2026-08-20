@@ -14,6 +14,10 @@ function mapProduct(p: any): Product {
     stock: p.stock ?? 0,
     inStock: p.in_stock ?? (p.stock ?? 0) > 0,
     visible: p.is_visible ?? true,
+    availableMunicipalities: (p.available_municipalities || '')
+      .split(',')
+      .map((s: string) => s.trim())
+      .filter(Boolean),
   };
 }
 

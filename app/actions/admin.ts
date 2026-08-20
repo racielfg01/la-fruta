@@ -52,6 +52,10 @@ function mapProduct(p: any) {
     inStock: p.in_stock ?? (p.stock ?? 0) > 0,
     visible: p.is_visible ?? true,
     category: p.expand?.category?.name || p.category || '',
+    availableMunicipalities: (p.available_municipalities || '')
+      .split(',')
+      .map((s: string) => s.trim())
+      .filter(Boolean),
   };
 }
 
@@ -82,6 +86,12 @@ function mapOrder(o: any) {
     deliveryNotes: o.delivery_notes || '',
     currencyCode: o.currency_code || 'CUP',
     zoneId: o.zone_id || '',
+    cancelReason: o.cancel_reason || '',
+    receipt: o.receipt || '',
+    reference: o.reference || '',
+    bankName: o.bank_name || '',
+    accountNumber: o.account_number || '',
+    transferAmount: Number(o.transfer_amount) || 0,
     createdAt: o.created,
     updatedAt: o.updated,
   };
@@ -159,6 +169,7 @@ export async function addProductAction(product: Product, token: string) {
     stock: product.stock,
     in_stock: product.stock > 0,
     is_visible: product.visible,
+    available_municipalities: (product.availableMunicipalities || []).join(','),
   });
   return { ...product, id: record.id };
 }
@@ -179,6 +190,9 @@ export async function editProductAction(id: string, data: Partial<Product>, toke
     updateData.in_stock = data.stock > 0;
   }
   if (data.visible !== undefined) updateData.is_visible = data.visible;
+  if (data.availableMunicipalities !== undefined) {
+    updateData.available_municipalities = (data.availableMunicipalities || []).join(',');
+  }
   if (Object.keys(updateData).length === 0) return;
   await pb.collection('products').update(id, updateData);
 }

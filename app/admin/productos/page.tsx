@@ -43,12 +43,14 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Field, FieldLabel } from "@/components/ui/field";
-import { Plus, Pencil, Trash2, Search, Package, Check } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Plus, Pencil, Trash2, Search, Package, Check, MapPin } from "lucide-react";
 import Link from "next/link";
 import { ImageUpload } from "@/components/upload-button";
 import { usePagination } from "@/lib/use-pagination";
 import { PaginationBar } from "@/components/pagination-bar";
 import { useCurrency } from "@/lib/currency";
+import { getPublicLocations } from "@/app/actions/public";
 
 const emptyProduct: Omit<Product, "id"> = {
   name: "",
@@ -89,11 +91,24 @@ function ProductsAdmin() {
   const [isLoading, setIsLoading] = useState(false);
   const [imageUploaded, setImageUploaded] = useState(false);
   const [step, setStep] = useState(1);
+  const [municipalities, setMunicipalities] = useState<{ id: string; name: string; province: string }[]>([]);
+  const [selectedMunicipalities, setSelectedMunicipalities] = useState<string[]>([]);
+
+  useEffect(() => {
+    getPublicLocations().then((d) => setMunicipalities(d.municipalities));
+  }, []);
+
+  const toggleMunicipality = (id: string) => {
+    setSelectedMunicipalities((prev) =>
+      prev.includes(id) ? prev.filter((m) => m !== id) : [...prev, id]
+    );
+  };
 
   const handleNewProduct = useCallback(() => {
     setEditingProduct(null);
     setFormData(emptyProduct);
     setImageUploaded(false);
+    setSelectedMunicipalities([]);
     setStep(1);
     setDialogOpen(true);
   }, []);
@@ -147,6 +162,7 @@ function ProductsAdmin() {
       visible: product.visible,
     });
     setImageUploaded(false);
+    setSelectedMunicipalities(product.availableMunicipalities || []);
     setStep(1);
     setDialogOpen(true);
   };
@@ -169,6 +185,8 @@ function ProductsAdmin() {
     setIsLoading(true);
 
     const data = { ...formData, inStock: formData.stock > 0 };
+
+    data.availableMunicipalities = selectedMunicipalities;
 
     try {
       if (editingProduct) {
@@ -569,6 +587,44 @@ function ProductsAdmin() {
                         <SelectItem value="hidden">Oculto</SelectItem>
                       </SelectContent>
                     </Select>
+                  </Field>
+
+                  <Field>
+                    <FieldLabel className="flex items-center gap-1.5">
+                      <MapPin className="h-3.5 w-3.5 text-primary" />
+                      Zonas de entrega
+                    </FieldLabel>
+                    <div className="rounded-lg border max-h-44 overflow-y-auto p-3 space-y-1.5">
+                      {municipalities.length === 0 ? (
+                        <p className="text-xs text-muted-foreground">
+                          Sin municipios configurados. Créalos en Ubicaciones.
+                        </p>
+                      ) : (
+                        municipalities.map((m) => (
+                          <label
+                            key={m.id}
+                            className="flex items-center gap-2 cursor-pointer text-sm hover:bg-muted/60 rounded px-1 py-0.5"
+                          >
+                            <Checkbox
+                              checked={selectedMunicipalities.includes(m.id)}
+                              onCheckedChange={() => toggleMunicipality(m.id)}
+                              className="data-[state=checked]:bg-primary data-[state=checked]:border-primary"
+                            />
+                            {m.name}
+                          </label>
+                        ))
+                      )}
+                    </div>
+                    {selectedMunicipalities.length > 0 && (
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {selectedMunicipalities.length} municipio(s) seleccionado(s)
+                      </p>
+                    )}
+                    {selectedMunicipalities.length === 0 && (
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Sin selección = disponible en todas las zonas.
+                      </p>
+                    )}
                   </Field>
               </div>
             )}

@@ -197,13 +197,24 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ShoppingCart, Leaf, Menu, X, Settings, LogOut, User } from "lucide-react";
+import { ShoppingCart, Leaf, Menu, X, Settings, LogOut, User, Moon, Sun, Globe } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useCartStore } from "@/lib/store";
 import { useAuthStore } from "@/lib/auth-context";
 import { useState, useEffect } from "react";
 import Image from "next/image";
+import { useTheme } from "next-themes";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { useCurrencyStore, useSelectedCurrency } from "@/lib/currency-store";
+import { useSettingsStore } from "@/lib/settings-store";
+import { getPublicCountries } from "@/app/actions/public";
 
 export function Header() {
   const totalItems = useCartStore((state) => state.getTotalItems());
@@ -221,6 +232,28 @@ export function Header() {
   const ready = !isLoading;
   const isAdmin = ready && Number(user?.role_id) === 2;
 
+  // Moneda global
+  const initCurrencies = useCurrencyStore((s) => s.init);
+  const currencies = useCurrencyStore((s) => s.currencies);
+  const setCurrency = useCurrencyStore((s) => s.setCurrency);
+  const selectByPhone = useCurrencyStore((s) => s.selectByPhone);
+  const selectedCurrency = useSelectedCurrency();
+
+  // Tema y ajustes de la tienda
+  const { setTheme, resolvedTheme } = useTheme();
+  const settings = useSettingsStore((s) => s.settings);
+  const initSettings = useSettingsStore((s) => s.init);
+
+  useEffect(() => {
+    initCurrencies();
+    initSettings();
+  }, [initCurrencies, initSettings]);
+
+  useEffect(() => {
+    if (!mounted || !user?.phone) return;
+    getPublicCountries().then((countries) => selectByPhone(user.phone, countries));
+  }, [mounted, user?.phone, selectByPhone, currencies.length]);
+
   // No renderizar el contador hasta que esté montado en el cliente
   const cartBadge = mounted && totalItems > 0 && (
     <Badge className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full p-0 text-xs">
@@ -233,10 +266,10 @@ export function Header() {
       <div className="container mx-auto flex h-16 items-center justify-between px-4">
         <Link href="/" className="flex items-center gap-2">
           <div className="flex h-10 w-10 items-center justify-center rounded-full overflow-hidden">
-            <Image className="object-cover" src={"/icon-512x512.png"} alt="logo" width={40} height={40} priority/>
+            <Image className="object-cover" src={settings.logo || "/icon-512x512.png"} alt={settings.storeName || "logo"} width={40} height={40} priority/>
           </div>
           <span className="font-[family-name:var(--font-playfair)] text-2xl font-semibold text-foreground">
-            <span className="text-primary">Merca</span><span className="text-destructive">Toma</span>
+            {settings.storeName || <><span className="text-primary">Merca</span><span className="text-destructive">Toma</span></>}
           </span>
         </Link>
 
@@ -267,6 +300,34 @@ export function Header() {
         </nav>
 
         <div className="flex items-center gap-2">
+          {/* Selector de moneda global */}
+          {mounted && currencies.length > 0 && (
+            <Select value={selectedCurrency?.id} onValueChange={(val) => setCurrency(val)}>
+              <SelectTrigger className="hidden md:flex h-10 w-[110px] gap-1.5 text-sm">
+                <Globe className="h-4 w-4 text-muted-foreground" />
+                <SelectValue placeholder="Moneda" />
+              </SelectTrigger>
+              <SelectContent>
+                {currencies.map((c) => (
+                  <SelectItem key={c.id} value={c.id}>
+                    {c.symbol} {c.code}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+
+          {/* Alternar tema claro/oscuro */}
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
+            aria-label="Cambiar tema"
+            className="min-h-[44px] min-w-[44px]"
+          >
+            {resolvedTheme === "dark" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+          </Button>
+
           <Link href="/cart">
             <Button variant="ghost" size="icon" className="relative">
               <ShoppingCart className="h-5 w-5" />

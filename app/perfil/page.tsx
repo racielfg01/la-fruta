@@ -3,12 +3,20 @@
 import { useState, useEffect } from "react";
 import { useAuthStore, AuthUser } from "@/lib/auth-context";
 import { useRouter } from "next/navigation";
-import { getUserOrders, updateUserProfile } from "@/app/actions/orders";
+import { getUserOrders, updateUserProfile, cancelOrderAction } from "@/app/actions/orders";
 import { Header } from "@/components/header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import {
   Loader2,
   User,
@@ -32,6 +40,7 @@ import {
   Headphones,
   MessageCircle,
   Clock,
+  XCircle,
 } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
@@ -61,6 +70,36 @@ export default function ProfilePage() {
     gender: "",
   });
 
+  // Cancelación de órdenes
+  const [cancelOpen, setCancelOpen] = useState(false);
+  const [cancellingOrder, setCancellingOrder] = useState<any>(null);
+  const [cancelReason, setCancelReason] = useState("");
+  const [cancelling, setCancelling] = useState(false);
+
+  const requestCancel = (order: any) => {
+    setCancellingOrder(order);
+    setCancelReason("");
+    setCancelOpen(true);
+  };
+
+  const confirmCancel = async () => {
+    if (!cancellingOrder || !token) return;
+    if (!cancelReason.trim()) {
+      alert("El motivo de cancelación es obligatorio.");
+      return;
+    }
+    setCancelling(true);
+    const res = await cancelOrderAction(cancellingOrder.id, cancelReason, token);
+    setCancelling(false);
+    if (res.success) {
+      setCancelOpen(false);
+      setCancellingOrder(null);
+      loadOrders();
+    } else {
+      alert(res.error || "No se pudo cancelar la orden.");
+    }
+  };
+
   // Redirigir si no autenticado
   useEffect(() => {
     if (!isAuthenticated) {
@@ -89,7 +128,7 @@ export default function ProfilePage() {
         order.items.some((item: any) =>
           item.productName.toLowerCase().includes(searchLower)
         ) ||
-        order.delivery_address.toLowerCase().includes(searchLower)
+        (order.deliveryAddress || "").toLowerCase().includes(searchLower)
       );
     });
     setFilteredOrders(filtered);
@@ -406,7 +445,7 @@ export default function ProfilePage() {
                                         <span className="text-muted-foreground flex items-center gap-1">
                                           <Truck className="h-3 w-3" /> Envío
                                         </span>
-                                        <span>{formatPrice(convertToUSD(order.delivery_fee), defaultCurrency)}</span>
+                                        <span>{formatPrice(convertToUSD(order.deliveryFee), defaultCurrency)}</span>
                                       </div>
                                       <div className="flex justify-between font-bold pt-1 border-t">
                                         <span>Total</span>
@@ -421,22 +460,40 @@ export default function ProfilePage() {
                                           <CreditCard className="h-3 w-3" /> Pago
                                         </p>
                                         <p className="font-medium capitalize">
-                                          {order.payment_method} -{" "}
-                                          {order.payment_status === "paid" ? "Pagado" : "Pendiente"}
+                                          {order.paymentMethod} -{" "}
+                                          {order.paymentStatus === "paid" ? "Pagado" : "Pendiente"}
                                         </p>
                                       </div>
                                       <div className="space-y-1">
                                         <p className="text-muted-foreground flex items-center gap-1">
                                           <MapPin className="h-3 w-3" /> Entrega
                                         </p>
-                                        <p className="font-medium">{order.delivery_address}</p>
-                                        {order.delivery_notes && (
+                                        <p className="font-medium">{order.deliveryAddress}</p>
+                                        {order.deliveryNotes && (
                                           <p className="text-xs text-muted-foreground">
-                                            Nota: {order.delivery_notes}
+                                            Nota: {order.deliveryNotes}
                                           </p>
                                         )}
                                       </div>
                                     </div>
+
+                                    {order.cancelReason && (
+                                      <p className="text-xs text-destructive">
+                                        Motivo de cancelación: {order.cancelReason}
+                                      </p>
+                                    )}
+
+                                    {order.status !== "delivered" &&
+                                      order.status !== "cancelled" && (
+                                        <Button
+                                          variant="outline"
+                                          size="sm"
+                                          className="text-destructive border-destructive/40 hover:bg-destructive/10"
+                                          onClick={() => requestCancel(order)}
+                                        >
+                                          <XCircle className="mr-1 h-4 w-4" /> Cancelar pedido
+                                        </Button>
+                                      )}
                                   </div>
                                 )}
                               </CardContent>
@@ -640,6 +697,46 @@ export default function ProfilePage() {
             </CardContent>
           </Card>
         </div>
+
+        {/* Diálogo de cancelación */}
+        <Dialog open={cancelOpen} onOpenChange={setCancelOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <XCircle className="h-5 w-5 text-destructive" />
+                Cancelar pedido #{cancellingOrder?.id?.slice(0, 8)}
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-3">
+              <p className="text-sm text-muted-foreground">
+                Cuéntanos el motivo de la cancelación (obligatorio):
+              </p>
+              <Textarea
+                value={cancelReason}
+                onChange={(e) => setCancelReason(e.target.value)}
+                placeholder="Ej: Ya no necesito el pedido"
+                rows={3}
+              />
+            </div>
+            <DialogFooter className="gap-2">
+              <Button variant="outline" onClick={() => setCancelOpen(false)}>
+                Volver
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={confirmCancel}
+                disabled={cancelling || !cancelReason.trim()}
+              >
+                {cancelling ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <XCircle className="mr-1 h-4 w-4" />
+                )}
+                Confirmar cancelación
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </main>
     </div>
   );

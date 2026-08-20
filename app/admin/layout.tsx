@@ -16,6 +16,11 @@ import {
   ShoppingBag,
   Coins,
   LogOut,
+  MapPin,
+  Settings as SettingsIcon,
+  Landmark,
+  Globe,
+  ShieldCheck,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -32,10 +37,15 @@ const navigation = [
   { name: "Panel Principal", href: "/admin", icon: LayoutDashboard },
   { name: "Órdenes", href: "/admin/ordenes", icon: ShoppingBag },
   { name: "Productos", href: "/admin/productos", icon: Package },
-  { name: "Envíos", href: "/admin/envios", icon: Truck },
-  { name: "Usuarios", href: "/admin/usuarios", icon: Users },
   { name: "Categorías", href: "/admin/categorias", icon: Tags },
+  { name: "Envíos", href: "/admin/envios", icon: Truck },
+  { name: "Ubicaciones", href: "/admin/ubicaciones", icon: MapPin },
+  { name: "Usuarios", href: "/admin/usuarios", icon: Users },
   { name: "Monedas", href: "/admin/monedas", icon: Coins },
+  { name: "Bancos", href: "/admin/bancos", icon: Landmark },
+  { name: "Países", href: "/admin/paises", icon: Globe },
+  { name: "Roles", href: "/admin/roles", icon: ShieldCheck },
+  { name: "Configuración", href: "/admin/configuracion", icon: SettingsIcon },
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {

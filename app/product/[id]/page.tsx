@@ -142,6 +142,20 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
               <span>Origen: {product.origin}</span>
             </div>
 
+            {product.inStock && product.stock > 0 && (
+              <div className="mt-4 flex items-center gap-2 text-sm">
+                {product.stock <= 20 ? (
+                  <span className="rounded-full bg-amber-100 px-3 py-1 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400">
+                    Solo quedan {product.stock}
+                  </span>
+                ) : (
+                  <span className="rounded-full bg-muted px-3 py-1 text-muted-foreground">
+                    Disponible · {product.stock} en stock
+                  </span>
+                )}
+              </div>
+            )}
+
             <Card className="mt-6">
               <CardContent className="grid gap-4 p-4 sm:grid-cols-3">
                 <div className="flex items-center gap-3">
@@ -190,7 +204,8 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
                   <Button
                     variant="outline"
                     size="icon"
-                    onClick={() => setQuantity(quantity + 1)}
+                    onClick={() => setQuantity(Math.min(product.stock, quantity + 1))}
+                    disabled={quantity >= product.stock}
                   >
                     <Plus className="h-4 w-4" />
                   </Button>

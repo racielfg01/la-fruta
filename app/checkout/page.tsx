@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Header } from "@/components/header";
 import { Button } from "@/components/ui/button";
@@ -33,12 +33,18 @@ import {
   Building2,
   BadgeCheck,
   AlertCircle,
+  Copy,
+  UploadCloud,
+  CheckCircle2,
 } from "lucide-react";
 import { useMemo } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { getPublicCurrencies } from "@/app/actions/public-currencies";
 import { createOrderAction } from "@/app/actions/orders";
+import { getPublicTransferData } from "@/app/actions/public";
+import { useCurrencyStore } from "@/lib/currency-store";
+import { toast } from "sonner";
 
 // -------------------------------
 // Configuración de métodos de pago (igual)
@@ -50,14 +56,6 @@ interface PaymentMethodConfig {
   icon: any;
   type: "cash" | "transfer";
   disabled?: boolean;
-  currency?: string;
-  bankDetails?: {
-    bank: string;
-    accountNumber: string;
-    accountType?: string;
-    owner: string;
-    ci: string;
-  };
 }
 
 const paymentMethodsConfig: PaymentMethodConfig[] = [
@@ -69,30 +67,26 @@ const paymentMethodsConfig: PaymentMethodConfig[] = [
     type: "cash",
   },
   {
-    id: "transfer_cup",
-    name: "Transferencia bancaria (CUP)",
-    description: "Paga mediante transferencia en pesos cubanos",
+    id: "transfer",
+    name: "Transferencia bancaria",
+    description: "Paga mediante transferencia y sube tu comprobante",
     icon: Building2,
     type: "transfer",
-    currency: "CUP",
-    disabled: true,
-    bankDetails: {
-      bank: "Banco de Crédito y Comercio (BANDEC)",
-      accountNumber: "1234567890",
-      accountType: "Cuenta Corriente",
-      owner: "MercaToma S.A.",
-      ci: "123456789",
-    },
-  },
-  {
-    id: "transfer_visa",
-    name: "Transferencia Visa",
-    description: "Próximamente disponible",
-    icon: CreditCard,
-    type: "transfer",
-    disabled: true,
+    disabled: false,
   },
 ];
+
+interface TransferAccount {
+  id: string;
+  bank: string;
+  accountNumber: string;
+  accountType: string;
+  owner: string;
+  ci: string;
+  currency: string;
+  transferLimit: number;
+  transferCount: number;
+}
 
 interface Currency {
   id: string;
@@ -121,6 +115,7 @@ export default function CheckoutPage() {
   } = useAdminStore();
 
   const [isProcessing, setIsProcessing] = useState(false);
+  const processingRef = useRef(false);
   const [currencies, setCurrencies] = useState<Currency[]>([]);
   const [selectedCurrency, setSelectedCurrency] = useState<Currency | null>(
     null,
@@ -134,6 +129,75 @@ export default function CheckoutPage() {
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string>(
     paymentMethodsConfig[0].id,
   );
+
+  // Transferencia bancaria
+  const [transferData, setTransferData] = useState<{
+    banks: { id: string; name: string }[];
+    accounts: TransferAccount[];
+  }>({ banks: [], accounts: [] });
+  const [transferBank, setTransferBank] = useState("");
+  const [transferAccountId, setTransferAccountId] = useState("");
+  const [receiptUrl, setReceiptUrl] = useState("");
+  const [receiptName, setReceiptName] = useState("");
+  const [uploading, setUploading] = useState(false);
+  const [reference, setReference] = useState("");
+
+  useEffect(() => {
+    getPublicTransferData().then(setTransferData).catch(() => {});
+  }, []);
+
+  const accountsForBank = transferData.accounts.filter((a) => {
+    const full = a.transferLimit > 0 && a.transferCount >= a.transferLimit;
+    return !full && a.bank === transferBank;
+  });
+  const selectedTransferAccount = transferData.accounts.find(
+    (a) => a.id === transferAccountId
+  );
+
+  const handleBankChange = (bank: string) => {
+    setTransferBank(bank);
+    setTransferAccountId("");
+    const pool = transferData.accounts.filter((a) => {
+      const full = a.transferLimit > 0 && a.transferCount >= a.transferLimit;
+      return !full && a.bank === bank;
+    });
+    const preferred =
+      pool.find((a) => a.currency === selectedCurrency?.code) || pool[0];
+    if (preferred) setTransferAccountId(preferred.id);
+  };
+
+  const handleReceiptUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const res = await fetch("/api/upload", { method: "POST", body: fd });
+      const json = await res.json();
+      if (res.ok && json.success) {
+        setReceiptUrl(json.url);
+        setReceiptName(file.name);
+        toast.success("Comprobante subido correctamente");
+      } else {
+        toast.error(json.error || "Error al subir el comprobante");
+      }
+    } catch {
+      toast.error("Error al subir el comprobante");
+    } finally {
+      setUploading(false);
+      e.target.value = "";
+    }
+  };
+
+  const copyAccount = async (num: string) => {
+    try {
+      await navigator.clipboard.writeText(num);
+      toast.success("Número de cuenta copiado");
+    } catch {
+      toast.error("No se pudo copiar, cópialo manualmente");
+    }
+  };
 
   // Estados para envío
   const [selectedZoneId, setSelectedZoneId] = useState<string>("");
@@ -152,8 +216,12 @@ export default function CheckoutPage() {
       setIsLoadingCurrencies(true);
       const data = await getPublicCurrencies();
       setCurrencies(data);
-      const defaultCurr = data.find((c) => c.isDefault) || data[0];
-      setSelectedCurrency(defaultCurr || null);
+      const globalId = useCurrencyStore.getState().currencyId;
+      const preferred =
+        data.find((c) => c.id === globalId) ||
+        data.find((c) => c.isDefault) ||
+        data[0];
+      setSelectedCurrency(preferred || null);
       setIsLoadingCurrencies(false);
     };
     loadCurrencies();
@@ -229,20 +297,37 @@ export default function CheckoutPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    // Guard síncrono contra doble envío (doble clic / Enter rápido)
+    if (processingRef.current || isProcessing) return;
+    processingRef.current = true;
+    setIsProcessing(true);
     if (!canCheckout) {
+      processingRef.current = false;
       alert("Selecciona una zona de envío y completa tu dirección.");
       return;
     }
     if (!formData.name || !formData.phone) {
+      processingRef.current = false;
       alert("Completa tus datos de contacto.");
       return;
     }
     if (!selectedCurrency) {
+      processingRef.current = false;
       alert("Selecciona una moneda.");
       return;
     }
+    if (
+      selectedPaymentMethod === "transfer" &&
+      (!transferAccountId || !receiptUrl)
+    ) {
+      processingRef.current = false;
+      setIsProcessing(false);
+      toast.error(
+        "Selecciona una cuenta bancaria y sube el comprobante de la transferencia."
+      );
+      return;
+    }
 
-    setIsProcessing(true);
     try {
       const orderItems = items.map((item) => ({
         productId: item.product.id,
@@ -266,6 +351,16 @@ export default function CheckoutPage() {
         deliveryNotes: "",
         currencyCode: selectedCurrency.code,
         zoneId: selectedZone.id,
+        ...(selectedPaymentMethod === "transfer"
+          ? {
+              bankAccountId: transferAccountId,
+              bankName: selectedTransferAccount?.bank || "",
+              accountNumber: selectedTransferAccount?.accountNumber || "",
+              receipt: receiptUrl,
+              reference: reference.trim() || `Pedido ${Date.now()}`,
+              transferAmount: totalConverted,
+            }
+          : {}),
       };
 
       const result = await createOrderAction(orderData, token!);
@@ -277,11 +372,13 @@ export default function CheckoutPage() {
       } else {
         alert(result.error || "Error al crear la orden.");
         setIsProcessing(false);
+        processingRef.current = false;
       }
     } catch (error) {
       console.error(error);
       alert("Ocurrió un error al procesar tu orden.");
       setIsProcessing(false);
+      processingRef.current = false;
     }
   };
   console.log("deliveryZones", deliveryZones);
@@ -506,11 +603,10 @@ export default function CheckoutPage() {
                   <Label>Moneda de pago</Label>
                   <Select
                     value={selectedCurrency?.id}
-                    onValueChange={(val) =>
-                      setSelectedCurrency(
-                        currencies.find((c) => c.id === val) || null,
-                      )
-                    }
+                    onValueChange={(val) => {
+                      setSelectedCurrency(currencies.find((c) => c.id === val) || null);
+                      useCurrencyStore.getState().setCurrency(val);
+                    }}
                   >
                     <SelectTrigger className="w-full sm:w-64">
                       <SelectValue placeholder="Seleccionar moneda" />
@@ -593,70 +689,147 @@ export default function CheckoutPage() {
                         </p>
                       </div>
                     )}
-                    {selectedMethod.type === "transfer" &&
-                      selectedMethod.bankDetails && (
-                        <div className="space-y-3">
-                          <div className="rounded-lg bg-muted/50 p-4 space-y-2">
-                            <div className="grid gap-2 text-sm">
-                              <div className="flex justify-between">
-                                <span className="text-muted-foreground">
-                                  Banco:
-                                </span>
-                                <span className="font-medium">
-                                  {selectedMethod.bankDetails.bank}
-                                </span>
+                    {selectedMethod.type === "transfer" && (
+                      <div className="space-y-4">
+                        {transferData.accounts.filter((a) => {
+                          const full = a.transferLimit > 0 && a.transferCount >= a.transferLimit;
+                          return !full;
+                        }).length === 0 ? (
+                          <p className="text-sm text-muted-foreground">
+                            No hay cuentas bancarias disponibles para transferencia.
+                          </p>
+                        ) : (
+                          <>
+                            <div className="grid gap-4 sm:grid-cols-2">
+                              <div className="space-y-2">
+                                <Label>Banco</Label>
+                                <Select value={transferBank} onValueChange={handleBankChange}>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Selecciona un banco" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {transferData.banks.map((b) => (
+                                      <SelectItem key={b.id} value={b.name}>{b.name}</SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
                               </div>
-                              <div className="flex justify-between">
-                                <span className="text-muted-foreground">
-                                  Número de cuenta:
-                                </span>
-                                <span className="font-mono">
-                                  {selectedMethod.bankDetails.accountNumber}
-                                </span>
+                              <div className="space-y-2">
+                                <Label>Cuenta</Label>
+                                <Select
+                                  value={transferAccountId}
+                                  onValueChange={setTransferAccountId}
+                                  disabled={!transferBank || accountsForBank.length === 0}
+                                >
+                                  <SelectTrigger>
+                                    <SelectValue placeholder={accountsForBank.length ? "Selecciona la cuenta" : "Sin cuentas"} />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {accountsForBank.map((a) => (
+                                      <SelectItem key={a.id} value={a.id}>
+                                        {a.accountNumber} ({a.currency})
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
                               </div>
-                              {selectedMethod.bankDetails.accountType && (
-                                <div className="flex justify-between">
-                                  <span className="text-muted-foreground">
-                                    Tipo:
-                                  </span>
-                                  <span>
-                                    {selectedMethod.bankDetails.accountType}
-                                  </span>
+                            </div>
+
+                            {selectedTransferAccount && (
+                              <div className="rounded-lg bg-muted/50 p-4 space-y-2">
+                                <div className="flex items-center justify-between gap-2">
+                                  <span className="text-sm text-muted-foreground">Número de cuenta:</span>
+                                  <div className="flex items-center gap-2">
+                                    <span className="font-mono font-medium">{selectedTransferAccount.accountNumber}</span>
+                                    <Button
+                                      type="button"
+                                      variant="outline"
+                                      size="sm"
+                                      className="h-7 gap-1 px-2"
+                                      onClick={() => copyAccount(selectedTransferAccount.accountNumber)}
+                                    >
+                                      <Copy className="h-3 w-3" /> Copiar
+                                    </Button>
+                                  </div>
                                 </div>
-                              )}
-                              <div className="flex justify-between">
-                                <span className="text-muted-foreground">
-                                  Titular:
-                                </span>
-                                <span>{selectedMethod.bankDetails.owner}</span>
+                                {selectedTransferAccount.accountType && (
+                                  <div className="flex justify-between text-sm">
+                                    <span className="text-muted-foreground">Tipo:</span>
+                                    <span className="font-medium">{selectedTransferAccount.accountType}</span>
+                                  </div>
+                                )}
+                                <div className="flex justify-between text-sm">
+                                  <span className="text-muted-foreground">Titular:</span>
+                                  <span className="font-medium">{selectedTransferAccount.owner}</span>
+                                </div>
+                                {selectedTransferAccount.ci && (
+                                  <div className="flex justify-between text-sm">
+                                    <span className="text-muted-foreground">CI / RUC:</span>
+                                    <span className="font-mono">{selectedTransferAccount.ci}</span>
+                                  </div>
+                                )}
                               </div>
-                              <div className="flex justify-between">
-                                <span className="text-muted-foreground">
-                                  CI / RUC:
-                                </span>
-                                <span className="font-mono">
-                                  {selectedMethod.bankDetails.ci}
-                                </span>
-                              </div>
-                            </div>
-                            <div className="rounded-lg bg-primary/5 p-3 mt-2">
-                              <p className="text-sm font-medium">
-                                Monto a transferir:
-                              </p>
+                            )}
+
+                            <div className="rounded-lg bg-primary/5 p-3">
+                              <p className="text-sm font-medium">Monto a transferir:</p>
                               <p className="text-xl font-bold text-primary">
-                                {selectedCurrency?.symbol}{" "}
-                                {totalConverted.toFixed(2)}{" "}
-                                {selectedCurrency?.code}
+                                {selectedCurrency?.symbol} {totalConverted.toFixed(2)} {selectedCurrency?.code}
                               </p>
                             </div>
+
+                            <div className="space-y-2">
+                              <Label>Comprobante de transferencia *</Label>
+                              {receiptUrl ? (
+                                <div className="flex items-center justify-between gap-2 rounded-lg border border-green-200 bg-green-50 p-3 dark:bg-green-500/10">
+                                  <div className="flex items-center gap-2 text-green-700 dark:text-green-400">
+                                    <CheckCircle2 className="h-4 w-4" />
+                                    <span className="text-sm line-clamp-1">{receiptName || "Comprobante subido"}</span>
+                                  </div>
+                                  <a
+                                    href={receiptUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-xs text-primary underline"
+                                  >
+                                    Ver
+                                  </a>
+                                </div>
+                              ) : (
+                                <label className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed p-6 text-center hover:bg-muted/40">
+                                  <UploadCloud className="h-6 w-6 text-muted-foreground" />
+                                  <span className="text-sm text-muted-foreground">
+                                    {uploading ? "Subiendo..." : "Imagen o PDF (máx. 5MB)"}
+                                  </span>
+                                  <input
+                                    type="file"
+                                    accept="image/*,application/pdf"
+                                    className="hidden"
+                                    onChange={handleReceiptUpload}
+                                    disabled={uploading}
+                                  />
+                                </label>
+                              )}
+                            </div>
+
+                            <div className="space-y-2">
+                              <Label>Referencia (opcional)</Label>
+                              <Input
+                                placeholder={"Ej: Pedido de tu carrito"}
+                                value={reference}
+                                onChange={(e) => setReference(e.target.value)}
+                              />
+                            </div>
+
                             <div className="text-xs text-muted-foreground flex items-center gap-1">
                               <BadgeCheck className="h-3 w-3 text-green-600" />{" "}
-                              Transfiere el monto exacto y coloca tu número de
-                              pedido como referencia.
+                              Transfiere el monto exacto. Tu pedido se confirmará al validar el
+                              comprobante.
                             </div>
-                          </div>
-                        </div>
-                      )}
+                          </>
+                        )}
+                      </div>
+                    )}
                   </div>
                 )}
 

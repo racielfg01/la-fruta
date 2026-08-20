@@ -1,7 +1,7 @@
 'use server';
 
-import { createUser, SignupData, getRoleIds } from '@/lib/auth';
-import { getAdminPB, getEphemeralPB } from '@/lib/pocketbase';
+import { createUser, SignupData, getRoleIds, decodePocketBaseToken } from '@/lib/auth';
+import { getAdminPB, getEphemeralPB, getTokenPB } from '@/lib/pocketbase';
 
 export interface AuthResponse {
   success: boolean;
@@ -200,5 +200,38 @@ export async function loginAction(credentials: { identifier: string; password: s
       return { success: false, message: '', error: 'Error de conexión. Verifica tu internet o intenta más tarde.' };
     }
     return { success: false, message: '', error: 'Correo/Teléfono o contraseña incorrectos' };
+  }
+}
+
+export async function refreshUserAction(token: string): Promise<AuthResponse> {
+  try {
+    const payload = decodePocketBaseToken(token);
+    if (!payload) {
+      return { success: false, message: '', error: 'Sesión inválida o expirada' };
+    }
+    const pb = getTokenPB(token);
+    const userWithRole = await pb.collection('users').getOne(payload.userId, {
+      expand: 'role_id',
+    });
+    const roleIds = await getRoleIds();
+    return {
+      success: true,
+      message: '',
+      user: {
+        id: userWithRole.id,
+        name: userWithRole.name,
+        email: userWithRole.email,
+        phone: userWithRole.phone || '',
+        address: userWithRole.address || '',
+        gender: userWithRole.gender || '',
+        role_id: roleIds.admin
+          ? (userWithRole.role_id === roleIds.admin ? 2 : 1)
+          : (userWithRole.expand?.role_id?.name === 'admin' ? 2 : 1),
+      },
+      token,
+    };
+  } catch (error) {
+    console.error('Refresh user error:', error);
+    return { success: false, message: '', error: 'No se pudo validar la sesión' };
   }
 }

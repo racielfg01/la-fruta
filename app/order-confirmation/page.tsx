@@ -13,6 +13,7 @@ function OrderConfirmationContent() {
   const orderId = searchParams.get("orderId") || "DESCONOCIDO";
   const currencyCode = searchParams.get("currency") || "";
   const amount = Number(searchParams.get("amount")) || 0;
+  const paymentMethod = searchParams.get("paymentMethod") || "";
 
   const steps = [
     { icon: CheckCircle, label: "Pedido Confirmado", status: "complete" },
@@ -41,6 +42,12 @@ function OrderConfirmationContent() {
         <p className="mb-8 text-lg font-bold text-primary">
           Total pagado: {currencyCode} {amount.toFixed(2)}
         </p>
+      )}
+      {paymentMethod === "transfer" && (
+        <div className="mb-8 w-full max-w-md rounded-lg bg-muted/50 p-4 text-center text-sm text-muted-foreground">
+          Recibimos tu comprobante de transferencia. Tu pedido será confirmado
+          en cuanto validemos el pago.
+        </div>
       )}
 
       <Card className="mb-8 w-full max-w-2xl">

@@ -79,6 +79,12 @@ export interface Order {
   deliveryNotes: string;
   currencyCode: string;
   zoneId: string;
+  cancelReason?: string;
+  receipt?: string;
+  reference?: string;
+  bankName?: string;
+  accountNumber?: string;
+  transferAmount?: number;
   createdAt: string;
   updatedAt: string;
 }

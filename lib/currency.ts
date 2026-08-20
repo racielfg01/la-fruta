@@ -1,5 +1,6 @@
 import { getPublicCurrencies } from '@/app/actions/public-currencies';
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
+import { useCurrencyStore, useSelectedCurrency } from './currency-store';
 
 export interface CurrencyInfo {
   id: string;
@@ -34,17 +35,12 @@ export function formatPrice(amount: number, currency?: CurrencyInfo | null): str
 }
 
 export function useCurrency() {
-  const [currencies, setCurrencies] = useState<CurrencyInfo[]>([]);
-  const [defaultCurrency, setDefaultCurrency] = useState<CurrencyInfo | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { currencies, loading, init } = useCurrencyStore();
+  const defaultCurrency = useSelectedCurrency();
 
   useEffect(() => {
-    fetchCurrencies().then((data) => {
-      setCurrencies(data);
-      setDefaultCurrency(data.find((c) => c.isDefault) || data[0] || null);
-      setLoading(false);
-    });
-  }, []);
+    init();
+  }, [init]);
 
   return { currencies, defaultCurrency, loading, formatPrice, convertPrice };
 }

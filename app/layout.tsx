@@ -3,6 +3,9 @@ import type { Metadata, Viewport } from 'next'
 import { Analytics } from '@vercel/analytics/next'
 import { AuthProvider } from '@/components/auth-provider'
 import { ServiceWorkerRegister } from '@/components/service-worker-register'
+import { ThemeProvider } from '@/components/theme-provider'
+import { SettingsApplicator } from '@/components/settings-applicator'
+import { Toaster } from '@/components/ui/sonner'
 import './globals.css'
 
 // const poppins = Poppins({
@@ -53,11 +56,15 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en" className="bg-background">
+    <html lang="en" className="bg-background" suppressHydrationWarning>
       <body className={` font-sans antialiased`}>
-        <AuthProvider>
-          {children}
-        </AuthProvider>
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
+          <SettingsApplicator />
+          <AuthProvider>
+            {children}
+          </AuthProvider>
+          <Toaster richColors />
+        </ThemeProvider>
         <ServiceWorkerRegister />
         {process.env.NODE_ENV === 'production' && <Analytics />}
       </body>

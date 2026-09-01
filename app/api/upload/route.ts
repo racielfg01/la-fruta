@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { randomUUID } from 'crypto';
 import { promises as fs } from 'fs';
 import path from 'path';
+import { decodePocketBaseToken } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
@@ -11,6 +12,11 @@ const MAX_SIZE = 5 * 1024 * 1024;
 
 export async function POST(req: NextRequest) {
   try {
+    const token = req.headers.get('authorization')?.replace('Bearer ', '');
+    if (!token || !decodePocketBaseToken(token)) {
+      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
+    }
+
     const form = await req.formData();
     const file = form.get('file');
     if (!(file instanceof File)) {

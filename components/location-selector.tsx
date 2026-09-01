@@ -54,7 +54,7 @@ export function LocationSelector({
             <MapPin className="h-6 w-6 text-primary" />
           </div>
           <div>
-            <h2 className="text-xl font-bold text-foreground">¿Dónde recibimos tu pedido?</h2>
+            <h2 className="text-xl font-bold text-foreground">¿Dónde entregamos tu pedido?</h2>
             <p className="text-sm text-muted-foreground">
               Selecciona tu provincia y municipio para ver los productos disponibles en tu zona.
             </p>
@@ -73,7 +73,7 @@ export function LocationSelector({
                 <SelectTrigger className="h-11">
                   <SelectValue placeholder="Selecciona tu provincia" />
                 </SelectTrigger>
-                <SelectContent className="max-h-72">
+                <SelectContent position="popper" className="max-h-72 z-[301]">
                   {provinces.map((p) => (
                     <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
                   ))}
@@ -87,7 +87,7 @@ export function LocationSelector({
                 <SelectTrigger className="h-11">
                   <SelectValue placeholder={province ? "Selecciona tu municipio" : "Primero elige la provincia"} />
                 </SelectTrigger>
-                <SelectContent className="max-h-72">
+                <SelectContent position="popper" className="max-h-72 z-[301]">
                   {filteredMunicipalities.map((m) => (
                     <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>
                   ))}

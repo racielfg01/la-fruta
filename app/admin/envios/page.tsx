@@ -63,8 +63,9 @@ export default function DeliveryAdmin() {
   const { deliveryZones, addDeliveryZone, updateDeliveryZone, deleteDeliveryZone } =
     useAdminStore();
   const { defaultCurrency, currencies, formatPrice, convertPrice } = useCurrency();
-  const cupCurrency = currencies.find(c => c.code === 'CUP');
-  const usdCurrency = currencies.find(c => c.code === 'USD');
+  // ponytail: CUP siempre existe en la BD; fallback a la primera activa si no
+  const cupCurrency = currencies.find((c) => c.code === "CUP") || currencies[0];
+  const usdCurrency = currencies.find((c) => c.code === "USD");
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);

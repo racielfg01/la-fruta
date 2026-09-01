@@ -1,0 +1,502 @@
+{{Ficha de tipo de subdivisión
+|nombre           = Municipio
+|imagen           = Cuba (location map).svg
+|tamaño de imagen = 300px
+|categoría        = Segundo nivel de división administrativa
+|país             = {{CUB}}
+|unidad_superior  = [[Provincias de Cuba|Provincias]]
+|número_actual    = 168
+|gobierno         = 
+|subdivisión      = 
+}}
+
+[[Cuba]] está dividida en 168 [[municipio]]s. En agosto de 2010 la [[Asamblea Nacional de Cuba]] aprobó cambios en la organización territorial del país que consistieron en:
+
+* La segmentación de la [[antigua provincia de La Habana]], con la creación de las nuevas provincias de [[Provincia de Artemisa|Artemisa]] y [[Provincia de Mayabeque|Mayabeque]], con 11 municipios cada una. A la primera de ellas, [[Pinar del Río]], le traspasó sus tres municipios más orientales: [[San Cristóbal (Cuba)|San Cristóbal]], [[Candelaria (Cuba)|Candelaria]] y [[Bahía Honda (ciudad)|Bahía Honda]].
+
+* La eliminación del municipio de [[Varadero]], en la [[provincia de Matanzas]] que pasa a formar parte del municipio [[Cárdenas (Cuba)|Cárdenas]].
+
+* La ampliación del municipio de [[Manuel Tames (Cuba)|Manuel Tames]] en la [[provincia de Guantánamo]], con la adquisición de las áreas montañosas del municipio de [[Guantánamo]] y algunas áreas de [[Yateras]] y el traspaso de su cabecera hacia el poblado de Jamaica.
+
+De esa forma Cuba quedó dividida en 15 provincias y 168 municipios. Las nuevas provincias de Artemisa y Mayabeque comenzaron a funcionar a partir del 1 de enero de 2011.
+
+== Órganos locales del Poder del Estado ==
+Según lo estipulado en la nueva [[Constitución cubana de 2019|Constitución del 2019]], los 168 municipios de [[Cuba]], incluido el municipio especial [[Isla de la Juventud]], tienen autonomía municipal, lo cual estará garantizado en la facultad de elegir las máximas autoridades mediante el voto popular, manejar los recursos locales siempre sin menoscabar los intereses de otras regiones, además, la facultad de consultar al pueblo sobre temas de interés local. 
+
+La Asamblea Municipal del Poder Popular es el órgano superior del poder del Estado en su demarcación y, en consecuencia, está investida de la más alta autoridad en su territorio. Está integrada por los delegados elegidos en cada circunscripción por el voto igual, directo y secreto de sus electores, cada cinco años. La propia asamblea elige entre sus delegados a su Presidente y Vicepresidente; y designa al Secretario y al Intendente Municipal. El [[Alcalde|Presidente de la Asamblea Municipal del Poder Popular]] representa al Estado en su demarcación territorial y el Intendente Municipal dirige la administración y preside el Consejo de Administración Municipal, el cual desempeña las funciones ejecutivo-administrativa de esos territorios.
+
+== Municipios por provincia ==
+
+=== Pinar del Río ===
+La [[provincia de Pinar del Río]] está subdividida en 11 municipios.<ref name="Sin_nombre-pFzi-1">{{cita web |url=https://www.citypopulation.de/php/cuba-admin.php |título=Cuba: Administrative Division - Provinces and Municipalities |publicación=Citypopulation |idioma=en |fecha= 24 de julio de 2018}}</ref>
+
+{|class="wikitable sortable"
+|-
+!Municipio!!Población<br />(2017)!!Área<br />(km²)!!Ubicación!!Comentarios
+|-
+|[[Consolación del Sur]]|| 88.564 || 1112 ||<small>{{Coord|22|30|0|N|83|30|55|W|format=dm|name=Consolación del Sur}}</small>||
+|-
+|[[Guane (Cuba)|Guane]]|| 35.990 ||| 717 ||<small>{{Coord|22|12|2|N|84|05|1|W|format=dm|name=Guane}}</small>||
+|-
+|[[La Palma (Cuba)|La Palma]]|| 34.289 || 621 ||<small>{{Coord|22|45|22|N|83|33|12|W|format=dm|name=La Palma}}</small>||
+|-
+|[[Los Palacios (Cuba)|Los Palacios]]|| 38.731 || 786 ||<small>{{Coord|22|34|57|N|83|14|56|W|format=dm|name=Los Palacios}}</small>||
+|-
+|[[Mantua (Cuba)|Mantua]]|| 23.974 || 915 ||<small>{{Coord|22|17|27|N|84|17|14|W|format=dm|name=Mantua}}</small>||
+|-
+|[[Minas de Matahambre]]|| 32.008 || 858 ||<small>{{Coord|22|34|57|N|83|56|57|W|format=dm|name=Minas de Matahambre}}</small>||
+|-
+|[[Pinar del Río]]|| 191.837 || 708 ||<small>{{Coord|22|25|33|N|83|41|18|W|format=dm|name=Pinar del Río}}</small>|| Capital provincial
+|-
+|[[San Juan y Martínez]]|| 43.572 || 409 ||<small>{{Coord|22|16|0|N|83|50|2|W|format=dm|name=San Juan y Martínez}}</small>||
+|-
+|[[San Luis (Pinar del Río)|San Luis]]|| 32.229 || 765 ||<small>{{Coord|22|16|59|N|83|46|4|W|format=dm|name=San Luis}}</small>||
+|-
+|[[Sandino (Cuba)|Sandino]]|| 36.569 || 1718 ||<small>{{Coord|22|04|52|N|84|13|18|W|format=dm|name=Sandino}}</small>||
+|-
+|[[Viñales (Cuba)|Viñales]]|| 28.720 || 704 ||<small>{{Coord|22|36|55|N|83|42|57|W|format=dm|name=Viñales}}</small>|| [[Patrimonio de la Humanidad]]
+|}
+
+=== Artemisa ===
+La [[provincia de Artemisa]] está subdividida en 11 municipios.<ref name="Sin_nombre-pFzi-1"/>
+
+{|class="wikitable sortable"
+|-
+!Municipio!!Población<br />(2017)!!Área<br />(km²)!!Ubicación!!Comentarios
+|-
+|[[Alquízar]]|| 32.540 || 193 ||<small>{{Coord|22|48|24|N|82|34|58|W|format=dm|name=Alquizar}}</small>||
+|-
+|[[Artemisa (Cuba)|Artemisa]]|| 85.289 || 690 ||<small>{{Coord|22|48|49|N|82|45|48|W|format=dm|name=Artemisa}}</small>|| Capital provincial
+|-
+|[[Bahía Honda (municipio)|Bahía Honda]]|| 43.351 || 784 ||<small>{{Coord|22|54|23|N|83|09|49|W|format=dm|name=Bahía Honda}}</small>||
+|-
+|[[Bauta]]|| 50.189 || 157 ||<small>{{Coord|22|59|31|N|82|32|57|W|format=dm|name=Bauta}}</small>||
+|-
+|[[Caimito (Cuba)|Caimito]]|| 41.570 || 238 ||<small>{{Coord|22|57|28|N|82|35|47|W|format=dm|name=Caimito}}</small>||
+|-
+|[[Candelaria (Cuba)|Candelaria]]|| 20.973 || 299 ||<small>{{Coord|22|44|40|N|82|57|57|W|format=dm|name=Candelaria}}</small>||
+|-
+|[[Guanajay]]|| 28.242 || 113 ||<small>{{Coord|22|55|50|N|82|41|16|W|format=dm|name=Guanajay}}</small>||
+|-
+|[[Güira de Melena]]|| 39.794 || 178 ||<small>{{Coord|22|48|8|N|82|30|17|W|format=dm|name=Güira de Melena}}</small>||
+|-
+|[[Mariel (Cuba)|Mariel]]|| 45.016 || 269 ||<small>{{Coord|22|59|38|N|82|45|14|W|format=dm|name=Mariel}}</small>||
+|-
+|[[San Antonio de los Baños]]|| 50.107 || 127 ||<small>{{Coord|22|53|20|N|82|29|55|W|format=dm|name=San Antonio de los}}</small>||
+|-
+|[[San Cristóbal (Cuba)|San Cristóbal]]|| 71.420 || 936 ||<small>{{Coord|22|43|1|N|83|03|4|W|format=dm|name=San Cristóbal}}</small>||
+|}
+
+=== La Habana ===
+La [[provincia de La Habana]], comprende el territorio de la ciudad de [[La Habana]], capital de la república, y zonas suburbanas aledañas. Está subdividida en 15 municipios.<ref name="Sin_nombre-pFzi-1"/>
+
+{|class="wikitable sortable"
+|-
+!Municipio!!Población<br />(2017)!!Área<br />(km²)!!Ubicación!!Comentarios
+|-
+|[[Arroyo Naranjo]]|| 204.434 || 83 ||<small>{{Coord|23|02|37|N|82|19|58|W|format=dm|name=Arroyo Naranjo}}</small>||
+|-
+|[[Boyeros]]|| 196.834 || 134 ||<small>{{Coord|23|00|26|N|82|24|6|W|format=dm|name=Boyeros}}</small>||
+|-
+|[[Centro Habana]]|| 136.452 || 4 ||<small>{{Coord|23|08|0|N|82|23|0|W|format=dm|name=Centro Habana}}</small>||
+|-
+|[[Cerro (La Habana)|Cerro]]|| 124.536 || 10 ||<small>{{Coord|23|06|49|N|82|21|48|W|format=dm|name=Cerro}}</small>||
+|-
+|[[Cotorro]]|| 81.071 || 66 ||<small>{{Coord|23|01|34|N|82|14|51|W|format=dm|name=Cotorro}}</small>||
+|-
+|[[Diez de Octubre (Cuba)|Diez de Octubre]]|| 202.012 || 12 ||<small>{{Coord|23|05|17|N|82|21|35|W|format=dm|name=Diez de Octubre}}</small>||
+|-
+|[[Guanabacoa]]|| 123.127 || 127 ||<small>{{Coord|23|03|40|N|82|17|23|W|format=dm|name=Guanabacoa}}</small>||
+|-
+|[[La Habana del Este]]|| 175.459 || 145 ||<small>{{Coord|23|09|25|N|82|17|49|W|format=dm|name=La Habana del Este}}</small>||
+|-
+|[[La Habana Vieja]]|| 82.889 || 5 ||<small>{{Coord|23|08|20|N|82|21|20|W|format=dm|name=La Habana Vieja}}</small>|| [[Patrimonio de la Humanidad]]
+|-
+|[[La Lisa]]|| 142.124 || 38 ||<small>{{Coord|23|01|29|N|82|27|47|W|format=dm|name=La Lisa}}</small>||
+|-
+|[[Marianao (Cuba)|Marianao]]|| 135.708 || 21 ||<small>{{Coord|23|05|3|N|82|25|47|W|format=dm|name=Marianao}}</small>||
+|-
+|[[Playa (La Habana)|Playa]]|| 179.866 || 36 ||<small>{{Coord|23|05|39|N|82|26|56|W|format=dm|name=Playa}}</small>||
+|-
+|[[Plaza de la Revolución (municipio)|Plaza de la Revolución]]|| 144.190 || 12 ||<small>{{Coord|23|07|28|N|82|23|10|W|format=dm|name=Plaza de la Revolución}}</small>||
+|-
+|[[Regla (Cuba)|Regla]]|| 43.688 || 9 ||<small>{{Coord|23|07|32|N|82|18|55|W|format=dm|name=Regla}}</small>||
+|-
+|[[San Miguel del Padrón]]|| 157.163 || 26 ||<small>{{Coord|23|05|47|N|82|19|36|W|format=dm|name=San Miguel del Padrón}}</small>||
+|}
+
+=== Mayabeque ===
+La [[provincia de Mayabeque]] está subdividida en 11 municipios.<ref name="Sin_nombre-pFzi-1"/>
+
+{|class="wikitable sortable"
+|-
+!Municipio!!Población<br />(2017)!!Área<br />(km²)!!Ubicación!!Comentarios
+|-
+|[[Batabanó]]|| 27.231 || 187 ||<small>{{Coord|22|43|29|N|82|17|23|W|format=dm|name=Batabanó}}</small>||
+|-
+|[[Bejucal]]|| 27.748 || 120 ||<small>{{Coord|22|55|58|N|82|23|13|W|format=dm|name=Bejucal}}</small>||
+|-
+|[[Güines]]|| 66.446 || 445 ||<small>{{Coord|22|50|52|N|82|01|25|W|format=dm|name=Güines}}</small>||
+|-
+|[[Jaruco]]|| 24.602 || 276 ||<small>{{Coord|23|02|34|N|82|00|33|W|format=dm|name=Jaruco}}</small>||
+|-
+|[[Madruga (Cuba)|Madruga]]|| 27.476 || 464 ||<small>{{Coord|22|54|59|N|81|51|25|W|format=dm|name=Madruga}}</small>||
+|-
+|[[Melena del Sur]]|| 20.481 || 227 ||<small>{{Coord|22|46|54|N|82|08|54|W|format=dm|name=Melena del Sur}}</small>||
+|-
+|[[Nueva Paz]]|| 24.308 || 515 ||<small>{{Coord|22|45|48|N|81|45|29|W|format=dm|name=Nueva Paz}}</small>||
+|-
+|[[Quivicán]]|| 29.999 || 283 ||<small>{{Coord|22|49|29|N|82|21|21|W|format=dm|name=Quivicán}}</small>||
+|-
+|[[San José de las Lajas]]|| 78.227 || 591 ||<small>{{Coord|22|58|5|N|82|09|21|W|format=dm|name=San José de las Lajas}}</small>||Capital provincial
+|-
+|[[San Nicolás de Bari (Cuba)|San Nicolás]]|| 20.799 || 242 ||<small>{{Coord|22|46|55|N|81|54|24|W|format=dm|name=San Nicolás}}</small>||
+|-
+|[[Santa Cruz del Norte]]|| 35.142 || 376 ||<small>{{Coord|23|09|21|N|81|55|35|W|format=dm|name=Santa Cruz del Norte}}</small>||
+|}
+
+=== Matanzas ===
+La [[provincia de Matanzas]] está subdividida en 13 municipios (después de eliminado el municipio de Varadero).<ref name="Sin_nombre-pFzi-1"/>
+
+{|class="wikitable sortable"
+|-
+!Municipio!!Población<br />(2017)!!Área<br />(km²)!!Ubicación!!Comentarios
+|-
+|[[Calimete]]|| 28.100 || 958 ||<small>{{Coord|22|32|2|N|80|54|35|W|format=dm|name=Calimete}}</small>||
+|-
+|[[Cárdenas (Cuba)|Cárdenas]]|| 154.204 || 598 ||<small>{{Coord|23|02|34|N|81|12|13|W|format=dm|name=Cárdenas}}</small>|| Incluye [[Varadero (Cuba)|Varadero]] desde 2010
+|-
+|[[Ciénaga de Zapata (municipio)|Ciénaga de Zapata]]|| 9.968 || 4320 ||<small>{{Coord|22|17|17|N|81|11|51|W|format=dm|name=Playa Larga}}</small>|| Cabecera en Playa Larga
+|-
+|[[Colón (Cuba)|Colón]]|| 69.881 || 597 ||<small>{{Coord|22|43|21|N|80|54|23|W|format=dm|name=Colón}}</small>||
+|-
+|[[Jagüey Grande]]|| 60.391 || 882 ||<small>{{Coord|22|31|46|N|81|07|57|W|format=dm|name=Jagüey Grande}}</small>||
+|-
+|[[Jovellanos (Cuba)|Jovellanos]]|| 58.123 || 505 ||<small>{{Coord|22|48|38|N|81|11|52|W|format=dm|name=Jovellanos}}</small>||
+|-
+|[[Limonar (Cuba)|Limonar]]|| 26.756 || 449 ||<small>{{Coord|22|57|22|N|81|24|31|W|format=dm|name=Limonar}}</small>||
+|-
+|[[Los Arabos]]|| 24.119 || 762 ||<small>{{Coord|22|44|24|N|80|42|57|W|format=dm|name=Los Arabos}}</small>||
+|-
+|[[Martí (Cuba)|Martí]]|| 22.236 || 1070 ||<small>{{Coord|22|57|9|N|80|55|0|W|format=dm|name=Martí}}</small>||
+|-
+|[[Matanzas]]|| 160.629 || 317 ||<small>{{Coord|23|03|5|N|81|34|30|W|format=dm|name=Matanzas}}</small>|| Capital provincial
+|-
+|[[Pedro Betancourt (Cuba)|Pedro Betancourt]]|| 30.824 || 388 ||<small>{{Coord|22|43|50|N|81|17|27|W|format=dm|name=Pedro Betancourt}}</small>||
+|-
+|[[Perico (Cuba)|Perico]]|| 30.774 || 278 ||<small>{{Coord|22|46|31|N|81|00|54|W|format=dm|name=Perico}}</small>||
+|-
+|[[Unión de Reyes]]|| 36.413 || 856 ||<small>{{Coord|22|48|2|N|81|32|13|W|format=dm|name=Unión de Reyes}}</small>||
+|}
+
+=== Cienfuegos ===
+La [[provincia de Cienfuegos]] está subdividida en 8 municipios.<ref name="Sin_nombre-pFzi-1"/>
+
+{|class="wikitable sortable"
+|-
+!Municipio!!Población<br />(2017)!!Área<br />(km²)!!Ubicación!!Comentarios
+|-
+|[[Abreus]]|| 30.894 || 564 ||<small>{{Coord|22|16|50|N|80|34|4|W|format=dm|name=Abreus}}</small>||
+|-
+|[[Aguada de Pasajeros]]|| 32.098 || 680 ||<small>{{Coord|22|23|5|N|80|50|46|W|format=dm|name=Aguada de Pasajeros}}</small>||
+|-
+|[[Cienfuegos]]|| 177.113 || 333 ||<small>{{Coord|22|08|45|N|80|26|11|W|format=dm|name=Cienfuegos}}</small>|| Capital provincial, [[Patrimonio de la Humanidad]]
+|-
+|[[Cruces (Cuba)|Cruces]]|| 30.083 || 198 ||<small>{{Coord|22|20|32|N|80|16|34|W|format=dm|name=Cruces}}</small>||
+|-
+|[[Cumanayagua]]|| 48.674 || 1099 ||<small>{{Coord|22|09|9|N|80|12|4|W|format=dm|name=Cumanayagua}}</small>||
+|-
+|[[Lajas (Cuba)|Lajas]]|| 21.826 || 430 ||<small>{{Coord|22|24|59|N|80|17|26|W|format=dm|name=Lajas}}</small>||
+|-
+|[[Palmira (Cuba)|Palmira]]|| 32.708 || 318 ||<small>{{Coord|22|14|40|N|80|23|39|W|format=dm|name=Palmira}}</small>||
+|-
+|[[Rodas (Cuba)|Rodas]]|| 33.848 || 552 ||<small>{{Coord|22|20|34|N|80|33|19|W|format=dm|name=Rodas}}</small>||
+|}
+
+=== Villa Clara ===
+La [[provincia de Villa Clara]] está subdividida en 13 municipios.<ref name="Sin_nombre-pFzi-1"/>
+
+{|class="wikitable sortable"
+|-
+!Municipio!!Población<br />(2017)!!Área<br />(km²)!!Ubicación!!Comentarios
+|-
+|[[Caibarién]]|| 40.284 || 212 ||<small>{{Coord|22|30|57|N|79|28|20|W|format=dm|name=Caibarién}}</small>|| Incluye [[Cayo Santa María]]
+|-
+|[[Camajuaní]]|| 59.475 || 614 ||<small>{{Coord|22|28|5|N|79|43|25|W|format=dm|name=Camajuaní}}</small>||
+|-
+|[[Cifuentes (Cuba)|Cifuentes]]|| 27.323 || 512 ||<small>{{Coord|22|37|15|N|80|03|57|W|format=dm|name=Cifuentes}}</small>||
+|-
+|[[Corralillo]]|| 25.834 || 843 ||<small>{{Coord|22|59|9|N|80|34|58|W|format=dm|name=Corralillo}}</small>||
+|-
+|[[Encrucijada (Cuba)|Encrucijada]]|| 32.821 || 345 ||<small>{{Coord|22|37|2|N|79|51|58|W|format=dm|name=Encrucijada}}</small>||
+|-
+|[[Manicaragua]]|| 63.510 || 1063 ||<small>{{Coord|22|09|1|N|79|58|34|W|format=dm|name=Manicaragua}}</small>||
+|-
+|[[Placetas]]|| 67.657 || 601 ||<small>{{Coord|22|18|58|N|79|39|19|W|format=dm|name=Placetas}}</small>||
+|-
+|[[Quemado de Güines]]|| 21.359 || 338 ||<small>{{Coord|22|47|24|N|80|15|21|W|format=dm|name=Quemado de Güines}}</small>||
+|-
+|[[Ranchuelo]]|| 53.329 || 556 ||<small>{{Coord|22|20|10|N|80|06|46|W|format=dm|name=Ranchuelo}}</small>||
+|-
+|[[San Juan de los Remedios]]|| 44.453 || 560 ||<small>{{Coord|22|29|32|N|79|32|44|W|format=dm|name=Remedios}}</small>||
+|-
+|[[Sagua la Grande]]|| 51.687 || 661 ||<small>{{Coord|22|48|32|N|80|04|15|W|format=dm|name=Sagua la Grande}}</small>||
+|-
+|[[Santa Clara (Cuba)|Santa Clara]]|| 246.067 || 514 ||<small>{{Coord|22|24|20|N|79|57|14|W|format=dm|name=Santa Clara}}</small>|| Capital provincial
+|-
+|[[Santo Domingo (Villa Clara)|Santo Domingo]]|| 49.445 || 883 ||<small>{{Coord|22|35|1|N|80|14|18|W|format=dm|name=Santo Domingo}}</small>||
+|}
+
+=== Sancti Spíritus ===
+La [[provincia de Sancti Spíritus]] está subdividida en 8 municipios.<ref name="Sin_nombre-pFzi-1"/>
+
+{|class="wikitable sortable"
+|-
+!Municipio!!Población<br />(2017)!!Área<br />(km²)!!Ubicación!!Comentarios
+|-
+|[[Cabaiguán]]|| 65.349 || 597 ||<small>{{Coord|22|05|2|N|79|29|43|W|format=dm|name=Cabaiguán}}</small>||
+|-
+|[[Fomento (Cuba)|Fomento]]|| 32.409 || 471 ||<small>{{Coord|22|06|19|N|79|43|12|W|format=dm|name=Fomento}}</small>||
+|-
+|[[Jatibonico]]|| 43.039 || 276 ||<small>{{Coord|21|56|47|N|79|10|3|W|format=dm|name=Jaruco}}</small>||
+|-
+|[[La Sierpe (Cuba)|La Sierpe]]|| 16.662 || 1035 ||<small>{{Coord|21|45|39|N|79|14|36|W|format=dm|name=La Sierpe}}</small>||
+|-
+|[[Sancti Spíritus (Cuba)|Sancti Spíritus]]|| 142.447 || 1151 ||<small>{{Coord|21|56|3|N|79|26|37|W|format=dm|name=Sancti Spíritus}}</small>|| Capital provincial
+|-
+|[[Taguasco]]|| 33.997 || 518 ||<small>{{Coord|22|00|19|N|79|15|54|W|format=dm|name=Taguasco}}</small>||
+|-
+|[[Trinidad (Cuba)|Trinidad]]|| 76.772 || 1155 ||<small>{{Coord|21|48|16|N|79|58|58|W|format=dm|name=Trinidad}}</small>|| [[Patrimonio de la Humanidad]]
+|-
+|[[Yaguajay]]|| 55.256 || 1032 ||<small>{{Coord|22|19|50|N|79|14|13|W|format=dm|name=Yaguajay}}</small>||
+|}
+
+=== Ciego de Ávila ===
+La [[provincia de Ciego de Ávila]] está subdividida en 10 municipios.<ref name="Sin_nombre-pFzi-1"/>
+
+{|class="wikitable sortable"
+|-
+!Municipio!!Población<br />(2017)!!Área<br />(km²)!!Ubicación!!Comentarios
+|-
+|[[Baraguá (Ciego de Ávila)|Baraguá]]|| 32.747 || 728 ||<small>{{Coord|21|40|56|N|78|37|28|W|format=dm|name=Baraguá}}</small>||Cabecera en Gaspar
+|-
+|[[Bolivia (Cuba)|Bolivia]]|| 15.597 || 918 ||<small>{{Coord|22|04|30|N|78|21|1|W|format=dm|name=Bolivia}}</small>||
+|-
+|[[Chambas]]|| 37.614 || 769 ||<small>{{Coord|22|11|48|N|78|54|47|W|format=dm|name=Chambas}}</small>||
+|-
+|[[Ciego de Ávila]]|| 154.681 || 445 ||<small>{{Coord|21|50|53|N|78|45|46|W|format=dm|name=Ciego de Ávila}}</small>|| Capital provincial
+|-
+|[[Ciro Redondo (Cuba)|Ciro Redondo]]|| 30.567 || 588 ||<small>{{Coord|22|01|8|N|78|42|10|W|format=dm|name=Ciro Redondo}}</small>||
+|-
+|[[Florencia (Cuba)|Florencia]]|| 19.022 || 286 ||<small>{{Coord|22|08|51|N|78|58|1|W|format=dm|name=Florencia}}</small>||
+|-
+|[[Majagua]]|| 25.559 || 544 ||<small>{{Coord|21|55|28|N|78|59|26|W|format=dm|name=Majagua}}</small>||
+|-
+|[[Morón (Cuba)|Morón]]|| 69.707 || 615 ||<small>{{Coord|22|06|39|N|78|37|40|W|format=dm|name=Morón}}</small>|| Incluye [[Cayo Coco]]
+|-
+|[[Primero de Enero (Cuba)|Primero de Enero]]|| 23.191 || 713 ||<small>{{Coord|21|56|43|N|78|25|8|W|format=dm|name=Primero de Enero}}</small>||
+|-
+|[[Venezuela (Cuba)|Venezuela]]|| 26.485 || 716 ||<small>{{Coord|21|45|4|N|78|46|44|W|format=dm|name=Venezuela}}</small>||
+|}
+
+=== Camagüey ===
+La [[provincia de Camagüey]] está subdividida en 13 municipios.<ref name="Sin_nombre-pFzi-1"/>
+
+{|class="wikitable sortable"
+|-
+!Municipio!!Población<br />(2017)!!Área<br />(km²)!!Ubicación!!Comentarios
+|-
+|[[Camagüey]]|| 330.253 || 1106 ||<small>{{Coord|21|23|2|N|77|54|26|W|format=dm|name=Camagüey}}</small>|| Capital provincial, [[Patrimonio de la Humanidad]]
+|-
+|[[Carlos Manuel de Céspedes (Cuba)|Carlos M. de Céspedes]]|| 23.722 || 653 ||<small>{{Coord|21|34|37|N|78|16|39|W|format=dm|name=Carlos M. de Céspedes}}</small>||
+|-
+|[[Esmeralda (Cuba)|Esmeralda]]|| 29.967 || 1480 ||<small>{{Coord|21|51|22|N|78|06|40|W|format=dm|name=Esmeralda}}</small>||
+|-
+|[[Florida (Camagüey)|Florida]]|| 71.203 || 1800 ||<small>{{Coord|21|31|46|N|78|13|21|W|format=dm|name=Florida}}</small>||
+|-
+|[[Guáimaro]]|| 37.551 || 1847 ||<small>{{Coord|21|03|32|N|77|20|52|W|format=dm|name=Guáimaro}}</small>||
+|-
+|[[Jimaguayú]]|| 20.370 || 799 ||<small>{{Coord|21|16|0|N|77|49|49|W|format=dm|name=Jimaguayú}}</small>||
+|-
+|[[Minas (Cuba)|Minas]]|| 37.078 || 1015 ||<small>{{Coord|21|29|22|N|77|36|17|W|format=dm|name=Minas}}</small>||
+|-
+|[[Najasa]]|| 15.260 || 921 ||<small>{{Coord|21|05|2|N|77|44|49|W|format=dm|name=Najasa}}</small>||
+|-
+|[[Nuevitas]]|| 61.473 || 415 ||<small>{{Coord|21|32|25|N|77|15|52|W|format=dm|name=Nuevitas}}</small>||
+|-
+|[[Santa Cruz del Sur]]|| 43.229 || 1122 ||<small>{{Coord|20|43|10|N|77|59|27|W|format=dm|name=Santa Cruz del Sur}}</small>||
+|-
+|[[Sibanicú]]|| 30.470 || 736 ||<small>{{Coord|21|14|21|N|77|31|15|W|format=dm|name=Sibanicú}}</small>||
+|-
+|[[Sierra de Cubitas]]|| 18.320 || 549 ||<small>{{Coord|21|43|59|N|77|46|14|W|format=dm|name=Sierra de Cubitas}}</small>||Cabecera en Sola
+|-
+|[[Vertientes]]|| 50.967 || 2005 ||<small>{{Coord|21|15|26|N|78|08|56|W|format=dm|name=Vertientes}}</small>||
+|}
+
+=== Las Tunas ===
+La [[provincia de Las Tunas]] está subdividida en 8 municipios.<ref name="Sin_nombre-pFzi-1"/>
+
+{|class="wikitable sortable"
+|-
+!Municipio!!Población<br />(2017)!!Área<br />(km²)!!Ubicación!!Comentarios
+|-
+|[[Amancio (Cuba)|Amancio]]|| 38.111 || 857 ||<small>{{Coord|20|49|11|N|77|35|3|W|format=dm|name=Amancio}}</small>||
+|-
+|[[Colombia (Cuba)|Colombia]]|| 32.186 || 563 ||<small>{{Coord|20|59|27|N|77|24|57|W|format=dm|name=Colombia}}</small>||
+|-
+|[[Jesús Menéndez (Cuba)|Jesús Menéndez]]|| 48.441 || 638 ||<small>{{Coord|21|09|49|N|76|28|38|W|format=dm|name=Jesús Menéndez}}</small>|| Cabecera en Chaparra
+|-
+|[[Jobabo]]|| 43.123 || 884 ||<small>{{Coord|20|54|29|N|77|16|59|W|format=dm|name=Jobabo}}</small>||
+|-
+|[[Las Tunas (Cuba)|Las Tunas]]|| 210.412 || 891 ||<small>{{Coord|20|57|36|N|76|57|16|W|format=dm|name=Victoria de Las Tunas}}</small>|| Capital provincial
+|-
+|[[Majibacoa]]|| 41.431 || 621 ||<small>{{Coord|20|55|2|N|76|52|34|W|format=dm|name=Calixto}}</small>|| Cabecera en Calixto
+|-
+|[[Manatí (Cuba)|Manatí]]|| 30.211 || 953 ||<small>{{Coord|21|18|53|N|76|56|15|W|format=dm|name=Manatí}}</small>||
+|-
+|[[Puerto Padre]]|| 92.179 || 1178 ||<small>{{Coord|21|11|43|N|76|36|5|W|format=dm|name=Puerto Padre}}</small>||
+|}
+
+=== Holguín ===
+La [[provincia de Holguín]] está subdividida en 14 municipios.<ref name="Sin_nombre-pFzi-1"/>
+
+{|class="wikitable sortable"
+|-
+!Municipio!!Población<br />(2017)!!Área<br />(km²)!!Ubicación!!Comentarios
+|-
+|[[Antilla (Cuba)|Antilla]]|| 12.365 || 100 ||<small>{{Coord|20|50|55|N|75|45|9|W|format=dm|name=Antilla}}</small>||
+|-
+|[[Báguanos]]|| 49.615 || 806 ||<small>{{Coord|20|45|47|N|76|01|46|W|format=dm|name=Báguanos}}</small>||
+|-
+|[[Banes]]|| 78.268 || 781 ||<small>{{Coord|20|58|12|N|75|42|41|W|format=dm|name=Banes}}</small>|| Incluye [[Guardalavaca]]
+|-
+|[[Cacocum]]|| 40.447 || 661 ||<small>{{Coord|20|44|38|N|76|19|27|W|format=dm|name=Cacocum}}</small>||
+|-
+|[[Calixto García (Cuba)|Calixto García]]|| 54.969 || 617 ||<small>{{Coord|20|51|15|N|76|36|7|W|format=dm|name=Calixto Garcia}}</small>|| Cabecera en  [[Buenaventura (Holguín)|Buenaventura]]
+|-
+|[[Cueto (Cuba)|Cueto]]|| 31.855 || 326 ||<small>{{Coord|20|38|54|N|75|55|54|W|format=dm|name=Cueto}}</small>||
+|-
+|[[Frank País (Cuba)|Frank País]]|| 23.490 || 510 ||<small>{{Coord|20|39|53|N|75|16|53|W|format=dm|name=Frank País}}</small>|| Cabecera en [[Cayo Mambí]]
+|-
+|[[Gibara]]|| 71.430 || 630 ||<small>{{Coord|21|06|26|N|76|08|12|W|format=dm|name=Gibara}}</small>||
+|-
+|[[Holguín]]|| 355.016 || 666 ||<small>{{Coord|20|53|20|N|76|15|26|W|format=dm|name=Holguín}}</small>|| Capital provincial
+|-
+|[[Mayarí]]|| 98.200 || 1307 ||<small>{{Coord|20|39|34|N|75|40|40|W|format=dm|name=Mayarí}}</small>||
+|-
+|[[Moa (Cuba)|Moa]]|| 74.075 || 730 ||<small>{{Coord|20|38|24|N|74|55|3|W|format=dm|name=Moa}}</small>||
+|-
+|[[Rafael Freyre (Cuba)|Rafael Freyre]]|| 53.627 || 620 ||<small>{{Coord|21|01|42|N|75|59|47|W|format=dm|name=Rafael Freyre}}</small>||Cabecera: [[Santa Lucía (Cuba)|Santa Lucía]]
+|-
+|[[Sagua de Tánamo]]|| 46.967 || 704 ||<small>{{Coord|20|35|10|N|75|14|30|W|format=dm|name=Sagua de Tánamo}}</small>||
+|-
+|[[Urbano Noris]]|| 39.700 || 846 ||<small>{{Coord|20|36|5|N|76|07|57|W|format=dm|name=Urbano Noris}}</small>||Cabecera: [[San Germán (Holguín)|San Germán]]
+|}
+
+=== Granma ===
+La [[provincia de Granma]] está subdividida en 13 municipios.<ref name="Sin_nombre-pFzi-1"/>
+
+{|class="wikitable sortable"
+|-
+!Municipio!!Población<br />(2017)!!Área<br />(km²)!!Ubicación!!Comentarios
+|-
+|[[Bartolomé Masó (Cuba)|Bartolomé Masó]]|| 40.089 || 629 ||<small>{{Coord|20|10|7|N|76|56|33|W|format=dm|name=Bartolomé Masó}}</small>||
+|-
+|[[Bayamo]]|| 238.544 || 918 ||<small>{{Coord|20|22|54|N|76|38|33|W|format=dm|name=Bayamo}}</small>|| Capital provincial
+|-
+|[[Buey Arriba]]|| 31.463 || 452 ||<small>{{Coord|20|10|25|N|76|44|57|W|format=dm|name=Buey Arriba}}</small>||
+|-
+|[[Campechuela]]|| 43.648 || 577 ||<small>{{Coord|20|14|0|N|77|16|44|W|format=dm|name=Campechuela}}</small>||
+|-
+|[[Cauto Cristo]]|| 20.556 || 550 ||<small>{{Coord|20|33|44|N|76|28|10|W|format=dm|name=Cauto Cristo}}</small>||
+|-
+|[[Guisa (Cuba)|Guisa]]|| 46.879 || 596 ||<small>{{Coord|20|15|40|N|76|32|17|W|format=dm|name=Guisa}}</small>||
+|-
+|[[Jiguaní]]|| 60.163 || 646 ||<small>{{Coord|20|22|24|N|76|25|20|W|format=dm|name=Jiguaní}}</small>||
+|-
+|[[Manzanillo (Cuba)|Manzanillo]]|| 128.667 || 498 ||<small>{{Coord|20|20|23|N|77|06|31|W|format=dm|name=Manzanillo}}</small>||
+|-
+|[[Media Luna (Cuba)|Media Luna]]|| 32.967 || 376 ||<small>{{Coord|20|08|40|N|77|26|10|W|format=dm|name=Media Luna}}</small>||
+|-
+|[[Niquero]]|| 42.485 || 582 ||<small>{{Coord|20|02|50|N|77|34|41|W|format=dm|name=Niquero}}</small>||
+|-
+|[[Pilón (Cuba)|Pilón]]|| 29.546 || 462 ||<small>{{Coord|19|54|20|N|77|19|15|W|format=dm|name=Pilón}}</small>||
+|-
+|[[Río Cauto (municipio)|Río Cauto]]|| 46.804 || 1500 ||<small>{{Coord|20|33|50|N|76|55|2|W|format=dm|name=Río Cauto}}</small>|| 
+|-
+|[[Yara]]|| 56.100 || 576 ||<small>{{Coord|20|16|37|N|76|56|49|W|format=dm|name=Yara}}</small>||
+|}
+
+=== Santiago de Cuba ===
+La [[provincia de Santiago de Cuba]] está subdividida en 9 municipios.<ref name="Sin_nombre-pFzi-1"/>
+
+{|class="wikitable sortable"
+|-
+!Municipio!!Población<br />(2017)!!Área<br />(km²)!!Ubicación!!Comentarios
+|-
+|[[Contramaestre (Cuba)|Contramaestre]]|| 105.972 || 610.3 ||<small>{{Coord|20|18|0|N|76|15|2|W|format=dm|name=Contramaestre}}</small>||
+|-
+|[[Guamá (Cuba)|Guamá]]|| 34.221 || 964.6 ||<small>{{Coord|19|57|13|N|76|44|58|W|format=dm|name=Guama}}</small>||Cabecera en Chivirico
+|-
+|[[Mella (Cuba)|Mella]]|| 34.959 || 335.2 ||<small>{{Coord|20|22|10|N|75|54|39|W|format=dm|name=Mella}}</small>||
+|-
+|[[Palma Soriano]]|| 123.419 || 845.8 ||<small>{{Coord|20|12|51|N|75|59|30|W|format=dm|name=Palma Soriano}}</small>||
+|-
+|[[San Luis (Santiago de Cuba)|San Luis]]|| 79.700 || 498 ||<small>{{Coord|20|11|17|N|75|50|55|W|format=dm|name=San Luis}}</small>||
+|-
+|[[Santiago de Cuba]]|| 509.873 || 1023.8 ||<small>{{Coord|20|02|25|N|75|48|53|W|format=dm|name=Santiago de Cuba}}</small>|| Capital provincial, contiene un [[Castillo de San Pedro de la Roca|Patrimonio de la Humanidad]]
+|-
+|[[Segundo Frente (municipio)|Segundo Frente]]|| 40.081 || 540 ||<small>{{Coord|20|24|43|N|75|31|43|W|format=dm|name=Mayarí Arriba}}</small>|| Cabecera en Mayarí Arriba
+|-
+|[[Songo-La Maya (Cuba)|Songo-La Maya]]|| 92.474 || 721 ||<small>{{Coord|20|10|24|N|75|38|46|W|format=dm|name=La Maya}}</small>|| Cabecera en La Maya
+|-
+|[[Tercer Frente (municipio)|Tercer Frente]]|| 30.370 || 364 ||<small>{{Coord|20|10|19|N|76|19|38|W|format=dm|name=Cruce de los Baños}}</small>|| Cabecera en Cruce de los Baños
+|}
+
+=== Guantánamo ===
+La [[provincia de Guantánamo]] está sudividida en 10 municipios.<ref name="Sin_nombre-pFzi-1"/>
+
+{|class="wikitable sortable"
+|-
+!Municipio!!Población<br />(2017)!!Área<br />(km²)!!Ubicación!!Comentarios
+|-
+|[[Baracoa]]|| 80.371 || 977 ||<small>{{Coord|20|21|2|N|74|30|37|W|format=dm|name=Baracoa}}</small>||
+|-
+|[[Caimanera]]|| 11.173 || 366 ||<small>{{Coord|19|59|42|N|75|09|35|W|format=dm|name=Caimanera}}</small>||
+|-
+|[[El Salvador (Cuba)|El Salvador]]|| 42.648 || 637 ||<small>{{Coord|20|12|35|N|75|13|22|W|format=dm|name=El Salvador}}</small>||
+|-
+|[[Guantánamo]]|| 227.535 || 268 ||<small>{{Coord|20|08|13|N|75|12|50|W|format=dm|name=Guantánamo}}</small>|| Capital provincial
+|-
+|[[Imías]]|| 21.111 || 524 ||<small>{{Coord|20|04|37|N|74|39|6|W|format=dm|name=Imías}}</small>||
+|-
+|[[Maisí]]|| 28.752 || 525 ||<small>{{Coord|20|14|36|N|74|09|21|W|format=dm|name=Maisí}}</small>|| Cabecera en La Máquina
+|-
+|[[Manuel Tames (Cuba)|Manuel Tames]]|| 37.880 || 1025 ||<small>{{Coord|20|10|50|N|75|03|5|W|format=dm|name=Manuel Tames}}</small>||Cabecera transferida a Jamaica en 2010
+|-
+|[[Niceto Pérez (Cuba)|Niceto Pérez]]|| 16.553 || 640 ||<small>{{Coord|20|07|40|N|75|20|31|W|format=dm|name=Niceto Pérez}}</small>||Cabecera en La Yaya
+|-
+|[[San Antonio del Sur]]|| 25.880 || 585 ||<small>{{Coord|20|03|25|N|74|48|28|W|format=dm|name=San Antonio del Sur}}</small>||
+|-
+|[[Yateras]]|| 19.190 || 636 ||<small>{{Coord|20|21|1|N|74|55|27|W|format=dm|name=Yateras}}</small>|| Cabecera en Palenque
+|}
+
+=== Isla de la Juventud ===
+[[Isla de la Juventud]], con 84.013 habitantes (2017),<ref name="Sin_nombre-pFzi-1"/> es un municipio especial que no está bajo la administración de ninguna provincia.
+La cabecera municipal es la ciudad de [[Nueva Gerona]]. Y tiene el mismo nivel administrativo a pesar de los cargos, los pueblos más conocidos son la Demajagua y Santa Fe.
+
+== Véase también ==
+* [[Provincias de Cuba]]
+* [[Historia territorial de Cuba]]
+* [[Organización territorial de Cuba]]
+
+== Referencias ==
+
+{{Listaref}}
+
+== Enlaces externos ==
+* [http://www.one.cu Oficina Nacional de Estadísticas] {{Wayback|url=http://www.one.cu/ |date=20110226105518 }}
+
+{{Control de autoridades}}
+[[Categoría:Municipios de Cuba| ]]
+[[Categoría:Organización territorial de Cuba]]

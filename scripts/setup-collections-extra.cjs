@@ -68,14 +68,14 @@ async function setup() {
   console.log("Authenticated as admin\n");
 
   // 1. provinces
-  await createCollection(pb, "provinces", [T.text("name", true)]);
+  await createCollection(pb, "provinces", [T.text("name", true), T.bool("active")]);
 
   // 2. municipalities (relacion a provinces)
   let provincesCollId = "";
   try {
     provincesCollId = (await pb.collections.getOne("provinces")).id;
   } catch {}
-  await createCollection(pb, "municipalities", [T.text("name", true), T.relation("province", provincesCollId)]);
+  await createCollection(pb, "municipalities", [T.text("name", true), T.relation("province", provincesCollId), T.bool("active")]);
 
   // 3. countries
   await createCollection(pb, "countries", [
@@ -83,6 +83,7 @@ async function setup() {
     T.text("code"),
     T.text("phone_code"),
     T.text("currency_code"),
+    T.text("emoji"),
   ]);
 
   // 4. banks
@@ -112,6 +113,17 @@ async function setup() {
     T.text("logo"),
     T.text("theme"),
     T.text("font"),
+    T.text("background_color"),
+    T.text("primary_color"),
+    T.text("accent_color"),
+    T.text("success_color"),
+    T.text("warning_color"),
+    T.text("light_background_color"),
+    T.text("light_primary_color"),
+    T.text("light_accent_color"),
+    T.text("light_success_color"),
+    T.text("light_warning_color"),
+    T.text("font_family"),
   ]);
 
   // 7. products: zonas disponibles (CSV de ids de municipio)
@@ -126,6 +138,30 @@ async function setup() {
     T.text("reference"),
     T.number("transfer_amount"),
     T.text("cancel_reason"),
+  ]);
+
+  // 9. provinces: add active field if missing
+  await addFields(pb, "provinces", [T.bool("active")]);
+
+  // 10. municipalities: add active field if missing
+  await addFields(pb, "municipalities", [T.bool("active")]);
+
+  // 11. countries: add emoji field if missing
+  await addFields(pb, "countries", [T.text("emoji")]);
+
+  // 12. settings: add color fields if missing
+  await addFields(pb, "settings", [
+    T.text("background_color"),
+    T.text("primary_color"),
+    T.text("accent_color"),
+    T.text("success_color"),
+    T.text("warning_color"),
+    T.text("light_background_color"),
+    T.text("light_primary_color"),
+    T.text("light_accent_color"),
+    T.text("light_success_color"),
+    T.text("light_warning_color"),
+    T.text("font_family"),
   ]);
 
   // ── Seed (solo si la colección está vacía) ──
@@ -147,7 +183,7 @@ async function setup() {
 
   try {
     if ((await pb.collection("provinces").getFullList({ batch: 1 })).length === 0) {
-      for (const name of PROVINCES) await pb.collection("provinces").create({ name });
+      for (const name of PROVINCES) await pb.collection("provinces").create({ name, active: true });
       console.log("[seed] provinces (" + PROVINCES.length + ")");
       seeded.add("provinces");
     } else {
@@ -160,7 +196,7 @@ async function setup() {
       const prov = await pb.collection("provinces").getFullList({ filter: 'name = "La Habana"' });
       if (prov[0]) {
         for (const name of HABANA_MUNIS) {
-          await pb.collection("municipalities").create({ name, province: prov[0].id });
+          await pb.collection("municipalities").create({ name, province: prov[0].id, active: true });
         }
         console.log("[seed] municipalities (La Habana, " + HABANA_MUNIS.length + ")");
         seeded.add("municipalities");
@@ -172,10 +208,10 @@ async function setup() {
 
   try {
     if ((await pb.collection("countries").getFullList({ batch: 1 })).length === 0) {
-      await pb.collection("countries").create({ name: "Cuba", code: "CU", phone_code: "53", currency_code: "CUP" });
-      await pb.collection("countries").create({ name: "Estados Unidos", code: "US", phone_code: "1", currency_code: "USD" });
-      await pb.collection("countries").create({ name: "España", code: "ES", phone_code: "34", currency_code: "EUR" });
-      await pb.collection("countries").create({ name: "México", code: "MX", phone_code: "52", currency_code: "MXN" });
+      await pb.collection("countries").create({ name: "Cuba", code: "CU", phone_code: "53", currency_code: "CUP", emoji: "🇨🇺" });
+      await pb.collection("countries").create({ name: "Estados Unidos", code: "US", phone_code: "1", currency_code: "USD", emoji: "🇺🇸" });
+      await pb.collection("countries").create({ name: "España", code: "ES", phone_code: "34", currency_code: "EUR", emoji: "🇪🇸" });
+      await pb.collection("countries").create({ name: "México", code: "MX", phone_code: "52", currency_code: "MXN", emoji: "🇲🇽" });
       console.log("[seed] countries (4)");
       seeded.add("countries");
     } else {

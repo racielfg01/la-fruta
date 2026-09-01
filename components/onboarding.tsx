@@ -172,7 +172,7 @@ export function Onboarding({ onComplete }: OnboardingProps) {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-gradient-to-br from-primary/5 via-background to-accent/5 p-0 sm:p-4 md:p-6"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-gradient-to-br from-primary/5 via-background to-accent/5 p-0 sm:p-4 md:p-6"
       onTouchStart={onTouchStart}
       onTouchMove={onTouchMove}
       onTouchEnd={onTouchEnd}
@@ -182,12 +182,12 @@ export function Onboarding({ onComplete }: OnboardingProps) {
         <div className="absolute -bottom-32 -right-32 h-64 w-64 sm:h-96 sm:w-96 rounded-full bg-accent/10 blur-3xl" />
       </div>
 
-      <Card className="relative w-full max-w-5xl overflow-hidden border-0 bg-card/95 shadow-2xl backdrop-blur-sm mx-auto max-h-dvh sm:max-h-[90vh] rounded-t-2xl sm:rounded-xl">
+      <Card className="relative w-full max-w-5xl overflow-hidden border-0 bg-card/95 shadow-2xl backdrop-blur-sm mx-auto h-[100dvh] sm:h-[90vh] sm:max-h-[90vh] rounded-none sm:rounded-xl">
         <div className="absolute left-0 right-0 top-0 z-10">
           <Progress value={progress} className="h-1 rounded-none" />
         </div>
 
-        <CardContent className="p-0 flex flex-col h-full max-h-dvh sm:max-h-[90vh]">
+        <CardContent className="p-0 flex flex-col h-full">
           <div className="flex flex-col md:grid md:grid-cols-2 flex-1 min-h-0">
             {/* Image Side - Desktop */}
             <div className="relative hidden md:block min-h-0">

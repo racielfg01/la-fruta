@@ -90,9 +90,20 @@ export async function getPublicSettings() {
       logo: s.logo || '',
       theme: s.theme || 'system',
       font: s.font || 'poppins',
+      background_color: s.background_color || '',
+      primary_color: s.primary_color || '',
+      accent_color: s.accent_color || '',
+      success_color: s.success_color || '',
+      warning_color: s.warning_color || '',
+      light_background_color: s.light_background_color || '',
+      light_primary_color: s.light_primary_color || '',
+      light_accent_color: s.light_accent_color || '',
+      light_success_color: s.light_success_color || '',
+      light_warning_color: s.light_warning_color || '',
+      font_family: s.font_family || '',
     };
   } catch (error) {
     console.error('Error fetching settings:', error);
-    return { storeName: '', storeDescription: '', logo: '', theme: 'system', font: 'poppins' };
+    return { storeName: '', storeDescription: '', logo: '', theme: 'system', font: 'poppins', background_color: '', primary_color: '', accent_color: '', success_color: '', warning_color: '', light_background_color: '', light_primary_color: '', light_accent_color: '', light_success_color: '', light_warning_color: '', font_family: '' };
   }
 }

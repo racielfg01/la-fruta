@@ -38,6 +38,13 @@ export const useAuthStore = create<AuthStore>()(
     }),
     {
       name: 'auth-storage',
+      version: 1,
+      migrate: (persistedState: any, version: number) => {
+        if (version === 0) {
+          return { ...persistedState, isLoading: false };
+        }
+        return persistedState;
+      },
       onRehydrateStorage: () => (state) => {
         state?.setLoading(false);
       },

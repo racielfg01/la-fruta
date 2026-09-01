@@ -14,13 +14,8 @@ import {
   X,
   Users,
   ShoppingBag,
-  Coins,
   LogOut,
-  MapPin,
   Settings as SettingsIcon,
-  Landmark,
-  Globe,
-  ShieldCheck,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -39,12 +34,7 @@ const navigation = [
   { name: "Productos", href: "/admin/productos", icon: Package },
   { name: "Categorías", href: "/admin/categorias", icon: Tags },
   { name: "Envíos", href: "/admin/envios", icon: Truck },
-  { name: "Ubicaciones", href: "/admin/ubicaciones", icon: MapPin },
   { name: "Usuarios", href: "/admin/usuarios", icon: Users },
-  { name: "Monedas", href: "/admin/monedas", icon: Coins },
-  { name: "Bancos", href: "/admin/bancos", icon: Landmark },
-  { name: "Países", href: "/admin/paises", icon: Globe },
-  { name: "Roles", href: "/admin/roles", icon: ShieldCheck },
   { name: "Configuración", href: "/admin/configuracion", icon: SettingsIcon },
 ];
 

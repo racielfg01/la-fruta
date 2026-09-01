@@ -15,7 +15,11 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ path
     }
     const buf = await fs.readFile(real);
     const ext = path.extname(safePath).toLowerCase();
-    const mime = ext === '.pdf' ? 'application/pdf' : 'image/*';
+    const mimeMap: Record<string, string> = {
+      '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.png': 'image/png',
+      '.webp': 'image/webp', '.gif': 'image/gif', '.pdf': 'application/pdf',
+    };
+    const mime = mimeMap[ext] || 'application/octet-stream';
     return new NextResponse(buf, { headers: { 'Content-Type': mime, 'Cache-Control': 'public, max-age=31536000, immutable' } });
   } catch {
     return new NextResponse('Not found', { status: 404 });

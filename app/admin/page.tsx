@@ -84,7 +84,7 @@ export default function AdminDashboard() {
     },
   ];
 
-  const recentOrders = orders
+  const recentOrders = [...orders]
     .sort(
       (a, b) =>
         new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
@@ -184,7 +184,7 @@ export default function AdminDashboard() {
             </div>
           </CardContent>
         </Card>
-        <Link href="/admin/monedas">
+        <Link href="/admin/configuracion?tab=monedas">
           <Card className="hover:shadow-md transition-shadow cursor-pointer h-full">
             <CardContent className="flex items-center gap-4 p-6">
               <div className="rounded-full bg-blue-500/10 p-3">
@@ -245,7 +245,7 @@ export default function AdminDashboard() {
             </div>
             {otherActiveCurrencies.length > 4 && (
               <Button variant="link" size="sm" className="mt-3 h-auto p-0" asChild>
-                <Link href="/admin/monedas">
+                <Link href="/admin/configuracion?tab=monedas">
                   Ver todas las {otherActiveCurrencies.length} monedas activas
                 </Link>
               </Button>
@@ -334,7 +334,7 @@ export default function AdminDashboard() {
               </Link>
             </Button>
             <Button variant="outline" asChild className="justify-start w-full">
-              <Link href="/admin/monedas">
+              <Link href="/admin/configuracion?tab=monedas">
                 <Coins className="mr-2 h-4 w-4" />
                 Configurar Monedas
               </Link>

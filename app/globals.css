@@ -205,3 +205,5 @@
 @media (min-width: 40rem) {
   .hidden.sm\:flex { display: flex }
 }
+
+.settings-loading { opacity: 0; }

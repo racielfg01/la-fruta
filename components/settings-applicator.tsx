@@ -30,6 +30,11 @@ export function SettingsApplicator() {
 
   useEffect(() => {
     const root = document.documentElement;
+    if (!settings.font) {
+      root.classList.add('settings-loading');
+      return;
+    }
+    root.classList.remove('settings-loading');
     const headingFont =
       settings.font === 'poppins' ? "'Poppins', sans-serif" : "'Playfair Display', Georgia, serif";
     const bodyFont = settings.font === 'playfair' ? "'Playfair Display', Georgia, serif" : "'Poppins', sans-serif";

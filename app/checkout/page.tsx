@@ -303,16 +303,19 @@ export default function CheckoutPage() {
     setIsProcessing(true);
     if (!canCheckout) {
       processingRef.current = false;
+      setIsProcessing(false);
       alert("Selecciona una zona de envío y completa tu dirección.");
       return;
     }
     if (!formData.name || !formData.phone) {
       processingRef.current = false;
+      setIsProcessing(false);
       alert("Completa tus datos de contacto.");
       return;
     }
     if (!selectedCurrency) {
       processingRef.current = false;
+      setIsProcessing(false);
       alert("Selecciona una moneda.");
       return;
     }
@@ -381,7 +384,6 @@ export default function CheckoutPage() {
       processingRef.current = false;
     }
   };
-  console.log("deliveryZones", deliveryZones);
 
   // Estados de carga combinados
   const isLoading =

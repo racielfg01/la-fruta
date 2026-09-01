@@ -787,9 +787,6 @@ function FilterContent({
         <div className="space-y-2">
           {categories.map((category) => {
             const config = categoryConfig[category] || categoryConfig.Fruits;
-            // const count = products.filter(
-            //   (p) => p.category === category,
-            // ).length;
             const count = categoryCounts[category] || 0;
             const isSelected = selectedCategories.includes(category);
 

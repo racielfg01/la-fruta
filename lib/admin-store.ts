@@ -166,7 +166,6 @@ export const useAdminStore = create<AdminStore>()((set, get) => ({
     set({ loading: true });
     try {
       const token = getAuthToken();
-      // const data = await getAdminData(token);
 const data = await withTimeout(getAdminData(token), 15000);
       set({
         products: data.products as Product[],

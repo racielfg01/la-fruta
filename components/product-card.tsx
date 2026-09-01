@@ -40,7 +40,7 @@ export function ProductCard({ product }: ProductCardProps) {
           {!product.inStock && (
             <div className="absolute inset-0 flex items-center justify-center bg-background/80">
               <Badge variant="secondary" className="text-sm">
-                Out of Stock
+                Agotado
               </Badge>
             </div>
           )}
@@ -70,12 +70,12 @@ export function ProductCard({ product }: ProductCardProps) {
             {added ? (
               <>
                 <Check className="h-4 w-4" />
-                Added
+                Añadido
               </>
             ) : (
               <>
                 <Plus className="h-4 w-4" />
-                Add
+                Añadir
               </>
             )}
           </Button>

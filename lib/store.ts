@@ -62,7 +62,7 @@ export const useCartStore = create<CartStore>()(
       userLocation: null,
       setOnboardingComplete: (complete) => set({ onboardingComplete: complete }),
       addItem: (product) => {
-        if (product.stock <= 0) return;
+        if (!product.inStock || product.stock <= 0) return;
         const items = get().items;
         const existingItem = items.find((item) => item.product.id === product.id);
         if (existingItem) {

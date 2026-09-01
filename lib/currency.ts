@@ -17,10 +17,15 @@ let fetchPromise: Promise<CurrencyInfo[]> | null = null;
 export async function fetchCurrencies(): Promise<CurrencyInfo[]> {
   if (cached) return cached;
   if (!fetchPromise) {
-    fetchPromise = getPublicCurrencies().then((data) => {
-      cached = data;
-      return data;
-    });
+    fetchPromise = getPublicCurrencies()
+      .then((data) => {
+        cached = data;
+        return data;
+      })
+      .catch((err) => {
+        fetchPromise = null;
+        throw err;
+      });
   }
   return fetchPromise;
 }

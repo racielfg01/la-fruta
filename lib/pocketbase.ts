@@ -1,6 +1,12 @@
 import PocketBase from 'pocketbase'
 
 let pb: PocketBase | null = null
+let adminAuthPromise: Promise<PocketBase> | null = null
+
+/** Escapa comillas dobles para usar valores en filtros PB de forma segura. */
+export function sanitize(value: string): string {
+  return value.replace(/"/g, '\\"')
+}
 
 export async function getAllRecords<T = Record<string, any>>(
   pb: PocketBase,
@@ -38,15 +44,22 @@ export function getPB(): PocketBase {
 
 export async function getAdminPB(): Promise<PocketBase> {
   const client = getPB()
-  if (!client.authStore.isValid) {
+  if (client.authStore.isValid) return client
+  if (adminAuthPromise) return adminAuthPromise
+  adminAuthPromise = (async () => {
     const email = process.env.POCKETBASE_ADMIN_EMAIL
     const password = process.env.POCKETBASE_ADMIN_PASSWORD
     if (!email || !password) {
       throw new Error('Missing POCKETBASE_ADMIN_EMAIL or POCKETBASE_ADMIN_PASSWORD env vars')
     }
     await client.admins.authWithPassword(email, password)
+    return client
+  })()
+  try {
+    return await adminAuthPromise
+  } finally {
+    adminAuthPromise = null
   }
-  return client
 }
 
 export function getEphemeralPB(): PocketBase {

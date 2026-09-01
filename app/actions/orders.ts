@@ -1,7 +1,8 @@
 "use server";
 
 import { decodePocketBaseToken } from "@/lib/auth";
-import { getAdminPB, getAllRecords } from "@/lib/pocketbase";
+import { getAdminPB, getAllRecords, sanitize } from "@/lib/pocketbase";
+import { randomUUID } from "crypto";
 
 export interface OrderActionResult {
   success: boolean;
@@ -107,7 +108,7 @@ export async function createOrderAction(
 
       const order = await pb.collection('orders').create({
         // id único con sufijo aleatorio: evita colisión entre pedidos del mismo ms
-        id: `${Date.now()}${Math.floor(Math.random() * 10000)}`,
+        id: randomUUID(),
         user_id: orderData.userId,
         user_name: orderData.userName,
         user_email: orderData.userEmail,
@@ -193,14 +194,14 @@ export async function getUserOrders(token: string) {
 
   const pb = await getAdminPB();
   const orders = await getAllRecords(pb, 'orders', {
-    filter: `user_id = "${payload.userId}"`,
+    filter: `user_id = "${sanitize(payload.userId)}"`,
     sort: '-created_at',
   });
 
   return await Promise.all(
     orders.map(async (order: any) => {
       const items = await getAllRecords(pb, 'order_items', {
-        filter: `order_id = "${order.id}"`,
+        filter: `order_id = "${sanitize(order.id)}"`,
       });
       return {
         id: order.id,
@@ -278,6 +279,9 @@ export async function cancelOrderAction(
       if (order.status === 'delivered' || order.status === 'cancelled') {
         return { success: false, error: "Esta orden ya no puede cancelarse" };
       }
+      if (order.payment_status === 'paid' || order.payment_status === 'confirmed') {
+        return { success: false, error: "No se puede cancelar una orden con pago confirmado" };
+      }
 
       await pb.collection('orders').update(orderId, {
         status: 'cancelled',
@@ -286,7 +290,7 @@ export async function cancelOrderAction(
 
       // Restaurar inventario al cancelar (dentro del lock)
       const items = await getAllRecords(pb, 'order_items', {
-        filter: `order_id = "${orderId}"`,
+        filter: `order_id = "${sanitize(orderId)}"`,
       });
       for (const item of items) {
         try {

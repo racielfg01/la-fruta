@@ -1,4 +1,4 @@
-import { getEphemeralPB, getAdminPB, getAllRecords } from './pocketbase';
+import { getEphemeralPB, getAdminPB, getAllRecords, sanitize } from './pocketbase';
 
 let _roleIdsCache: { admin: string; client: string } | null = null;
 
@@ -87,7 +87,7 @@ export async function getUserByIdentifier(identifier: string): Promise<User | nu
   try {
     const pb = await getAdminPB();
     const records = await pb.collection('users').getList(1, 1, {
-      filter: `phone = "${identifier}" || email = "${identifier}"`,
+      filter: `phone = "${sanitize(identifier)}" || email = "${sanitize(identifier)}"`,
       expand: 'role_id',
     });
     return records.items.length > 0 ? mapUser(records.items[0]) : null;
@@ -101,7 +101,7 @@ export async function getUserByPhone(phone: string): Promise<User | null> {
   try {
     const pb = await getAdminPB();
     const records = await pb.collection('users').getList(1, 1, {
-      filter: `phone = "${phone}"`,
+      filter: `phone = "${sanitize(phone)}"`,
       expand: 'role_id',
     });
     return records.items.length > 0 ? mapUser(records.items[0]) : null;
@@ -115,7 +115,7 @@ export async function getUserByEmail(email: string): Promise<User | null> {
   try {
     const pb = await getAdminPB();
     const records = await pb.collection('users').getList(1, 1, {
-      filter: `email = "${email}"`,
+      filter: `email = "${sanitize(email)}"`,
       expand: 'role_id',
     });
     return records.items.length > 0 ? mapUser(records.items[0]) : null;
@@ -165,7 +165,7 @@ export async function verifyUserCredentials(identifier: string, password: string
     } else {
       const adminPb = await getAdminPB();
       const users = await adminPb.collection('users').getList(1, 1, {
-        filter: `phone = "${identifier}"`,
+        filter: `phone = "${sanitize(identifier)}"`,
       });
       if (users.items.length === 0) return null;
       authData = await pb.collection('users').authWithPassword(users.items[0].email, password);

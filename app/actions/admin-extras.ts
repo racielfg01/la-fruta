@@ -1,7 +1,7 @@
 'use server';
 
 import { decodePocketBaseToken } from '@/lib/auth';
-import { getAdminPB, getTokenPB, getAllRecords } from '@/lib/pocketbase';
+import { getAdminPB, getTokenPB, getAllRecords, sanitize } from '@/lib/pocketbase';
 import type PocketBase from 'pocketbase';
 
 async function getDataPB(token: string): Promise<PocketBase> {
@@ -32,23 +32,36 @@ export async function getProvincesAction(token: string) {
   await verifyAdminAndGetUserId(token);
   const pb = await getDataPB(token);
   const rows = await getAllRecords(pb, 'provinces', { sort: 'name' });
-  return rows.map((p: any) => ({ id: p.id, name: p.name }));
+  return rows.map((p: any) => ({ id: p.id, name: p.name, active: p.active !== false }));
 }
 
 export async function createProvinceAction(name: string, token: string) {
+  if (!name?.trim()) throw new Error('El nombre de la provincia es requerido');
   await verifyAdminAndGetUserId(token);
   const pb = await getDataPB(token);
-  const rec = await pb.collection('provinces').create({ name });
-  return { id: rec.id, name: rec.name };
+  const rec = await pb.collection('provinces').create({ name: name.trim(), active: true });
+  return { id: rec.id, name: rec.name, active: true };
 }
 
 export async function updateProvinceAction(id: string, name: string, token: string) {
+  if (!id) throw new Error('ID de provincia requerido');
+  if (!name?.trim()) throw new Error('El nombre de la provincia es requerido');
   await verifyAdminAndGetUserId(token);
   const pb = await getDataPB(token);
-  return pb.collection('provinces').update(id, { name });
+  return pb.collection('provinces').update(id, { name: name.trim() });
+}
+
+export async function toggleProvinceAction(id: string, active: boolean, token: string) {
+  if (!id) throw new Error('ID de provincia requerido');
+  await verifyAdminAndGetUserId(token);
+  const pb = await getDataPB(token);
+  await pb.collection('provinces').update(id, { active });
+  const muns = await getAllRecords(pb, 'municipalities', { filter: `province = "${sanitize(id)}"` });
+  await Promise.all(muns.map((m: any) => pb.collection('municipalities').update(m.id, { active })));
 }
 
 export async function deleteProvinceAction(id: string, token: string) {
+  if (!id) throw new Error('ID de provincia requerido');
   await verifyAdminAndGetUserId(token);
   const pb = await getDataPB(token);
   return pb.collection('provinces').delete(id);
@@ -63,24 +76,36 @@ export async function getMunicipalitiesAction(token: string) {
   return rows.map((m: any) => ({
     id: m.id,
     name: m.name,
-    province: m.expand?.province?.name || m.province || '',
+    province: m.expand?.province?.id || m.province || '',
+    active: m.active !== false,
   }));
 }
 
 export async function createMunicipalityAction(data: { name: string; province: string }, token: string) {
+  if (!data.name?.trim()) throw new Error('El nombre del municipio es requerido');
   await verifyAdminAndGetUserId(token);
   const pb = await getDataPB(token);
-  const rec = await pb.collection('municipalities').create({ name: data.name, province: data.province || '' });
-  return { id: rec.id, name: rec.name, province: data.province };
+  const rec = await pb.collection('municipalities').create({ name: data.name.trim(), province: data.province || '', active: true });
+  return { id: rec.id, name: rec.name, province: data.province, active: true };
 }
 
 export async function updateMunicipalityAction(id: string, data: { name: string; province: string }, token: string) {
+  if (!id) throw new Error('ID de municipio requerido');
+  if (!data.name?.trim()) throw new Error('El nombre del municipio es requerido');
   await verifyAdminAndGetUserId(token);
   const pb = await getDataPB(token);
-  return pb.collection('municipalities').update(id, { name: data.name, province: data.province || '' });
+  return pb.collection('municipalities').update(id, { name: data.name.trim(), province: data.province || '' });
+}
+
+export async function toggleMunicipalityAction(id: string, active: boolean, token: string) {
+  if (!id) throw new Error('ID de municipio requerido');
+  await verifyAdminAndGetUserId(token);
+  const pb = await getDataPB(token);
+  return pb.collection('municipalities').update(id, { active });
 }
 
 export async function deleteMunicipalityAction(id: string, token: string) {
+  if (!id) throw new Error('ID de municipio requerido');
   await verifyAdminAndGetUserId(token);
   const pb = await getDataPB(token);
   return pb.collection('municipalities').delete(id);
@@ -98,10 +123,11 @@ export async function getCountriesAction(token: string) {
     code: c.code || '',
     phoneCode: c.phone_code || '',
     currencyCode: c.currency_code || '',
+    emoji: c.emoji || '',
   }));
 }
 
-export async function createCountryAction(data: { name: string; code: string; phoneCode: string; currencyCode: string }, token: string) {
+export async function createCountryAction(data: { name: string; code: string; phoneCode: string; currencyCode: string; emoji?: string }, token: string) {
   await verifyAdminAndGetUserId(token);
   const pb = await getDataPB(token);
   const rec = await pb.collection('countries').create({
@@ -109,11 +135,12 @@ export async function createCountryAction(data: { name: string; code: string; ph
     code: data.code,
     phone_code: data.phoneCode,
     currency_code: data.currencyCode,
+    emoji: data.emoji || '',
   });
-  return { id: rec.id, ...data };
+  return { id: rec.id, ...data, emoji: data.emoji || '' };
 }
 
-export async function updateCountryAction(id: string, data: { name: string; code: string; phoneCode: string; currencyCode: string }, token: string) {
+export async function updateCountryAction(id: string, data: { name: string; code: string; phoneCode: string; currencyCode: string; emoji?: string }, token: string) {
   await verifyAdminAndGetUserId(token);
   const pb = await getDataPB(token);
   return pb.collection('countries').update(id, {
@@ -121,6 +148,7 @@ export async function updateCountryAction(id: string, data: { name: string; code
     code: data.code,
     phone_code: data.phoneCode,
     currency_code: data.currencyCode,
+    emoji: data.emoji || '',
   });
 }
 
@@ -193,7 +221,12 @@ export async function deleteBankAction(id: string, token: string) {
 export async function getBankAccountsAction(token: string) {
   await verifyAdminAndGetUserId(token);
   const pb = await getDataPB(token);
-  const rows = await getAllRecords(pb, 'bank_accounts', { sort: '-active,name', expand: 'bank' });
+  let rows: any[];
+  try {
+    rows = await getAllRecords(pb, 'bank_accounts', { sort: '-active,name', expand: 'bank' });
+  } catch {
+    rows = await getAllRecords(pb, 'bank_accounts', { sort: '-active,name' });
+  }
   return rows.map((a: any) => ({
     id: a.id,
     bank: a.expand?.bank?.name || a.bank || '',
@@ -251,7 +284,7 @@ export async function deleteBankAccountAction(id: string, token: string) {
 async function getBankIdByName(bankName: string, token: string): Promise<string> {
   if (!bankName) return '';
   const pb = await getDataPB(token);
-  const banks = await getAllRecords(pb, 'banks', { filter: `name = "${bankName}"` });
+  const banks = await getAllRecords(pb, 'banks', { filter: `name = "${sanitize(bankName)}"` });
   return banks[0]?.id || '';
 }
 
@@ -263,6 +296,17 @@ const EMPTY_SETTINGS = {
   logo: '',
   theme: 'system',
   font: 'poppins',
+  background_color: '#0D1b2a',
+  primary_color: '#1e3a8a',
+  accent_color: '#0ea5a5',
+  success_color: '#22c55e',
+  warning_color: '#Facc15',
+  light_background_color: '#f4f7fb',
+  light_primary_color: '#1e3a8a',
+  light_accent_color: '#0ea5a5',
+  light_success_color: '#16a34a',
+  light_warning_color: '#d97706',
+  font_family: 'Manrope, sans-serif',
 };
 
 export async function getSettingsAction(token: string) {
@@ -276,6 +320,17 @@ export async function getSettingsAction(token: string) {
     logo: s.logo || '',
     theme: s.theme || 'system',
     font: s.font || 'poppins',
+    background_color: s.background_color || EMPTY_SETTINGS.background_color,
+    primary_color: s.primary_color || EMPTY_SETTINGS.primary_color,
+    accent_color: s.accent_color || EMPTY_SETTINGS.accent_color,
+    success_color: s.success_color || EMPTY_SETTINGS.success_color,
+    warning_color: s.warning_color || EMPTY_SETTINGS.warning_color,
+    light_background_color: s.light_background_color || EMPTY_SETTINGS.light_background_color,
+    light_primary_color: s.light_primary_color || EMPTY_SETTINGS.light_primary_color,
+    light_accent_color: s.light_accent_color || EMPTY_SETTINGS.light_accent_color,
+    light_success_color: s.light_success_color || EMPTY_SETTINGS.light_success_color,
+    light_warning_color: s.light_warning_color || EMPTY_SETTINGS.light_warning_color,
+    font_family: s.font_family || EMPTY_SETTINGS.font_family,
   };
 }
 
@@ -289,6 +344,17 @@ export async function updateSettingsAction(data: Partial<typeof EMPTY_SETTINGS>,
     logo: data.logo,
     theme: data.theme,
     font: data.font,
+    background_color: data.background_color,
+    primary_color: data.primary_color,
+    accent_color: data.accent_color,
+    success_color: data.success_color,
+    warning_color: data.warning_color,
+    light_background_color: data.light_background_color,
+    light_primary_color: data.light_primary_color,
+    light_accent_color: data.light_accent_color,
+    light_success_color: data.light_success_color,
+    light_warning_color: data.light_warning_color,
+    font_family: data.font_family,
   };
   if (recs[0]) {
     return pb.collection('settings').update(recs[0].id, body);

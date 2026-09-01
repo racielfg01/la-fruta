@@ -1,10 +1,11 @@
 'use server';
 
 import { decodePocketBaseToken, getRoleIds } from '@/lib/auth';
-import { getAdminPB, getTokenPB, getAllRecords } from '@/lib/pocketbase';
+import { getAdminPB, getTokenPB, getAllRecords, sanitize } from '@/lib/pocketbase';
 import type PocketBase from 'pocketbase';
 import { Product } from '@/lib/store';
 import { Category, DeliveryZone, User, Order, Currency } from '@/lib/admin-store';
+import { randomBytes } from 'crypto';
 
 async function getDataPB(token: string): Promise<PocketBase> {
   try {
@@ -34,13 +35,13 @@ async function verifyAdminAndGetUserId(token: string): Promise<string> {
 
 async function getRoleIdByName(name: string, token: string): Promise<string> {
   const pb = await getDataPB(token);
-  const roles = await getAllRecords(pb, 'roles', { filter: `name = "${name}"` });
+  const roles = await getAllRecords(pb, 'roles', { filter: `name = "${sanitize(name)}"` });
   return roles[0]?.id || '';
 }
 
 async function getCategoryIdByName(name: string, token: string): Promise<string> {
   const pb = await getDataPB(token);
-  const cats = await getAllRecords(pb, 'categories', { filter: `name = "${name}"` });
+  const cats = await getAllRecords(pb, 'categories', { filter: `name = "${sanitize(name)}"` });
   return cats[0]?.id || '';
 }
 
@@ -116,7 +117,7 @@ export async function getAdminData(token: string) {
   const ordersFixed = await Promise.all(
     orders.map(async (order: any) => {
       const items = await getAllRecords(pb, 'order_items', {
-        filter: `order_id = "${order.id}"`,
+        filter: `order_id = "${sanitize(order.id)}"`,
       });
     return {
       ...mapOrder(order),
@@ -272,12 +273,13 @@ function generatePassword(): string {
   const lower = 'abcdefghijklmnopqrstuvwxyz';
   const digits = '0123456789';
   const all = upper + lower + digits;
+  const bytes = randomBytes(12);
   let pw = '';
-  pw += upper[Math.floor(Math.random() * upper.length)];
-  pw += lower[Math.floor(Math.random() * lower.length)];
-  pw += digits[Math.floor(Math.random() * digits.length)];
-  for (let i = 0; i < 8; i++) pw += all[Math.floor(Math.random() * all.length)];
-  return pw.split('').sort(() => Math.random() - 0.5).join('');
+  pw += upper[bytes[0] % upper.length];
+  pw += lower[bytes[1] % lower.length];
+  pw += digits[bytes[2] % digits.length];
+  for (let i = 3; i < 12; i++) pw += all[bytes[i] % all.length];
+  return pw.split('').sort(() => randomBytes(1)[0] % 256 - 128).join('');
 }
 
 export async function addUserAction(user: Omit<User, 'id'>, token: string) {
@@ -297,7 +299,7 @@ export async function addUserAction(user: Omit<User, 'id'>, token: string) {
     total_orders: 0,
     total_spent: 0,
   });
-  return { id: record.id, ...user };
+  return { id: record.id, ...user, password };
 }
 
 export async function editUserAction(id: string, data: Partial<User>, token: string) {
@@ -320,15 +322,41 @@ export async function removeUserAction(id: string, token: string) {
   await pb.collection('users').delete(id);
 }
 
+const VALID_ORDER_TRANSITIONS: Record<string, string[]> = {
+  pending: ['confirmed', 'cancelled'],
+  confirmed: ['preparing', 'cancelled'],
+  preparing: ['shipped', 'cancelled'],
+  shipped: ['delivered'],
+  delivered: [],
+  cancelled: [],
+};
+
 export async function setOrderStatusAction(orderId: string, status: Order['status'], token: string) {
   await verifyAdminAndGetUserId(token);
   const pb = await getDataPB(token);
+  const order = await pb.collection('orders').getOne(orderId);
+  const allowed = VALID_ORDER_TRANSITIONS[order.status] || [];
+  if (!allowed.includes(status)) {
+    throw new Error(`No se puede cambiar de "${order.status}" a "${status}"`);
+  }
   await pb.collection('orders').update(orderId, { status });
 }
+
+const VALID_PAYMENT_TRANSITIONS: Record<string, string[]> = {
+  pending: ['confirmed', 'paid', 'failed'],
+  confirmed: ['paid', 'failed'],
+  paid: [],
+  failed: ['pending'],
+};
 
 export async function setPaymentStatusAction(orderId: string, paymentStatus: Order['paymentStatus'], token: string) {
   await verifyAdminAndGetUserId(token);
   const pb = await getDataPB(token);
+  const order = await pb.collection('orders').getOne(orderId);
+  const allowed = VALID_PAYMENT_TRANSITIONS[order.payment_status] || [];
+  if (!allowed.includes(paymentStatus)) {
+    throw new Error(`No se puede cambiar pago de "${order.payment_status}" a "${paymentStatus}"`);
+  }
   await pb.collection('orders').update(orderId, { payment_status: paymentStatus });
 }
 

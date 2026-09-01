@@ -1,7 +1,7 @@
 'use server';
 
 import { createUser, SignupData, getRoleIds, decodePocketBaseToken } from '@/lib/auth';
-import { getAdminPB, getEphemeralPB, getTokenPB } from '@/lib/pocketbase';
+import { getAdminPB, getEphemeralPB, getTokenPB, sanitize } from '@/lib/pocketbase';
 
 export interface AuthResponse {
   success: boolean;
@@ -82,13 +82,13 @@ export async function signupAction(data: SignupData): Promise<AuthResponse> {
     try {
       const adminPb = await getAdminPB();
       const existingPhone = await adminPb.collection('users').getList(1, 1, {
-        filter: `phone = "${data.phone}"`,
+        filter: `phone = "${sanitize(data.phone)}"`,
       });
       if (existingPhone.items.length > 0) {
         return { success: false, message: '', error: 'El teléfono ya está registrado' };
       }
       const existingEmail = await adminPb.collection('users').getList(1, 1, {
-        filter: `email = "${data.email}"`,
+        filter: `email = "${sanitize(data.email)}"`,
       });
       if (existingEmail.items.length > 0) {
         return { success: false, message: '', error: 'El correo electrónico ya está registrado' };
@@ -155,7 +155,7 @@ export async function loginAction(credentials: { identifier: string; password: s
       try {
         const adminPb = await getAdminPB();
         const users = await adminPb.collection('users').getList(1, 1, {
-          filter: `phone = "${identifier}"`,
+          filter: `phone = "${sanitize(identifier)}"`,
         });
         if (users.items.length > 0) {
           email = users.items[0].email;

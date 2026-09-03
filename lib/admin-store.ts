@@ -22,7 +22,15 @@ import {
   removeCurrencyAction,
   setDefaultCurrencyAction,
 } from "@/app/actions/admin";
+import {
+  createRoleAction,
+  updateRoleAction,
+  deleteRoleAction,
+} from "@/app/actions/admin-extras";
 import { useAuthStore } from "./auth-context";
+import type { RolePermissions } from "./permissions";
+export { ALL_PERMISSIONS, NO_PERMISSIONS } from "./permissions";
+export type { RolePermissions } from "./permissions";
 
 // Tipos (coinciden con la base de datos real)
 export interface Category {
@@ -30,6 +38,8 @@ export interface Category {
   name: string;
   description: string;
   image: string;
+  active: boolean;
+  habilitada: boolean;
 }
 
 export interface DeliveryZone {
@@ -39,7 +49,9 @@ export interface DeliveryZone {
   maxDistance: number;
   price: number;
   estimatedTime: string;
-  active: boolean; 
+  active: boolean;
+  province?: string;
+  municipality?: string;
 }
 
 export interface User {
@@ -99,6 +111,26 @@ export interface Currency {
   isActive: boolean;
 }
 
+export interface Role {
+  id: string;
+  name: string;
+  description: string;
+  permissions?: RolePermissions;
+}
+
+export interface Province {
+  id: string;
+  name: string;
+  active: boolean;
+}
+
+export interface Municipality {
+  id: string;
+  name: string;
+  id_provincia: string;
+  active: boolean;
+}
+
 interface AdminStore {
   loaded: boolean;
   loading: boolean;
@@ -108,6 +140,7 @@ interface AdminStore {
   users: User[];
   orders: Order[];
   currencies: Currency[];
+  roles: Role[];
 
   initialize: () => Promise<void>;
 
@@ -134,6 +167,10 @@ interface AdminStore {
   updateCurrency: (id: string, currency: Partial<Currency>) => Promise<void>;
   deleteCurrency: (id: string) => Promise<void>;
   setDefaultCurrency: (id: string) => Promise<void>;
+
+  addRole: (role: Role) => Promise<void>;
+  updateRole: (id: string, data: Partial<Role>) => Promise<void>;
+  deleteRole: (id: string) => Promise<void>;
 }
 
 // Helper para obtener el token actual (fuera del store para evitar ciclos)
@@ -160,6 +197,7 @@ export const useAdminStore = create<AdminStore>()((set, get) => ({
   users: [],
   orders: [],
   currencies: [],
+  roles: [],
 
   initialize: async () => {
     if (get().loaded || get().loading) return;
@@ -174,6 +212,7 @@ const data = await withTimeout(getAdminData(token), 15000);
         users: data.users as User[],
         orders: data.orders as Order[],
         currencies: data.currencies as unknown as Currency[],
+        roles: data.roles as unknown as Role[],
         loaded: true,
         loading: false,
       });
@@ -291,5 +330,21 @@ const data = await withTimeout(getAdminData(token), 15000);
     const token = getAuthToken();
     await setDefaultCurrencyAction(id, token);
     set({ currencies: get().currencies.map((c) => ({ ...c, isDefault: c.id === id })) });
+  },
+
+  addRole: async (role) => {
+    const token = getAuthToken();
+    const created = await createRoleAction({ name: role.name, description: role.description, permissions: role.permissions }, token);
+    set({ roles: [...get().roles, { ...role, id: created.id }] });
+  },
+  updateRole: async (id, data) => {
+    const token = getAuthToken();
+    await updateRoleAction(id, { name: data.name || '', description: data.description, permissions: data.permissions }, token);
+    set({ roles: get().roles.map((r) => (r.id === id ? { ...r, ...data } : r)) });
+  },
+  deleteRole: async (id) => {
+    const token = getAuthToken();
+    await deleteRoleAction(id, token);
+    set({ roles: get().roles.filter((r) => r.id !== id) });
   },
 }));

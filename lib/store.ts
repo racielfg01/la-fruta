@@ -5,6 +5,13 @@ export type Unit = "por lb" | "por kg" | "c/u" | "por pinta" | "por docena";
 
 export const UNITS: Unit[] = ["por lb", "por kg", "c/u", "por pinta", "por docena"];
 
+export interface ProductLocation {
+  id: string;
+  province: string;
+  municipality?: string;
+  stock: number;
+}
+
 export interface Product {
   id: string;
   name: string;
@@ -18,6 +25,7 @@ export interface Product {
   inStock: boolean;
   visible: boolean;
   availableMunicipalities?: string[];
+  productLocations?: ProductLocation[];
 }
 
 export interface UserLocation {

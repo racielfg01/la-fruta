@@ -68,6 +68,8 @@ function mapDeliveryZone(z: any) {
     maxDistance: Number(z.max_distance) || 0,
     estimatedTime: z.estimated_time || '',
     active: z.active !== false,
+    province: z.province || '',
+    municipality: z.municipality || '',
   };
 }
 
@@ -103,13 +105,14 @@ export async function getAdminData(token: string) {
 
   const pb = await getDataPB(token);
 
-  const [products, categories, deliveryZones, users, orders, currencies] = await Promise.all([
+  const [products, categories, deliveryZones, users, orders, currencies, roles] = await Promise.all([
     getAllRecords(pb, 'products', { sort: 'name', expand: 'category' }),
     getAllRecords(pb, 'categories', { sort: 'name' }),
     getAllRecords(pb, 'delivery_zones', { sort: 'min_distance' }),
     getAllRecords(pb, 'users', { sort: '-created', expand: 'role_id' }),
     getAllRecords(pb, 'orders', { sort: '-created_at' }),
     getAllRecords(pb, 'currencies', { sort: 'code' }),
+    getAllRecords(pb, 'roles', { sort: 'name' }),
   ]);
 
   const roleIds = await getRoleIds();
@@ -150,6 +153,12 @@ export async function getAdminData(token: string) {
       exchangeRate: Number(c.exchange_rate) || 1,
       isDefault: c.is_default === true,
       isActive: c.is_active !== false,
+    })),
+    roles: roles.map((r: any) => ({
+      id: r.id,
+      name: r.name,
+      description: r.description || '',
+      permissions: r.permissions ? (typeof r.permissions === 'string' ? JSON.parse(r.permissions) : r.permissions) : undefined,
     })),
   };
 }

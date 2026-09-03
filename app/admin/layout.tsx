@@ -20,7 +20,9 @@ import {
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useAdminStore } from "@/lib/admin-store";
-import { useAuthStore } from "@/lib/auth-context";  // ✅ usar el store global
+import { useAuthStore } from "@/lib/auth-context";
+import { hasPermission } from "@/lib/use-permissions";
+import type { RolePermissions } from "@/lib/permissions";
 
 function AdminStoreInitializer() {
   const initialize = useAdminStore((s) => s.initialize);
@@ -28,14 +30,14 @@ function AdminStoreInitializer() {
   return null;
 }
 
-const navigation = [
-  { name: "Panel Principal", href: "/admin", icon: LayoutDashboard },
-  { name: "Órdenes", href: "/admin/ordenes", icon: ShoppingBag },
-  { name: "Productos", href: "/admin/productos", icon: Package },
-  { name: "Categorías", href: "/admin/categorias", icon: Tags },
-  { name: "Envíos", href: "/admin/envios", icon: Truck },
-  { name: "Usuarios", href: "/admin/usuarios", icon: Users },
-  { name: "Configuración", href: "/admin/configuracion", icon: SettingsIcon },
+const navigation: { name: string; href: string; icon: any; permission: keyof RolePermissions }[] = [
+  { name: "Panel Principal", href: "/admin", icon: LayoutDashboard, permission: "dashboard" },
+  { name: "Órdenes", href: "/admin/ordenes", icon: ShoppingBag, permission: "orders" },
+  { name: "Productos", href: "/admin/productos", icon: Package, permission: "products" },
+  { name: "Categorías", href: "/admin/categorias", icon: Tags, permission: "products" },
+  { name: "Envíos", href: "/admin/envios", icon: Truck, permission: "shipping" },
+  { name: "Usuarios", href: "/admin/usuarios", icon: Users, permission: "users" },
+  { name: "Configuración", href: "/admin/configuracion", icon: SettingsIcon, permission: "settings" },
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -117,7 +119,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </div>
 
         <nav className="flex flex-col gap-1 p-4">
-          {navigation.map((item) => {
+          {navigation
+            .filter((item) => hasPermission(user, item.permission))
+            .map((item) => {
             const isActive =
               pathname === item.href ||
               (item.href !== "/admin" && pathname.startsWith(item.href));

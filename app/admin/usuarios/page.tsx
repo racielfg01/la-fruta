@@ -13,6 +13,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { usePagination } from "@/lib/use-pagination";
 import { PaginationBar } from "@/components/pagination-bar";
 import {
@@ -96,6 +97,9 @@ export default function UsersPage() {
     role_id: 1, // 1 = user, 2 = admin
     status: "active" as "active" | "inactive" | "suspended",
   });
+  const [password, setPassword] = useState("");
+  const [passwordConfirm, setPasswordConfirm] = useState("");
+  const [pwdError, setPwdError] = useState("");
 
   // Normalizar usuarios (asegurar valores por defecto)
   const normalizedUsers = useMemo(() => {
@@ -165,11 +169,25 @@ export default function UsersPage() {
       });
     }
     setIsDialogOpen(true);
+    setPassword("");
+    setPasswordConfirm("");
+    setPwdError("");
   };
 
   const handleSave = () => {
+    if (editingUser && password) {
+      if (password.length < 8) {
+        setPwdError("La contraseña debe tener al menos 8 caracteres");
+        return;
+      }
+      if (password !== passwordConfirm) {
+        setPwdError("Las contraseñas no coinciden");
+        return;
+      }
+    }
+    setPwdError("");
     if (editingUser) {
-      updateUser(editingUser.id, formData);
+      updateUser(editingUser.id, { ...formData, ...(password ? { password } : {}) });
     } else {
       const newUser: User = {
         id: crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(),
@@ -488,6 +506,14 @@ export default function UsersPage() {
             </DialogTitle>
           </DialogHeader>
           <FieldGroup>
+            <Tabs defaultValue="generales" className="w-full">
+              <TabsList className="w-full">
+                <TabsTrigger value="generales">Generales</TabsTrigger>
+                {editingUser && (
+                  <TabsTrigger value="seguridad">Seguridad</TabsTrigger>
+                )}
+              </TabsList>
+              <TabsContent value="generales" className="mt-2 space-y-4">
             <Field>
               <FieldLabel>Nombre completo</FieldLabel>
               <Input
@@ -566,6 +592,36 @@ export default function UsersPage() {
                 </Select>
               </Field>
             </div>
+              </TabsContent>
+              {editingUser && (
+                <TabsContent value="seguridad" className="mt-2 space-y-4">
+                  <p className="text-sm text-muted-foreground">
+                    Dejar en blanco para no modificar la contraseña
+                  </p>
+                  <Field>
+                    <FieldLabel>Nueva contraseña</FieldLabel>
+                    <Input
+                      type="password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="Mínimo 8 caracteres"
+                    />
+                  </Field>
+                  <Field>
+                    <FieldLabel>Confirmar contraseña</FieldLabel>
+                    <Input
+                      type="password"
+                      value={passwordConfirm}
+                      onChange={(e) => setPasswordConfirm(e.target.value)}
+                      placeholder="Repite la contraseña"
+                    />
+                  </Field>
+                  {pwdError && (
+                    <p className="text-sm text-destructive">{pwdError}</p>
+                  )}
+                </TabsContent>
+              )}
+            </Tabs>
           </FieldGroup>
           <DialogFooter className="gap-2">
             <Button variant="outline" onClick={() => setIsDialogOpen(false)}>

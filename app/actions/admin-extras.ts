@@ -166,17 +166,25 @@ export async function getRolesAction(token: string) {
   return getAllRecords(pb, 'roles', { sort: 'name' });
 }
 
-export async function createRoleAction(name: string, token: string) {
+export async function createRoleAction(data: { name: string; description?: string; permissions?: import("@/lib/permissions").RolePermissions }, token: string) {
   await verifyAdminAndGetUserId(token);
   const pb = await getDataPB(token);
-  const rec = await pb.collection('roles').create({ name });
+  const rec = await pb.collection('roles').create({
+    name: data.name,
+    description: data.description || '',
+    permissions: data.permissions ? JSON.stringify(data.permissions) : '',
+  });
   return rec;
 }
 
-export async function updateRoleAction(id: string, name: string, token: string) {
+export async function updateRoleAction(id: string, data: { name: string; description?: string; permissions?: import("@/lib/permissions").RolePermissions }, token: string) {
   await verifyAdminAndGetUserId(token);
   const pb = await getDataPB(token);
-  return pb.collection('roles').update(id, { name });
+  return pb.collection('roles').update(id, {
+    name: data.name,
+    description: data.description || '',
+    permissions: data.permissions ? JSON.stringify(data.permissions) : '',
+  });
 }
 
 export async function deleteRoleAction(id: string, token: string) {

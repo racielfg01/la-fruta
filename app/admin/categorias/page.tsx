@@ -37,10 +37,14 @@ import {
 import { Plus, Pencil, Trash2, Tags, Package, ImageIcon, Loader2 } from "lucide-react";
 import { ImageUpload } from "@/components/upload-button";
 
+import { Switch } from "@/components/ui/switch";
+
 const emptyCategory: Omit<Category, "id"> = {
   name: "",
   description: "",
   image: "",
+  active: true,
+  habilitada: true,
 };
 
 export default function CategoriesAdminPage() {
@@ -96,6 +100,8 @@ function CategoriesAdmin() {
       name: category.name,
       description: category.description,
       image: category.image,
+      active: category.active,
+      habilitada: category.habilitada,
     });
     setImageUploaded(false);
     setDialogOpen(true);
@@ -230,6 +236,8 @@ function CategoriesAdmin() {
                   <TableHead>Nombre</TableHead>
                   <TableHead>Descripción</TableHead>
                   <TableHead className="text-center">Productos</TableHead>
+                  <TableHead className="text-center">Visible</TableHead>
+                  <TableHead className="text-center">Habilitada</TableHead>
                   <TableHead className="text-right">Acciones</TableHead>
                 </TableRow>
               </TableHeader>
@@ -237,7 +245,7 @@ function CategoriesAdmin() {
                 {categories.map((category) => {
                   const productCount = getProductCount(category.name);
                   return (
-                    <TableRow key={category.id}>
+                    <TableRow key={category.id} className={category.active ? "" : "opacity-60"}>
                       <TableCell>
                         <div className="flex items-center gap-3">
                           <div className="h-10 w-10 rounded-md overflow-hidden border shrink-0">
@@ -263,6 +271,18 @@ function CategoriesAdmin() {
                           <span>{productCount}</span>
                         </div>
                       </TableCell>
+                      <TableCell className="text-center">
+                        <Switch
+                          checked={category.active}
+                          onCheckedChange={(v) => updateCategory(category.id, { active: v })}
+                        />
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <Switch
+                          checked={category.habilitada}
+                          onCheckedChange={(v) => updateCategory(category.id, { habilitada: v })}
+                        />
+                      </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-1">
                           <Button
@@ -287,7 +307,7 @@ function CategoriesAdmin() {
                 })}
                 {categories.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
                       No hay categorías. Crea la primera para organizar tus productos.
                     </TableCell>
                   </TableRow>

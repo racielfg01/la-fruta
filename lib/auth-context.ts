@@ -1,6 +1,7 @@
 // lib/auth-context.ts
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import type { RolePermissions } from './permissions';
 
 export interface AuthUser {
   id: string;
@@ -11,6 +12,7 @@ export interface AuthUser {
   gender: string;
   created_at?: string;
   role_id: number;
+  permissions?: RolePermissions;
 }
 
 interface AuthStore {

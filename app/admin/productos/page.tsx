@@ -3,7 +3,7 @@
 import { Suspense, useState, useEffect, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
 import { useAdminStore } from "@/lib/admin-store";
-import { Product, Unit } from "@/lib/store";
+import { Product, Unit, ProductLocation } from "@/lib/store";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -47,6 +47,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Plus, Pencil, Trash2, Search, Package, Check, MapPin } from "lucide-react";
 import Link from "next/link";
 import { ImageUpload } from "@/components/upload-button";
+import { ProductLocationsField } from "@/components/admin/product-locations-field";
+import type { Province as ProvinceType, Municipality as MunicipalityType } from "@/lib/admin-store";
 import { usePagination } from "@/lib/use-pagination";
 import { PaginationBar } from "@/components/pagination-bar";
 import { useCurrency } from "@/lib/currency";
@@ -63,6 +65,7 @@ const emptyProduct: Omit<Product, "id"> = {
   stock: 0,
   inStock: false,
   visible: true,
+  productLocations: [],
 };
 
 export default function ProductsAdminPage() {
@@ -93,10 +96,15 @@ function ProductsAdmin() {
   const [imageUploaded, setImageUploaded] = useState(false);
   const [step, setStep] = useState(1);
   const [municipalities, setMunicipalities] = useState<{ id: string; name: string; province: string }[]>([]);
+  const [provinces, setProvinces] = useState<{ id: string; name: string }[]>([]);
   const [selectedMunicipalities, setSelectedMunicipalities] = useState<string[]>([]);
+  const [productLocations, setProductLocations] = useState<ProductLocation[]>([]);
 
   useEffect(() => {
-    getPublicLocations().then((d) => setMunicipalities(d.municipalities));
+    getPublicLocations().then((d) => {
+      setMunicipalities(d.municipalities);
+      setProvinces(d.provinces);
+    });
   }, []);
 
   const toggleMunicipality = (id: string) => {
@@ -110,6 +118,7 @@ function ProductsAdmin() {
     setFormData(emptyProduct);
     setImageUploaded(false);
     setSelectedMunicipalities([]);
+    setProductLocations([]);
     setStep(1);
     setDialogOpen(true);
   }, []);
@@ -164,6 +173,7 @@ function ProductsAdmin() {
     });
     setImageUploaded(false);
     setSelectedMunicipalities(product.availableMunicipalities || []);
+    setProductLocations(product.productLocations || []);
     setStep(1);
     setDialogOpen(true);
   };
@@ -188,6 +198,7 @@ function ProductsAdmin() {
     const data = { ...formData, inStock: formData.stock > 0 };
 
     data.availableMunicipalities = selectedMunicipalities;
+    data.productLocations = productLocations;
 
     try {
       if (editingProduct) {
@@ -593,35 +604,16 @@ function ProductsAdmin() {
                   <Field>
                     <FieldLabel className="flex items-center gap-1.5">
                       <MapPin className="h-3.5 w-3.5 text-primary" />
-                      Zonas de entrega
+                      Disponibilidad por ubicación
                     </FieldLabel>
-                    <div className="rounded-lg border max-h-44 overflow-y-auto p-3 space-y-1.5">
-                      {municipalities.length === 0 ? (
-                        <p className="text-xs text-muted-foreground">
-                          Sin municipios configurados. Créalos en Ubicaciones.
-                        </p>
-                      ) : (
-                        municipalities.map((m) => (
-                          <label
-                            key={m.id}
-                            className="flex items-center gap-2 cursor-pointer text-sm hover:bg-muted/60 rounded px-1 py-0.5"
-                          >
-                            <Checkbox
-                              checked={selectedMunicipalities.includes(m.id)}
-                              onCheckedChange={() => toggleMunicipality(m.id)}
-                              className="data-[state=checked]:bg-primary data-[state=checked]:border-primary"
-                            />
-                            {m.name}
-                          </label>
-                        ))
-                      )}
-                    </div>
-                    {selectedMunicipalities.length > 0 && (
-                      <p className="text-xs text-muted-foreground mt-1">
-                        {selectedMunicipalities.length} municipio(s) seleccionado(s)
-                      </p>
-                    )}
-                    {selectedMunicipalities.length === 0 && (
+                    <ProductLocationsField
+                      value={productLocations}
+                      onChange={setProductLocations}
+                      provinces={provinces as ProvinceType[]}
+                      municipalities={municipalities as unknown as MunicipalityType[]}
+                      defaultStock={formData.stock}
+                    />
+                    {productLocations.length === 0 && (
                       <p className="text-xs text-muted-foreground mt-1">
                         Sin selección = disponible en todas las zonas.
                       </p>

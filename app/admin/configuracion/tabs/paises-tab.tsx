@@ -21,13 +21,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Field, FieldLabel } from "@/components/ui/field";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import { Plus, Pencil, Trash2, Globe, Loader2 } from "lucide-react";
 import {
   getCountriesAction,
@@ -35,14 +29,12 @@ import {
   updateCountryAction,
   deleteCountryAction,
 } from "@/app/actions/admin-extras";
-import { useAdminStore } from "@/lib/admin-store";
 
-interface Country { id: string; name: string; code: string; phoneCode: string; currencyCode: string; emoji: string }
-const empty: Omit<Country, "id"> = { name: "", code: "", phoneCode: "", currencyCode: "", emoji: "" };
+interface Country { id: string; name: string; emoji: string; active: boolean }
+const empty: Omit<Country, "id"> = { name: "", emoji: "", active: true };
 
-export default function PaisesPage() {
+export default function PaisesTab() {
   const token = useAuthStore((s) => s.token);
-  const { currencies } = useAdminStore();
   const [countries, setCountries] = useState<Country[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialog, setDialog] = useState(false);
@@ -63,7 +55,7 @@ export default function PaisesPage() {
   const openNew = () => { setEditing(null); setForm(empty); setDialog(true); };
   const openEdit = (c: Country) => {
     setEditing(c);
-    setForm({ name: c.name, code: c.code, phoneCode: c.phoneCode, currencyCode: c.currencyCode, emoji: c.emoji });
+    setForm({ name: c.name, emoji: c.emoji, active: c.active });
     setDialog(true);
   };
   const save = async () => {
@@ -79,26 +71,11 @@ export default function PaisesPage() {
     load();
   };
 
-  const applyFlag = (code: string) => {
-    setForm((f) => ({ ...f, code: code.toUpperCase() }));
-  };
-
-  const linkedCurrencies = (currencyCode: string) => {
-    if (!currencyCode) return null;
-    const c = currencies.find((cu: any) => {
-      const cuCode = cu.code ?? cu.currency_code;
-      return cuCode?.toUpperCase() === currencyCode.toUpperCase();
-    });
-    return c || null;
-  };
-
   return (
     <div className="space-y-6">
       <div>
         <h2 className="text-2xl font-bold">Países</h2>
-        <p className="text-muted-foreground">
-          El código telefónico preselecciona la moneda del cliente (ej: +53 → CUP)
-        </p>
+        <p className="text-muted-foreground">Países disponibles en la tienda</p>
       </div>
 
       <div className="flex justify-end">
@@ -114,49 +91,38 @@ export default function PaisesPage() {
             <Table>
               <TableHeader><TableRow>
                 <TableHead>País</TableHead>
-                <TableHead>Código</TableHead>
-                <TableHead>Teléfono</TableHead>
-                <TableHead>Moneda</TableHead>
+                <TableHead className="text-center">Activo</TableHead>
                 <TableHead className="text-right">Acciones</TableHead>
               </TableRow></TableHeader>
               <TableBody>
-                {countries.map((c) => {
-                  const linked = linkedCurrencies(c.currencyCode);
-                  return (
-                    <TableRow key={c.id}>
-                      <TableCell className="font-medium">
-                        <span className="flex items-center gap-2">
-                          {c.emoji ? (
-                            <span className="text-xl leading-none">{c.emoji}</span>
-                          ) : (
-                            <Globe className="h-4 w-4 text-primary" />
-                          )}
-                          {c.name}
-                        </span>
-                      </TableCell>
-                      <TableCell className="uppercase">{c.code}</TableCell>
-                      <TableCell className="font-mono">+{c.phoneCode}</TableCell>
-                      <TableCell>
-                        {linked ? (
-                          <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-primary/10 text-primary text-sm font-medium">
-                            <span>{(linked as any).symbol || "$"}</span>
-                            {c.currencyCode}
-                          </span>
+                {countries.map((c) => (
+                  <TableRow key={c.id} className={c.active ? "" : "opacity-60"}>
+                    <TableCell className="font-medium">
+                      <span className="flex items-center gap-2">
+                        {c.emoji ? (
+                          <span className="text-xl leading-none">{c.emoji}</span>
                         ) : (
-                          <span className="text-muted-foreground">{c.currencyCode || "—"}</span>
+                          <Globe className="h-4 w-4 text-muted-foreground" />
                         )}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end gap-1">
-                          <Button variant="ghost" size="icon" onClick={() => openEdit(c)}><Pencil className="h-4 w-4" /></Button>
-                          <Button variant="ghost" size="icon" className="text-destructive" onClick={() => remove(c.id)}><Trash2 className="h-4 w-4" /></Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
+                        {c.name}
+                      </span>
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <Switch
+                        checked={c.active}
+                        onCheckedChange={(v) => updateCountryAction(c.id, { active: v }, token!).then(load)}
+                      />
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex justify-end gap-1">
+                        <Button variant="ghost" size="icon" onClick={() => openEdit(c)}><Pencil className="h-4 w-4" /></Button>
+                        <Button variant="ghost" size="icon" className="text-destructive" onClick={() => remove(c.id)}><Trash2 className="h-4 w-4" /></Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
                 {countries.length === 0 && (
-                  <TableRow><TableCell colSpan={5} className="text-center py-8 text-muted-foreground">No hay países creados</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={3} className="text-center py-8 text-muted-foreground">No hay países creados</TableCell></TableRow>
                 )}
               </TableBody>
             </Table>
@@ -184,40 +150,6 @@ export default function PaisesPage() {
                 />
               </Field>
             </div>
-            <div className="grid gap-4 sm:grid-cols-3">
-              <Field><FieldLabel>Código</FieldLabel>
-                <Input
-                  value={form.code}
-                  onChange={(e) => applyFlag(e.target.value)}
-                  onBlur={(e) => applyFlag(e.target.value)}
-                  placeholder="CU"
-                  maxLength={2}
-                />
-              </Field>
-              <Field><FieldLabel>Código tel.</FieldLabel>
-                <Input value={form.phoneCode} onChange={(e) => setForm({ ...form, phoneCode: e.target.value })} placeholder="53" />
-              </Field>
-              <Field><FieldLabel>Moneda (ISO)</FieldLabel>
-                <Input
-                  value={form.currencyCode}
-                  onChange={(e) => setForm({ ...form, currencyCode: e.target.value.toUpperCase() })}
-                  placeholder="CUP"
-                  maxLength={3}
-                />
-              </Field>
-            </div>
-            {form.currencyCode && (
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <span>Moneda enlazada:</span>
-                {linkedCurrencies(form.currencyCode) ? (
-                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary/10 text-primary font-medium">
-                    {(linkedCurrencies(form.currencyCode) as any)?.symbol} {form.currencyCode}
-                  </span>
-                ) : (
-                  <span className="text-amber-600">No existe en el sistema de monedas</span>
-                )}
-              </div>
-            )}
           </div>
           <DialogFooter className="gap-2">
             <Button variant="outline" onClick={() => setDialog(false)}>Cancelar</Button>

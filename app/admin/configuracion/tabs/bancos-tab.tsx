@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useAuthStore } from "@/lib/auth-context";
+import { useAdminStore } from "@/lib/admin-store";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -38,6 +39,7 @@ import {
   Loader2,
   Landmark,
   Copy,
+  Image as ImageIcon,
 } from "lucide-react";
 import {
   getBanksAction,
@@ -50,7 +52,7 @@ import {
   deleteBankAccountAction,
 } from "@/app/actions/admin-extras";
 
-interface Bank { id: string; name: string; active: boolean }
+interface Bank { id: string; name: string; logo: string; country: string; currency: string; active: boolean }
 interface Account {
   id: string; bank: string; accountNumber: string; accountType: string;
   owner: string; ci: string; currency: string; active: boolean;
@@ -61,8 +63,9 @@ const emptyAccount = {
   currency: "CUP", active: true, transferLimit: 0, transferCount: 0,
 };
 
-export default function BancosPage() {
+export default function BancosTab() {
   const token = useAuthStore((s) => s.token);
+  const { currencies } = useAdminStore();
   const [tab, setTab] = useState("bancos");
   const [banks, setBanks] = useState<Bank[]>([]);
   const [accounts, setAccounts] = useState<Account[]>([]);
@@ -70,8 +73,7 @@ export default function BancosPage() {
 
   const [bankDialog, setBankDialog] = useState(false);
   const [editingBank, setEditingBank] = useState<Bank | null>(null);
-  const [bankName, setBankName] = useState("");
-  const [bankActive, setBankActive] = useState(true);
+  const [bankForm, setBankForm] = useState({ name: "", logo: "", country: "", currency: "" });
 
   const [accDialog, setAccDialog] = useState(false);
   const [editingAcc, setEditingAcc] = useState<Account | null>(null);
@@ -89,12 +91,12 @@ export default function BancosPage() {
     if (token) load();
   }, [token, load]);
 
-  const openNewBank = () => { setEditingBank(null); setBankName(""); setBankActive(true); setBankDialog(true); };
-  const openEditBank = (b: Bank) => { setEditingBank(b); setBankName(b.name); setBankActive(b.active); setBankDialog(true); };
+  const openNewBank = () => { setEditingBank(null); setBankForm({ name: "", logo: "", country: "", currency: "" }); setBankDialog(true); };
+  const openEditBank = (b: Bank) => { setEditingBank(b); setBankForm({ name: b.name, logo: b.logo, country: b.country, currency: b.currency }); setBankDialog(true); };
   const saveBank = async () => {
-    if (!token || !bankName.trim()) return;
-    if (editingBank) await updateBankAction(editingBank.id, { name: bankName.trim(), active: bankActive }, token);
-    else await createBankAction(bankName.trim(), token);
+    if (!token || !bankForm.name.trim()) return;
+    if (editingBank) await updateBankAction(editingBank.id, bankForm, token);
+    else await createBankAction(bankForm, token);
     setBankDialog(false); load();
   };
   const removeBank = async (id: string) => {
@@ -143,12 +145,23 @@ export default function BancosPage() {
               {loading ? <Loader2 className="h-6 w-6 animate-spin text-primary mx-auto" /> : (
                 <Table>
                   <TableHeader><TableRow>
-                    <TableHead>Nombre</TableHead><TableHead>Activo</TableHead><TableHead className="text-right">Acciones</TableHead>
+                    <TableHead>Logo</TableHead><TableHead>Nombre</TableHead><TableHead>País</TableHead><TableHead>Moneda</TableHead><TableHead>Activo</TableHead><TableHead className="text-right">Acciones</TableHead>
                   </TableRow></TableHeader>
                   <TableBody>
                     {banks.map((b) => (
-                      <TableRow key={b.id}>
+                      <TableRow key={b.id} className={b.active ? "" : "opacity-60"}>
+                        <TableCell>
+                          {b.logo ? (
+                            <img src={b.logo} alt={b.name} className="h-8 w-8 rounded object-cover border" />
+                          ) : (
+                            <div className="h-8 w-8 rounded bg-muted flex items-center justify-center">
+                              <ImageIcon className="h-4 w-4 text-muted-foreground" />
+                            </div>
+                          )}
+                        </TableCell>
                         <TableCell className="font-medium"><span className="flex items-center gap-2"><Landmark className="h-4 w-4 text-primary" />{b.name}</span></TableCell>
+                        <TableCell>{b.country || "—"}</TableCell>
+                        <TableCell>{b.currency || "—"}</TableCell>
                         <TableCell>
                           <span className={`text-xs px-2 py-1 rounded-full ${b.active ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>
                             {b.active ? "Activo" : "Inactivo"}
@@ -163,7 +176,7 @@ export default function BancosPage() {
                       </TableRow>
                     ))}
                     {banks.length === 0 && (
-                      <TableRow><TableCell colSpan={3} className="text-center py-8 text-muted-foreground">No hay bancos creados</TableCell></TableRow>
+                      <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">No hay bancos creados</TableCell></TableRow>
                     )}
                   </TableBody>
                 </Table>
@@ -234,16 +247,31 @@ export default function BancosPage() {
           <DialogHeader><DialogTitle>{editingBank ? "Editar Banco" : "Nuevo Banco"}</DialogTitle></DialogHeader>
           <div className="space-y-4">
             <Field><FieldLabel>Nombre</FieldLabel>
-              <Input value={bankName} onChange={(e) => setBankName(e.target.value)} placeholder="Ej: Banco de Crédito y Comercio (BANDEC)" />
+              <Input value={bankForm.name} onChange={(e) => setBankForm({ ...bankForm, name: e.target.value })} placeholder="Ej: Banco de Crédito y Comercio (BANDEC)" />
             </Field>
-            <div className="flex items-center justify-between">
-              <Label>¿Activo?</Label>
-              <Switch checked={bankActive} onCheckedChange={setBankActive} />
+            <Field><FieldLabel>Logo (URL)</FieldLabel>
+              <Input value={bankForm.logo} onChange={(e) => setBankForm({ ...bankForm, logo: e.target.value })} placeholder="https://..." />
+            </Field>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Field><FieldLabel>País</FieldLabel>
+                <Input value={bankForm.country} onChange={(e) => setBankForm({ ...bankForm, country: e.target.value })} placeholder="Ej: Cuba" />
+              </Field>
+              <Field><FieldLabel>Moneda</FieldLabel>
+                <Select value={bankForm.currency} onValueChange={(v) => setBankForm({ ...bankForm, currency: v })}>
+                  <SelectTrigger><SelectValue placeholder="Selecciona" /></SelectTrigger>
+                  <SelectContent>
+                    {currencies.map((c: any) => {
+                      const code = c.code ?? c.currency_code;
+                      return <SelectItem key={c.id} value={code}>{code}</SelectItem>;
+                    })}
+                  </SelectContent>
+                </Select>
+              </Field>
             </div>
           </div>
           <DialogFooter className="gap-2">
             <Button variant="outline" onClick={() => setBankDialog(false)}>Cancelar</Button>
-            <Button onClick={saveBank} disabled={!bankName.trim()}>Guardar</Button>
+            <Button onClick={saveBank} disabled={!bankForm.name.trim()}>Guardar</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

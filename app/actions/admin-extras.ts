@@ -120,36 +120,26 @@ export async function getCountriesAction(token: string) {
   return rows.map((c: any) => ({
     id: c.id,
     name: c.name,
-    code: c.code || '',
-    phoneCode: c.phone_code || '',
-    currencyCode: c.currency_code || '',
     emoji: c.emoji || '',
+    active: c.active !== false,
   }));
 }
 
-export async function createCountryAction(data: { name: string; code: string; phoneCode: string; currencyCode: string; emoji?: string }, token: string) {
+export async function createCountryAction(data: { name: string; emoji?: string; active?: boolean }, token: string) {
   await verifyAdminAndGetUserId(token);
   const pb = await getDataPB(token);
   const rec = await pb.collection('countries').create({
     name: data.name,
-    code: data.code,
-    phone_code: data.phoneCode,
-    currency_code: data.currencyCode,
     emoji: data.emoji || '',
+    active: data.active !== false,
   });
-  return { id: rec.id, ...data, emoji: data.emoji || '' };
+  return { id: rec.id, name: rec.name, emoji: rec.emoji || '', active: rec.active !== false };
 }
 
-export async function updateCountryAction(id: string, data: { name: string; code: string; phoneCode: string; currencyCode: string; emoji?: string }, token: string) {
+export async function updateCountryAction(id: string, data: { name?: string; emoji?: string; active?: boolean }, token: string) {
   await verifyAdminAndGetUserId(token);
   const pb = await getDataPB(token);
-  return pb.collection('countries').update(id, {
-    name: data.name,
-    code: data.code,
-    phone_code: data.phoneCode,
-    currency_code: data.currencyCode,
-    emoji: data.emoji || '',
-  });
+  return pb.collection('countries').update(id, data);
 }
 
 export async function deleteCountryAction(id: string, token: string) {
@@ -199,23 +189,33 @@ export async function getBanksAction(token: string) {
   await verifyAdminAndGetUserId(token);
   const pb = await getDataPB(token);
   const rows = await getAllRecords(pb, 'banks', { sort: 'name' });
-  return rows.map((b: any) => ({ id: b.id, name: b.name, active: b.active !== false }));
+  return rows.map((b: any) => ({
+    id: b.id,
+    name: b.name,
+    logo: b.logo || '',
+    country: b.country || '',
+    currency: b.currency || '',
+    active: b.active !== false,
+  }));
 }
 
-export async function createBankAction(name: string, token: string) {
+export async function createBankAction(data: { name: string; logo?: string; country?: string; currency?: string }, token: string) {
   await verifyAdminAndGetUserId(token);
   const pb = await getDataPB(token);
-  const rec = await pb.collection('banks').create({ name, active: true });
-  return { id: rec.id, name: rec.name, active: true };
+  const rec = await pb.collection('banks').create({
+    name: data.name,
+    logo: data.logo || '',
+    country: data.country || '',
+    currency: data.currency || '',
+    active: true,
+  });
+  return { id: rec.id, name: rec.name, logo: rec.logo || '', country: rec.country || '', currency: rec.currency || '', active: true };
 }
 
-export async function updateBankAction(id: string, data: { name?: string; active?: boolean }, token: string) {
+export async function updateBankAction(id: string, data: { name?: string; logo?: string; country?: string; currency?: string; active?: boolean }, token: string) {
   await verifyAdminAndGetUserId(token);
   const pb = await getDataPB(token);
-  const updateData: any = {};
-  if (data.name !== undefined) updateData.name = data.name;
-  if (data.active !== undefined) updateData.active = data.active;
-  return pb.collection('banks').update(id, updateData);
+  return pb.collection('banks').update(id, data);
 }
 
 export async function deleteBankAction(id: string, token: string) {

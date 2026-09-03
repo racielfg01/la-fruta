@@ -80,14 +80,18 @@ async function setup() {
   // 3. countries
   await createCollection(pb, "countries", [
     T.text("name", true),
-    T.text("code"),
-    T.text("phone_code"),
-    T.text("currency_code"),
     T.text("emoji"),
+    T.bool("active"),
   ]);
 
   // 4. banks
-  await createCollection(pb, "banks", [T.text("name", true), T.bool("active")]);
+  await createCollection(pb, "banks", [
+    T.text("name", true),
+    T.text("logo"),
+    T.text("country"),
+    T.text("currency"),
+    T.bool("active"),
+  ]);
 
   // 5. bank_accounts (relacion a banks)
   let banksCollId = "";
@@ -147,7 +151,7 @@ async function setup() {
   await addFields(pb, "municipalities", [T.bool("active")]);
 
   // 11. countries: add emoji field if missing
-  await addFields(pb, "countries", [T.text("emoji")]);
+  await addFields(pb, "countries", [T.text("emoji"), T.bool("active")]);
 
   // 12. settings: add color fields if missing
   await addFields(pb, "settings", [
@@ -208,10 +212,10 @@ async function setup() {
 
   try {
     if ((await pb.collection("countries").getFullList({ batch: 1 })).length === 0) {
-      await pb.collection("countries").create({ name: "Cuba", code: "CU", phone_code: "53", currency_code: "CUP", emoji: "🇨🇺" });
-      await pb.collection("countries").create({ name: "Estados Unidos", code: "US", phone_code: "1", currency_code: "USD", emoji: "🇺🇸" });
-      await pb.collection("countries").create({ name: "España", code: "ES", phone_code: "34", currency_code: "EUR", emoji: "🇪🇸" });
-      await pb.collection("countries").create({ name: "México", code: "MX", phone_code: "52", currency_code: "MXN", emoji: "🇲🇽" });
+      await pb.collection("countries").create({ name: "Cuba", emoji: "🇨🇺", active: true });
+      await pb.collection("countries").create({ name: "Estados Unidos", emoji: "🇺🇸", active: true });
+      await pb.collection("countries").create({ name: "España", emoji: "🇪🇸", active: true });
+      await pb.collection("countries").create({ name: "México", emoji: "🇲🇽", active: true });
       console.log("[seed] countries (4)");
       seeded.add("countries");
     } else {
@@ -221,9 +225,9 @@ async function setup() {
 
   try {
     if ((await pb.collection("banks").getFullList({ batch: 1 })).length === 0) {
-      await pb.collection("banks").create({ name: "Banco de Crédito y Comercio (BANDEC)", active: true });
-      await pb.collection("banks").create({ name: "Banco Metropolitano", active: true });
-      await pb.collection("banks").create({ name: "Banco Popular de Ahorro (BPA)", active: true });
+      await pb.collection("banks").create({ name: "Banco de Crédito y Comercio (BANDEC)", logo: "", country: "Cuba", currency: "CUP", active: true });
+      await pb.collection("banks").create({ name: "Banco Metropolitano", logo: "", country: "Cuba", currency: "CUP", active: true });
+      await pb.collection("banks").create({ name: "Banco Popular de Ahorro (BPA)", logo: "", country: "Cuba", currency: "CUP", active: true });
       console.log("[seed] banks (3)");
       seeded.add("banks");
     } else {

@@ -186,6 +186,24 @@ async function setup() {
   const seeds = [];
   const seeded = new Set();
 
+  // Reparación: añadir un campo `bool` a una colección con registros existentes
+  // los deja en false. Si TODOS están inactivos, es artefacto de la migración
+  // (no una decisión del admin) y se reactivan.
+  for (const collName of ["provinces", "municipalities"]) {
+    try {
+      const all = await pb.collection(collName).getFullList({ batch: 1 });
+      const inactive = all.filter((r) => r.active === false);
+      if (all.length > 0 && inactive.length === all.length) {
+        for (const r of inactive) {
+          await pb.collection(collName).update(r.id, { active: true });
+        }
+        console.log(`[fix] ${collName}: reactivados ${inactive.length} registros (todos estaban inactive)`);
+      }
+    } catch (e) {
+      console.log(`[fix] ${collName} error:`, e.message);
+    }
+  }
+
   try {
     if ((await pb.collection("provinces").getFullList({ batch: 1 })).length === 0) {
       for (const name of PROVINCES) await pb.collection("provinces").create({ name, active: true });

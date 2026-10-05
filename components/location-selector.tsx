@@ -32,13 +32,19 @@ export function LocationSelector({
   const [province, setProvince] = useState(initial?.province || "");
   const [municipality, setMunicipality] = useState(initial?.municipality || "");
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
 
   useEffect(() => {
-    getPublicLocations().then((data) => {
-      setProvinces(data.provinces);
-      setMunicipalities(data.municipalities);
-      setLoading(false);
-    });
+    getPublicLocations()
+      .then((data) => {
+        setProvinces(data.provinces);
+        setMunicipalities(data.municipalities);
+      })
+      .catch((e) => {
+        console.error("getPublicLocations failed:", e);
+        setLoadError(true);
+      })
+      .finally(() => setLoading(false));
   }, []);
 
   const filteredMunicipalities = useMemo(
@@ -64,6 +70,17 @@ export function LocationSelector({
         {loading ? (
           <div className="flex justify-center py-8">
             <Loader2 className="h-6 w-6 animate-spin text-primary" />
+          </div>
+        ) : loadError || provinces.length === 0 ? (
+          <div className="space-y-2 rounded-lg border border-destructive/40 bg-destructive/5 p-4 text-sm">
+            <p className="font-medium text-destructive">
+              No se pudieron cargar las ubicaciones
+            </p>
+            <p className="text-muted-foreground">
+              {loadError
+                ? "Error de conexión con la base de datos. Verifica tu internet o intenta más tarde."
+                : "No hay provincias configuradas. Agrégalas en Configuración → Ubicaciones."}
+            </p>
           </div>
         ) : (
           <div className="space-y-4">

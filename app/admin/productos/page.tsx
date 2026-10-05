@@ -95,29 +95,28 @@ function ProductsAdmin() {
   const [isLoading, setIsLoading] = useState(false);
   const [imageUploaded, setImageUploaded] = useState(false);
   const [step, setStep] = useState(1);
-  const [municipalities, setMunicipalities] = useState<{ id: string; name: string; province: string }[]>([]);
-  const [provinces, setProvinces] = useState<{ id: string; name: string }[]>([]);
-  const [selectedMunicipalities, setSelectedMunicipalities] = useState<string[]>([]);
+  const [municipalities, setMunicipalities] = useState<MunicipalityType[]>([]);
+  const [provinces, setProvinces] = useState<ProvinceType[]>([]);
   const [productLocations, setProductLocations] = useState<ProductLocation[]>([]);
 
   useEffect(() => {
     getPublicLocations().then((d) => {
-      setMunicipalities(d.municipalities);
-      setProvinces(d.provinces);
+      setProvinces(d.provinces as ProvinceType[]);
+      setMunicipalities(
+        d.municipalities.map((m: any) => ({
+          id: m.id,
+          name: m.name,
+          active: m.active !== false,
+          id_provincia: m.province || m.id_provincia || "",
+        }))
+      );
     });
   }, []);
-
-  const toggleMunicipality = (id: string) => {
-    setSelectedMunicipalities((prev) =>
-      prev.includes(id) ? prev.filter((m) => m !== id) : [...prev, id]
-    );
-  };
 
   const handleNewProduct = useCallback(() => {
     setEditingProduct(null);
     setFormData(emptyProduct);
     setImageUploaded(false);
-    setSelectedMunicipalities([]);
     setProductLocations([]);
     setStep(1);
     setDialogOpen(true);
@@ -172,7 +171,6 @@ function ProductsAdmin() {
       visible: product.visible,
     });
     setImageUploaded(false);
-    setSelectedMunicipalities(product.availableMunicipalities || []);
     setProductLocations(product.productLocations || []);
     setStep(1);
     setDialogOpen(true);
@@ -197,7 +195,17 @@ function ProductsAdmin() {
 
     const data = { ...formData, inStock: formData.stock > 0 };
 
-    data.availableMunicipalities = selectedMunicipalities;
+    // Derivar la lista de municipios desde productLocations: una provincia entera
+// se expande a todos sus municipios. Vacío = disponible en todas las zonas.
+const available = new Set<string>();
+    for (const loc of productLocations) {
+      if (loc.municipality) available.add(loc.municipality);
+      else
+        municipalities
+          .filter((m) => m.id_provincia === loc.province)
+          .forEach((m) => available.add(m.id));
+    }
+    data.availableMunicipalities = [...available];
     data.productLocations = productLocations;
 
     try {
@@ -609,8 +617,8 @@ function ProductsAdmin() {
                     <ProductLocationsField
                       value={productLocations}
                       onChange={setProductLocations}
-                      provinces={provinces as ProvinceType[]}
-                      municipalities={municipalities as unknown as MunicipalityType[]}
+                      provinces={provinces}
+                      municipalities={municipalities}
                       defaultStock={formData.stock}
                     />
                     {productLocations.length === 0 && (

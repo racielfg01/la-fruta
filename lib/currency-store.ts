@@ -9,7 +9,6 @@ interface CurrencyState {
   initialized: boolean;
   init: () => Promise<void>;
   setCurrency: (id: string) => void;
-  selectByPhone: (phone: string, countries: { phoneCode: string; currencyCode: string }[]) => void;
 }
 
 export const useCurrencyStore = create<CurrencyState>()(
@@ -39,21 +38,6 @@ export const useCurrencyStore = create<CurrencyState>()(
       },
 
       setCurrency: (id) => set({ currencyId: id }),
-
-      selectByPhone: (phone, countries) => {
-        const { currencies, currencyId } = get();
-        if (currencyId || currencies.length === 0 || !phone) return;
-        const digits = phone.replace(/\D/g, '');
-        const country = countries
-          .filter((c) => c.phoneCode)
-          .sort((a, b) => b.phoneCode.length - a.phoneCode.length)
-          .find((c) => digits.startsWith(c.phoneCode));
-        if (!country) return;
-        const match = currencies.find(
-          (c) => c.code.toUpperCase() === country.currencyCode.toUpperCase()
-        );
-        if (match) set({ currencyId: match.id });
-      },
     }),
     {
       name: 'currency-storage',

@@ -29,7 +29,9 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { Checkbox } from "@/components/ui/checkbox";
-import { useCartStore, Product } from "@/lib/store";
+import { useCartStore, Product, availableStock } from "@/lib/store";
+
+
 import { useCurrency } from "@/lib/currency";
 import {
   Search,
@@ -100,6 +102,11 @@ const categoryConfig: Record<
   const setUserLocation = useCartStore((state) => state.setUserLocation);
   const [locationDialogOpen, setLocationDialogOpen] = useState(false);
 
+  // Primera visita: pedir zona, pero sin bloquear la tienda (se puede cerrar).
+  useEffect(() => {
+    if (!userLocation) setLocationDialogOpen(true);
+  }, [userLocation]);
+
   // En StoreView, modifica la carga de datos:
 useEffect(() => {
   const loadData = async () => {
@@ -147,14 +154,26 @@ useEffect(() => {
       const matchesPrice =
         productPriceUSD >= priceRange[0] && productPriceUSD <= priceRange[1];
 
-      const matchesStock = !showOnlyInStock || product.inStock;
+      const hasLocStock = !!(product.productLocations?.length && userLocation);
+      const locStock = availableStock(userLocation, product);
+      const matchesStock = !showOnlyInStock || (locStock ?? product.inStock);
 
       const matchesZone =
         !userLocation?.municipality ||
         (product.availableMunicipalities || []).length === 0 ||
         (product.availableMunicipalities || []).includes(userLocation.municipality);
 
-      return matchesSearch && matchesCategory && matchesPrice && matchesStock && matchesZone;
+      // Con stock por ubicación definido, una ubicación agotada oculta el producto.
+      const matchesLocationStock = !hasLocStock || locStock > 0;
+
+      return (
+        matchesSearch &&
+        matchesCategory &&
+        matchesPrice &&
+        matchesStock &&
+        matchesZone &&
+        matchesLocationStock
+      );
     });
 
     switch (sortBy) {
@@ -739,12 +758,13 @@ useEffect(() => {
 
       {/* Cambiar zona de entrega */}
       <Dialog open={locationDialogOpen} onOpenChange={setLocationDialogOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md" showCloseButton={false}>
           <DialogHeader>
             <DialogTitle>Cambiar zona de entrega</DialogTitle>
           </DialogHeader>
           <LocationSelector
             initial={userLocation || undefined}
+            onClose={() => setLocationDialogOpen(false)}
             onComplete={(loc) => {
               setUserLocation(loc);
               setLocationDialogOpen(false);

@@ -55,6 +55,7 @@ const T = {
   text: (name, required = false, extra = {}) => ({ name, type: "text", required, ...extra }),
   number: (name, required = false) => ({ name, type: "number", required }),
   bool: (name) => ({ name, type: "bool", required: false }),
+  json: (name) => ({ name, type: "json", required: false, maxSelect: 1, maxSize: 200000 }),
   relation: (name, collectionId) => ({
     name, type: "relation", required: false, collectionId,
     cascadeDelete: false, minSelect: 0, maxSelect: 1,
@@ -131,7 +132,7 @@ async function setup() {
   ]);
 
   // 7. products: zonas disponibles (CSV de ids de municipio)
-  await addFields(pb, "products", [T.text("available_municipalities")]);
+  await addFields(pb, "products", [T.text("available_municipalities"), T.json("product_locations")]);
 
   // 8. orders: datos de transferencia y cancelación
   await addFields(pb, "orders", [

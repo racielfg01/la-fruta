@@ -12,35 +12,17 @@ export async function getPublicLocations() {
       getAllRecords(pb, 'municipalities', { sort: 'name', expand: 'province' }),
     ]);
     return {
-      provinces: provinces.map((p: any) => ({ id: p.id, name: p.name })),
+      provinces: provinces.map((p: any) => ({ id: p.id, name: p.name, active: p.active !== false })),
       municipalities: municipalities.map((m: any) => ({
         id: m.id,
         name: m.name,
+        active: m.active !== false,
         province: m.expand?.province?.id || m.province || '',
       })),
     };
   } catch (error) {
     console.error('Error fetching locations:', error);
     return { provinces: [], municipalities: [] };
-  }
-}
-
-// ── Countries (currency mapping by phone code) ──
-
-export async function getPublicCountries() {
-  try {
-    const pb = getPB();
-    const rows = await getAllRecords(pb, 'countries', { sort: 'name' });
-    return rows.map((c: any) => ({
-      id: c.id,
-      name: c.name,
-      code: c.code || '',
-      phoneCode: String(c.phone_code || ''),
-      currencyCode: c.currency_code || '',
-    }));
-  } catch (error) {
-    console.error('Error fetching countries:', error);
-    return [];
   }
 }
 

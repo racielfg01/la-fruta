@@ -11,7 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { MapPin, Loader2, Check } from "lucide-react";
+import { MapPin, Loader2, Check, X } from "lucide-react";
 import { getPublicLocations } from "@/app/actions/public";
 
 interface Municipality {
@@ -23,9 +23,11 @@ interface Municipality {
 export function LocationSelector({
   onComplete,
   initial,
+  onClose,
 }: {
   onComplete: (loc: { province: string; municipality: string }) => void;
   initial?: { province: string; municipality: string };
+  onClose?: () => void;
 }) {
   const [provinces, setProvinces] = useState<{ id: string; name: string }[]>([]);
   const [municipalities, setMunicipalities] = useState<Municipality[]>([]);
@@ -65,6 +67,16 @@ export function LocationSelector({
               Selecciona tu provincia y municipio para ver los productos disponibles en tu zona.
             </p>
           </div>
+          {onClose && (
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label="Cerrar"
+              className="-mr-1 -mt-1 ml-auto shrink-0 rounded-lg p-2 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            >
+              <X className="h-5 w-5" />
+            </button>
+          )}
         </div>
 
         {loading ? (

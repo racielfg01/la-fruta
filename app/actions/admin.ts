@@ -45,6 +45,16 @@ async function getCategoryIdByName(name: string, token: string): Promise<string>
   return cats[0]?.id || '';
 }
 
+function parseJson<T>(raw: unknown, fallback: T): T {
+  if (raw === null || raw === undefined || raw === '') return fallback;
+  if (typeof raw === 'object') return raw as T;
+  try {
+    return JSON.parse(raw as string) as T;
+  } catch {
+    return fallback;
+  }
+}
+
 function mapProduct(p: any) {
   return {
     ...p,
@@ -57,6 +67,7 @@ function mapProduct(p: any) {
       .split(',')
       .map((s: string) => s.trim())
       .filter(Boolean),
+    productLocations: parseJson(p.product_locations, []),
   };
 }
 
@@ -180,6 +191,7 @@ export async function addProductAction(product: Product, token: string) {
     in_stock: product.stock > 0,
     is_visible: product.visible,
     available_municipalities: (product.availableMunicipalities || []).join(','),
+    product_locations: JSON.stringify(product.productLocations || []),
   });
   return { ...product, id: record.id };
 }
@@ -202,6 +214,9 @@ export async function editProductAction(id: string, data: Partial<Product>, toke
   if (data.visible !== undefined) updateData.is_visible = data.visible;
   if (data.availableMunicipalities !== undefined) {
     updateData.available_municipalities = (data.availableMunicipalities || []).join(',');
+  }
+  if (data.productLocations !== undefined) {
+    updateData.product_locations = JSON.stringify(data.productLocations || []);
   }
   if (Object.keys(updateData).length === 0) return;
   await pb.collection('products').update(id, updateData);

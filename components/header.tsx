@@ -19,7 +19,6 @@ import {
 } from "@/components/ui/select";
 import { useCurrencyStore, useSelectedCurrency } from "@/lib/currency-store";
 import { useSettingsStore } from "@/lib/settings-store";
-import { getPublicCountries } from "@/app/actions/public";
 
 export function Header() {
   const totalItems = useCartStore((state) => state.getTotalItems());
@@ -41,7 +40,6 @@ export function Header() {
   const initCurrencies = useCurrencyStore((s) => s.init);
   const currencies = useCurrencyStore((s) => s.currencies);
   const setCurrency = useCurrencyStore((s) => s.setCurrency);
-  const selectByPhone = useCurrencyStore((s) => s.selectByPhone);
   const selectedCurrency = useSelectedCurrency();
 
   // Tema y ajustes de la tienda
@@ -53,11 +51,6 @@ export function Header() {
     initCurrencies();
     initSettings();
   }, [initCurrencies, initSettings]);
-
-  useEffect(() => {
-    if (!mounted || !user?.phone) return;
-    getPublicCountries().then((countries) => selectByPhone(user.phone, countries));
-  }, [mounted, user?.phone, selectByPhone, currencies.length]);
 
   // No renderizar el contador hasta que esté montado en el cliente
   const cartBadge = mounted && totalItems > 0 && (

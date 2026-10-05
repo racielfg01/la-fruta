@@ -45,6 +45,22 @@ export interface DeliveryLocation {
   lng: number;
 }
 
+// Stock disponible del producto en la ubicación actual del cliente.
+// Sin stock por ubicación configurado, cae al stock global del producto.
+export function availableStock(
+  loc: UserLocation | null,
+  product: Product
+): number {
+  const locs = product.productLocations;
+  if (locs?.length && loc) {
+    const mun = locs.find((l) => l.municipality === loc.municipality);
+    if (mun) return mun.stock;
+    const prov = locs.find((l) => !l.municipality && l.province === loc.province);
+    if (prov) return prov.stock;
+  }
+  return product.stock ?? 0;
+}
+
 interface CartStore {
   items: CartItem[];
   deliveryLocation: DeliveryLocation | null;
@@ -70,16 +86,17 @@ export const useCartStore = create<CartStore>()(
       userLocation: null,
       setOnboardingComplete: (complete) => set({ onboardingComplete: complete }),
       addItem: (product) => {
-        if (!product.inStock || product.stock <= 0) return;
+        const available = availableStock(get().userLocation, product);
+        if (available <= 0) return;
         const items = get().items;
         const existingItem = items.find((item) => item.product.id === product.id);
         if (existingItem) {
           // Tope de stock: nunca superar el stock disponible
-          if (existingItem.quantity >= product.stock) return;
+          if (existingItem.quantity >= available) return;
           set({
             items: items.map((item) =>
               item.product.id === product.id
-                ? { ...item, quantity: Math.min(item.quantity + 1, product.stock) }
+                ? { ...item, quantity: Math.min(item.quantity + 1, available) }
                 : item
             ),
           });
@@ -95,12 +112,13 @@ export const useCartStore = create<CartStore>()(
           get().removeItem(productId);
           return;
         }
+        const { userLocation } = get();
         set({
-          items: get().items.map((item) =>
-            item.product.id === productId
-              ? { ...item, quantity: Math.min(quantity, item.product.stock || 1) }
-              : item
-          ),
+          items: get().items.map((item) => {
+            if (item.product.id !== productId) return item;
+            const available = availableStock(userLocation, item.product);
+            return { ...item, quantity: Math.min(quantity, Math.max(available, 1)) };
+          }),
         });
       },
       clearCart: () => set({ items: [], deliveryLocation: null }),

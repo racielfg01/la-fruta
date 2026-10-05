@@ -2,6 +2,16 @@
 
 import { getPB, getAllRecords } from '@/lib/pocketbase';
 
+function parseJson<T>(raw: unknown, fallback: T): T {
+  if (raw === null || raw === undefined || raw === '') return fallback;
+  if (typeof raw === 'object') return raw as T;
+  try {
+    return JSON.parse(raw as string) as T;
+  } catch {
+    return fallback;
+  }
+}
+
 function mapProduct(p: any) {
   return {
     id: p.id,
@@ -19,6 +29,7 @@ function mapProduct(p: any) {
       .split(',')
       .map((s: string) => s.trim())
       .filter(Boolean),
+    productLocations: parseJson(p.product_locations, []),
   };
 }
 

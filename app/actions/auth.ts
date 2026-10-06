@@ -44,6 +44,42 @@ function validatePassword(password: string): { valid: boolean; error?: string } 
   return { valid: true };
 }
 
+// Traduce una excepción de PocketBase a un mensaje con la causa real.
+// Antes un fallo de DNS (EAI_AGAIN), un 400 de credenciales y un 500
+// terminaban mostrando mensajes distintos o engañosos.
+function describeAuthError(error: any, kind: 'login' | 'signup'): string {
+  const cause =
+    error?.cause?.code ||
+    error?.originalError?.cause?.code ||
+    error?.originalError?.code;
+  const networkCodes = new Set([
+    'EAI_AGAIN', 'ENOTFOUND', 'ETIMEDOUT', 'EHOSTUNREACH',
+    'ECONNREFUSED', 'ECONNRESET', 'UND_ERR_CONNECT_TIMEOUT',
+  ]);
+  if (networkCodes.has(cause) || error?.message?.includes?.('fetch failed')) {
+    return `No se pudo conectar con PocketBase${cause ? ` (${cause})` : ''}. Revisa la conexión o el DNS.`;
+  }
+  const status = error?.response?.status;
+  if (status === 400) {
+    if (kind === 'signup') {
+      // 400 en registro = validación de PB (email duplicado, campos faltantes),
+      // nunca credenciales.
+      const data = error?.response?.data;
+      const first = data && Object.keys(data)[0];
+      const detail = first ? data[first]?.message : undefined;
+      return `Datos de registro inválidos${first ? ` (${first})` : ''}${detail ? `: ${detail}` : ''}`;
+    }
+    return 'Correo/Teléfono o contraseña incorrectos';
+  }
+  if (status === 401 || status === 403) return 'No tienes permiso para iniciar sesión.';
+  if (status === 404) return 'No se encontró el recurso. ¿Falta aplicar el esquema?';
+  if (status) {
+    const detail = error?.response?.message || '';
+    return `PocketBase respondió ${status}${detail ? `: ${detail}` : ''}`;
+  }
+  return `Error inesperado${error?.message ? `: ${error.message}` : ''}`;
+}
+
 function validateName(name: string): { valid: boolean; error?: string } {
   if (!name || name.trim().length === 0) return { valid: false, error: 'El nombre es requerido' };
   if (name.trim().length < 2) return { valid: false, error: 'El nombre debe tener al menos 2 caracteres' };
@@ -121,17 +157,7 @@ export async function signupAction(data: SignupData): Promise<AuthResponse> {
     };
   } catch (error: any) {
     console.error('Signup error:', error);
-    const isConnectionError =
-      error?.originalError?.cause?.code === 'UND_ERR_CONNECT_TIMEOUT' ||
-      error?.originalError?.cause?.code === 'EAI_AGAIN' ||
-      error?.cause?.code === 'UND_ERR_CONNECT_TIMEOUT' ||
-      error?.cause?.code === 'EAI_AGAIN' ||
-      error?.message?.includes?.('fetch failed');
-    if (isConnectionError) {
-      return { success: false, message: '', error: 'Error de conexión. Verifica tu internet o intenta más tarde.' };
-    }
-    const msg = error?.response?.message || error?.message || 'Error al registrar. Intenta más tarde.';
-    return { success: false, message: '', error: msg };
+    return { success: false, message: '', error: describeAuthError(error, 'signup') };
   }
 }
 
@@ -190,16 +216,7 @@ export async function loginAction(credentials: { identifier: string; password: s
     };
   } catch (error: any) {
     console.error('Login error:', error);
-    const isConnectionError =
-      error?.originalError?.cause?.code === 'UND_ERR_CONNECT_TIMEOUT' ||
-      error?.originalError?.cause?.code === 'EAI_AGAIN' ||
-      error?.cause?.code === 'UND_ERR_CONNECT_TIMEOUT' ||
-      error?.cause?.code === 'EAI_AGAIN' ||
-      error?.message?.includes?.('fetch failed');
-    if (isConnectionError) {
-      return { success: false, message: '', error: 'Error de conexión. Verifica tu internet o intenta más tarde.' };
-    }
-    return { success: false, message: '', error: 'Correo/Teléfono o contraseña incorrectos' };
+    return { success: false, message: '', error: describeAuthError(error, 'login') };
   }
 }
 

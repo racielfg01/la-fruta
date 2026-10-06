@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { getProductById, products } from "@/lib/products";
-import { useCartStore } from "@/lib/store";
+import { useCartStore, availableStock } from "@/lib/store";
 import { ProductCard } from "@/components/product-card";
 import { getPublicProductById } from "@/app/actions/public-products";
 import { Product } from "@/lib/store";
@@ -34,6 +34,7 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
   const [added, setAdded] = useState(false);
   const { defaultCurrency, currencies, formatPrice, convertPrice } = useCurrency();
   const cupCurrency = currencies.find(c => c.code === 'CUP');
+  const userLocation = useCartStore((state) => state.userLocation);
 
   useEffect(() => {
     if (!product) {
@@ -75,8 +76,13 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
     );
   }
 
+  // Stock efectivo en la ubicación del cliente (coherente con el filtrado de /).
+  const stock = availableStock(userLocation, product);
+  const inStock = product.inStock && stock > 0;
+
   const handleAddToCart = () => {
-    for (let i = 0; i < quantity; i++) {
+    if (!inStock || stock <= 0) return;
+    for (let i = 0; i < Math.min(quantity, stock); i++) {
       addItem(product);
     }
     setAdded(true);
@@ -109,7 +115,7 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
               sizes="(max-width: 1024px) 100vw, 50vw"
               priority
             />
-            {!product.inStock && (
+            {!inStock && (
               <div className="absolute inset-0 flex items-center justify-center bg-background/80">
                 <Badge variant="secondary" className="text-lg">
                   Agotado
@@ -142,15 +148,15 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
               <span>Origen: {product.origin}</span>
             </div>
 
-            {product.inStock && product.stock > 0 && (
+            {inStock && (
               <div className="mt-4 flex items-center gap-2 text-sm">
-                {product.stock <= 20 ? (
+                {stock <= 20 ? (
                   <span className="rounded-full bg-amber-100 px-3 py-1 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400">
-                    Solo quedan {product.stock}
+                    Solo quedan {stock}
                   </span>
                 ) : (
                   <span className="rounded-full bg-muted px-3 py-1 text-muted-foreground">
-                    Disponible · {product.stock} en stock
+                    Disponible · {stock} en stock
                   </span>
                 )}
               </div>
@@ -204,8 +210,8 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
                   <Button
                     variant="outline"
                     size="icon"
-                    onClick={() => setQuantity(Math.min(product.stock, quantity + 1))}
-                    disabled={quantity >= product.stock}
+                    onClick={() => setQuantity(Math.min(stock, quantity + 1))}
+                    disabled={quantity >= stock}
                   >
                     <Plus className="h-4 w-4" />
                   </Button>
@@ -216,7 +222,7 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
                 size="lg"
                 className="flex-1 sm:flex-none"
                 onClick={handleAddToCart}
-                disabled={!product.inStock || added}
+                disabled={!inStock || quantity > stock || added}
               >
                 {added ? (
                   <>

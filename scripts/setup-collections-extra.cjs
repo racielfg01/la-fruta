@@ -187,17 +187,26 @@ async function setup() {
   const seeded = new Set();
 
   // Reparación: añadir un campo `bool` a una colección con registros existentes
-  // los deja en false. Si TODOS están inactivos, es artefacto de la migración
-  // (no una decisión del admin) y se reactivan.
-  for (const collName of ["provinces", "municipalities"]) {
+  // los deja en false. Si el 90% o más están inactivos, es artefacto de la
+  // migración (no una decisión del admin) y se reactivan. Se ignora si el
+  // admin desactivó una parte, para no pisar esa decisión.
+  for (const collName of ["provinces", "municipalities", "countries", "banks"]) {
     try {
-      const all = await pb.collection(collName).getFullList({ batch: 1 });
+      const all = await pb.collection(collName).getFullList({ batch: 200 });
       const inactive = all.filter((r) => r.active === false);
-      if (all.length > 0 && inactive.length === all.length) {
+      if (all.length > 0 && inactive.length / all.length >= 0.9) {
         for (const r of inactive) {
           await pb.collection(collName).update(r.id, { active: true });
         }
-        console.log(`[fix] ${collName}: reactivados ${inactive.length} registros (todos estaban inactive)`);
+        console.log(
+          `[fix] ${collName}: reactivados ${inactive.length}/${all.length} ` +
+            `(≥90% inactive -> artefacto de migración)`
+        );
+      } else if (inactive.length) {
+        console.log(
+          `[fix] ${collName}: ${inactive.length}/${all.length} inactivos ` +
+            `(<90%: se asume decisión del admin, sin cambios)`
+        );
       }
     } catch (e) {
       console.log(`[fix] ${collName} error:`, e.message);

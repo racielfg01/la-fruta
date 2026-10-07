@@ -1,8 +1,7 @@
 "use client";
 
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState, useEffect, useId } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -11,7 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { MapPin, Loader2, Check, X } from "lucide-react";
+import { MapPin, RefreshCw, ChevronRight, AlertTriangle } from "lucide-react";
 import { getPublicLocations } from "@/app/actions/public";
 
 interface Municipality {
@@ -20,121 +19,198 @@ interface Municipality {
   province: string;
 }
 
+type LoadError = "network" | "empty";
+
 export function LocationSelector({
   onComplete,
   initial,
-  onClose,
 }: {
   onComplete: (loc: { province: string; municipality: string }) => void;
   initial?: { province: string; municipality: string };
-  onClose?: () => void;
 }) {
+  const provinceId = useId();
+  const municipalityId = useId();
+  const hintId = useId();
+
   const [provinces, setProvinces] = useState<{ id: string; name: string }[]>([]);
   const [municipalities, setMunicipalities] = useState<Municipality[]>([]);
   const [province, setProvince] = useState(initial?.province || "");
   const [municipality, setMunicipality] = useState(initial?.municipality || "");
   const [loading, setLoading] = useState(true);
-  const [loadError, setLoadError] = useState(false);
+  const [error, setError] = useState<LoadError | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    setError(null);
     getPublicLocations()
       .then((data) => {
+        if (cancelled) return;
         setProvinces(data.provinces);
         setMunicipalities(data.municipalities);
+        if (data.provinces.length === 0) setError("empty");
       })
       .catch((e) => {
+        if (cancelled) return;
         console.error("getPublicLocations failed:", e);
-        setLoadError(true);
+        setError("network");
       })
-      .finally(() => setLoading(false));
-  }, []);
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [reloadKey]);
 
   const filteredMunicipalities = useMemo(
     () => municipalities.filter((m) => m.province === province),
     [municipalities, province]
   );
 
-  return (
-    <Card className="w-full max-w-md shadow-2xl">
-      <CardContent className="p-6 space-y-5">
-        <div className="flex items-center gap-3">
-          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
-            <MapPin className="h-6 w-6 text-primary" />
-          </div>
-          <div>
-            <h2 className="text-xl font-bold text-foreground">¿Dónde entregamos tu pedido?</h2>
+  const isEdit = Boolean(initial);
+  const ready = Boolean(province && municipality);
+
+  const hint = !province
+    ? "Empieza por la provincia para desbloquear los municipios."
+    : !municipality
+    ? "Ahora elige el municipio de entrega."
+    : "Listo. Tus productos se filtrarán por esta zona.";
+
+  if (loading) {
+    return (
+      <div className="space-y-4" aria-busy="true" aria-live="polite">
+        <span className="sr-only">Cargando ubicaciones…</span>
+        <div className="space-y-2">
+          <div className="h-4 w-20 animate-pulse rounded bg-muted" />
+          <div className="h-9 w-full animate-pulse rounded-md bg-muted" />
+        </div>
+        <div className="space-y-2">
+          <div className="h-4 w-24 animate-pulse rounded bg-muted" />
+          <div className="h-9 w-full animate-pulse rounded-md bg-muted" />
+        </div>
+        <div className="h-9 w-full animate-pulse rounded-md bg-muted" />
+      </div>
+    );
+  }
+
+  if (error) {
+    const retry = () => setReloadKey((k) => k + 1);
+    return (
+      <div
+        role="alert"
+        className="space-y-4 rounded-lg border border-destructive/40 bg-destructive/5 p-4"
+      >
+        <div className="flex items-start gap-3">
+          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />
+          <div className="space-y-1">
+            <p className="text-sm font-medium text-foreground">
+              {error === "network"
+                ? "No pudimos cargar las ubicaciones"
+                : "Aún no hay ubicaciones configuradas"}
+            </p>
             <p className="text-sm text-muted-foreground">
-              Selecciona tu provincia y municipio para ver los productos disponibles en tu zona.
+              {error === "network"
+                ? "Revisa tu conexión e inténtalo de nuevo. Tu selección se conservará cuando vuelvas."
+                : "Un administrador debe crear las provincias y municipios desde Configuración → Ubicaciones."}
             </p>
           </div>
-          {onClose && (
-            <button
-              type="button"
-              onClick={onClose}
-              aria-label="Cerrar"
-              className="-mr-1 -mt-1 ml-auto shrink-0 rounded-lg p-2 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-            >
-              <X className="h-5 w-5" />
-            </button>
-          )}
+        </div>
+        <Button variant="outline" size="sm" onClick={retry}>
+          <RefreshCw className="mr-2 h-4 w-4" />
+          Reintentar
+        </Button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-5">
+      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+        <MapPin className="h-4 w-4 shrink-0 text-primary" />
+        <span>
+          {isEdit
+            ? "Cambia la zona para ver disponibilidad distinta."
+            : "Tu zona define el catálogo y el stock que puedes comprar."}
+        </span>
+      </div>
+
+      <div className="space-y-4">
+        <div className="space-y-2">
+          <Label htmlFor={provinceId}>Provincia</Label>
+          <Select
+            value={province}
+            onValueChange={(v) => {
+              setProvince(v);
+              setMunicipality("");
+            }}
+          >
+            <SelectTrigger id={provinceId} className="w-full">
+              <SelectValue placeholder="Selecciona la provincia" />
+            </SelectTrigger>
+            <SelectContent>
+              {provinces.map((p) => (
+                <SelectItem key={p.id} value={p.id}>
+                  {p.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
 
-        {loading ? (
-          <div className="flex justify-center py-8">
-            <Loader2 className="h-6 w-6 animate-spin text-primary" />
+        <div className="space-y-2">
+          <div className="flex items-baseline justify-between gap-2">
+            <Label htmlFor={municipalityId}>Municipio</Label>
+            {province && filteredMunicipalities.length > 0 && (
+              <span className="text-xs text-muted-foreground">
+                {filteredMunicipalities.length} disponible
+                {filteredMunicipalities.length === 1 ? "" : "s"}
+              </span>
+            )}
           </div>
-        ) : loadError || provinces.length === 0 ? (
-          <div className="space-y-2 rounded-lg border border-destructive/40 bg-destructive/5 p-4 text-sm">
-            <p className="font-medium text-destructive">
-              No se pudieron cargar las ubicaciones
-            </p>
-            <p className="text-muted-foreground">
-              {loadError
-                ? "Error de conexión con la base de datos. Verifica tu internet o intenta más tarde."
-                : "No hay provincias configuradas. Agrégalas en Configuración → Ubicaciones."}
-            </p>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label>Provincia</Label>
-              <Select value={province} onValueChange={(v) => { setProvince(v); setMunicipality(""); }}>
-                <SelectTrigger className="h-11">
-                  <SelectValue placeholder="Selecciona tu provincia" />
-                </SelectTrigger>
-                <SelectContent position="popper" className="max-h-72 z-[301]">
-                  {provinces.map((p) => (
-                    <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+          <Select
+            value={municipality}
+            onValueChange={setMunicipality}
+            disabled={!province || filteredMunicipalities.length === 0}
+          >
+            <SelectTrigger id={municipalityId} className="w-full">
+              <SelectValue
+                placeholder={
+                  !province
+                    ? "Primero elige la provincia"
+                    : filteredMunicipalities.length === 0
+                    ? "Sin municipios en esta provincia"
+                    : "Selecciona el municipio"
+                }
+              />
+            </SelectTrigger>
+            <SelectContent>
+              {filteredMunicipalities.map((m) => (
+                <SelectItem key={m.id} value={m.id}>
+                  {m.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
 
-            <div className="space-y-2">
-              <Label>Municipio</Label>
-              <Select value={municipality} onValueChange={setMunicipality} disabled={!province}>
-                <SelectTrigger className="h-11">
-                  <SelectValue placeholder={province ? "Selecciona tu municipio" : "Primero elige la provincia"} />
-                </SelectTrigger>
-                <SelectContent position="popper" className="max-h-72 z-[301]">
-                  {filteredMunicipalities.map((m) => (
-                    <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <Button
-              className="w-full h-11 gap-2"
-              disabled={!province || !municipality}
-              onClick={() => onComplete({ province, municipality })}
-            >
-              <Check className="h-4 w-4" />
-              Guardar mi ubicación
-            </Button>
-          </div>
-        )}
-      </CardContent>
-    </Card>
+      <div className="space-y-3">
+        <p id={hintId} className="text-xs text-muted-foreground">
+          {hint}
+        </p>
+        <Button
+          type="button"
+          className="w-full"
+          disabled={!ready}
+          aria-describedby={hintId}
+          onClick={() => onComplete({ province, municipality })}
+        >
+          {isEdit ? "Guardar ubicación" : "Ver productos disponibles"}
+          <ChevronRight className="ml-2 h-4 w-4" />
+        </Button>
+      </div>
+    </div>
   );
 }

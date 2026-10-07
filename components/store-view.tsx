@@ -62,6 +62,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog";
 
 type SortOption = "default" | "price-asc" | "price-desc" | "name";
@@ -758,13 +759,19 @@ useEffect(() => {
 
       {/* Cambiar zona de entrega */}
       <Dialog open={locationDialogOpen} onOpenChange={setLocationDialogOpen}>
-        <DialogContent className="max-w-md" showCloseButton={false}>
+        <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Cambiar zona de entrega</DialogTitle>
+            <DialogTitle className="pr-8">
+              {userLocation ? "Cambiar zona de entrega" : "¿Dónde entregamos tu pedido?"}
+            </DialogTitle>
+            <DialogDescription>
+              {userLocation
+                ? "Elige otra provincia o municipio para ver otra disponibilidad."
+                : "Selecciona tu provincia y municipio para ver los productos disponibles en tu zona."}
+            </DialogDescription>
           </DialogHeader>
           <LocationSelector
             initial={userLocation || undefined}
-            onClose={() => setLocationDialogOpen(false)}
             onComplete={(loc) => {
               setUserLocation(loc);
               setLocationDialogOpen(false);

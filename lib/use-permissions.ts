@@ -1,8 +1,12 @@
 import { AuthUser } from "./auth-context";
-import { RolePermissions, NO_PERMISSIONS } from "./permissions";
+import { RolePermissions, NO_PERMISSIONS, ALL_PERMISSIONS } from "./permissions";
 
 function resolvePermissions(user: AuthUser): RolePermissions {
   if (user.permissions) return user.permissions;
+  // Rol sin permisos configurados: el admin (role_id 2) ve todo, igual que
+  // roles-tab.tsx trata un rol vacío como ALL_PERMISSIONS. Cualquier otro
+  // rol sin configurar queda en denegado total, no en acceso total.
+  if (user.role_id === 2) return { ...ALL_PERMISSIONS };
   return { ...NO_PERMISSIONS };
 }
 

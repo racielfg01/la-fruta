@@ -2,6 +2,7 @@
 
 import { createUser, SignupData, getRoleIds, decodePocketBaseToken } from '@/lib/auth';
 import { getAdminPB, getEphemeralPB, getTokenPB, sanitize } from '@/lib/pocketbase';
+import type { RolePermissions } from '@/lib/permissions';
 
 export interface AuthResponse {
   success: boolean;
@@ -14,6 +15,7 @@ export interface AuthResponse {
     gender: string;
     address: string;
     role_id: number;
+    permissions?: RolePermissions;
   };
   token?: string;
   error?: string;
@@ -42,6 +44,19 @@ function validatePassword(password: string): { valid: boolean; error?: string } 
     return { valid: false, error: 'La contraseña debe contener mayúsculas, minúsculas y números' };
   }
   return { valid: true };
+}
+
+// Los permisos del rol viajan como JSON (o string) en role_id.permissions.
+// El rol llega expandido en getOne(..., { expand: 'role_id' }).
+function permissionsFrom(record: any): RolePermissions | undefined {
+  const raw = record?.expand?.role_id?.permissions;
+  if (!raw) return undefined;
+  try {
+    return typeof raw === 'string' ? JSON.parse(raw) : raw;
+  } catch {
+    console.warn('No se pudo parsear role_id.permissions');
+    return undefined;
+  }
 }
 
 // Traduce una excepción de PocketBase a un mensaje con la causa real.
@@ -211,6 +226,7 @@ export async function loginAction(credentials: { identifier: string; password: s
         role_id: roleIds.admin
           ? (userWithRole.role_id === roleIds.admin ? 2 : 1)
           : (userWithRole.expand?.role_id?.name === 'admin' ? 2 : 1),
+        permissions: permissionsFrom(userWithRole),
       },
       token: authData.token,
     };
@@ -234,7 +250,7 @@ export async function refreshUserAction(token: string): Promise<AuthResponse> {
     return {
       success: true,
       message: '',
-      user: {
+user: {
         id: userWithRole.id,
         name: userWithRole.name,
         email: userWithRole.email,
@@ -243,7 +259,9 @@ export async function refreshUserAction(token: string): Promise<AuthResponse> {
         gender: userWithRole.gender || '',
         role_id: roleIds.admin
           ? (userWithRole.role_id === roleIds.admin ? 2 : 1)
-          : (userWithRole.expand?.role_id?.name === 'admin' ? 2 : 1),
+          : (userWithRole.expand?.role_id?.name === 'admin' 
+            ? 2 : 1),
+        permissions: permissionsFrom(userWithRole),
       },
       token,
     };

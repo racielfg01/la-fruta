@@ -13,6 +13,7 @@ import { ProductCard } from "@/components/product-card";
 import { getPublicProductById } from "@/app/actions/public-products";
 import { Product } from "@/lib/store";
 import { useCurrency } from "@/lib/currency";
+import { optimizedImageUrl } from "@/lib/image";
 import {
   ArrowLeft,
   Minus,
@@ -108,7 +109,7 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
         <div className="grid gap-8 lg:grid-cols-2">
           <div className="relative aspect-square overflow-hidden rounded-2xl">
             <Image
-              src={product.image}
+              src={optimizedImageUrl(product.image, 1000)}
               alt={product.name}
               fill
               className="object-cover"

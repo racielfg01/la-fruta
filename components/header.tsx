@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ShoppingCart, Leaf, Menu, X, Settings, LogOut, User, Moon, Sun, Globe } from "lucide-react";
+import { ShoppingCart, Leaf, Menu, X, Settings, LogOut, User, Moon, Sun } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useCartStore } from "@/lib/store";
@@ -10,14 +10,6 @@ import { useAuthStore } from "@/lib/auth-context";
 import { useState, useEffect } from "react";
 import Image from "next/image";
 import { useTheme } from "next-themes";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { useCurrencyStore, useSelectedCurrency } from "@/lib/currency-store";
 import { useSettingsStore } from "@/lib/settings-store";
 
 export function Header() {
@@ -36,21 +28,14 @@ export function Header() {
   const ready = !isLoading;
   const isAdmin = ready && Number(user?.role_id) === 2;
 
-  // Moneda global
-  const initCurrencies = useCurrencyStore((s) => s.init);
-  const currencies = useCurrencyStore((s) => s.currencies);
-  const setCurrency = useCurrencyStore((s) => s.setCurrency);
-  const selectedCurrency = useSelectedCurrency();
-
   // Tema y ajustes de la tienda
   const { setTheme, resolvedTheme } = useTheme();
   const settings = useSettingsStore((s) => s.settings);
   const initSettings = useSettingsStore((s) => s.init);
 
   useEffect(() => {
-    initCurrencies();
     initSettings();
-  }, [initCurrencies, initSettings]);
+  }, [initSettings]);
 
   // No renderizar el contador hasta que esté montado en el cliente
   const cartBadge = mounted && totalItems > 0 && (
@@ -98,23 +83,6 @@ export function Header() {
         </nav>
 
         <div className="flex items-center gap-2">
-          {/* Selector de moneda global */}
-          {mounted && currencies.length > 0 && (
-            <Select value={selectedCurrency?.id} onValueChange={(val) => setCurrency(val)}>
-              <SelectTrigger className="hidden md:flex h-10 w-[110px] gap-1.5 text-sm">
-                <Globe className="h-4 w-4 text-muted-foreground" />
-                <SelectValue placeholder="Moneda" />
-              </SelectTrigger>
-              <SelectContent>
-                {currencies.map((c) => (
-                  <SelectItem key={c.id} value={c.id}>
-                    {c.symbol} {c.code}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          )}
-
           {/* Alternar tema claro/oscuro */}
           <Button
             variant="ghost"

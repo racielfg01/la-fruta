@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useCartStore } from "@/lib/store";
 import { Onboarding } from "@/components/onboarding";
-import { StoreView } from "@/components/store-view";
+import { StoreView } from "@/components/store-view_old";
 
 export default function HomePage() {
   const [isLoading, setIsLoading] = useState(true);

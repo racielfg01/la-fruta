@@ -30,8 +30,6 @@ import {
 } from "@/components/ui/tooltip";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useCartStore, Product, availableStock } from "@/lib/store";
-
-
 import { useCurrency } from "@/lib/currency";
 import {
   Search,
@@ -49,8 +47,6 @@ import {
   Shield,
   ArrowUpDown,
   Sparkles,
-  ChevronDown,
-  Eye,
   Loader2,
 } from "lucide-react";
 import Link from "next/link";
@@ -67,6 +63,9 @@ import {
 
 type SortOption = "default" | "price-asc" | "price-desc" | "name";
 
+// Copy unificado — un solo umbral para toda la app
+const FREE_SHIPPING_THRESHOLD = 20;
+
 const categoryConfig: Record<
   string,
   { icon: typeof Leaf; color: string; bgColor: string }
@@ -78,7 +77,14 @@ const categoryConfig: Record<
   Melons: { icon: Leaf, color: "text-green-600", bgColor: "bg-green-50" },
 };
 
-  export function StoreView() {
+const SORT_LABELS: Record<SortOption, string> = {
+  default: "Destacados",
+  "price-asc": "Precio: menor a mayor",
+  "price-desc": "Precio: mayor a menor",
+  name: "Nombre A-Z",
+};
+
+export function StoreView() {
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
@@ -88,9 +94,11 @@ const categoryConfig: Record<
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 100]);
   const [sortBy, setSortBy] = useState<SortOption>("default");
   const { currencies, defaultCurrency, convertPrice } = useCurrency();
-  const cupCurrency = currencies.find(c => c.code === 'CUP');
+  const cupCurrency = currencies.find((c) => c.code === "CUP");
   const toUSD = (cupPrice: number) =>
-    cupCurrency && defaultCurrency ? convertPrice(cupPrice, cupCurrency, defaultCurrency) : cupPrice;
+    cupCurrency && defaultCurrency
+      ? convertPrice(cupPrice, cupCurrency, defaultCurrency)
+      : cupPrice;
   const [showOnlyInStock, setShowOnlyInStock] = useState(false);
   const [viewMode, setViewMode] = useState<"masonry" | "grid">("masonry");
   const [isFiltersOpen, setIsFiltersOpen] = useState(false);
@@ -103,42 +111,38 @@ const categoryConfig: Record<
   const setUserLocation = useCartStore((state) => state.setUserLocation);
   const [locationDialogOpen, setLocationDialogOpen] = useState(false);
 
-  // Primera visita: pedir zona, pero sin bloquear la tienda (se puede cerrar).
   useEffect(() => {
     if (!userLocation) setLocationDialogOpen(true);
   }, [userLocation]);
 
-  // En StoreView, modifica la carga de datos:
-useEffect(() => {
-  const loadData = async () => {
-    setLoading(true);
-    setLoadError(null);
-    try {
-      const { products: prods, categories: cats } = await getPublicProducts();
-      const prodsWithNumberPrice = prods.map(p => ({
-        ...p,
-        price: Number(p.price)
-      })) as Product[];
-      setProducts(prodsWithNumberPrice);
-      setCategories(cats);
-      if (prods.length === 0) setLoadError("No hay productos disponibles");
-    } catch (e) {
-      setLoadError("Error al cargar productos");
-      console.error("StoreView load error:", e);
-    } finally {
-      setLoading(false);
-    }
-  };
-  loadData();
-}, []);
+  useEffect(() => {
+    const loadData = async () => {
+      setLoading(true);
+      setLoadError(null);
+      try {
+        const { products: prods, categories: cats } = await getPublicProducts();
+        const prodsWithNumberPrice = prods.map((p) => ({
+          ...p,
+          price: Number(p.price),
+        })) as Product[];
+        setProducts(prodsWithNumberPrice);
+        setCategories(cats);
+        if (prods.length === 0) setLoadError("No hay productos disponibles");
+      } catch (e) {
+        setLoadError("Error al cargar productos");
+        console.error("StoreView load error:", e);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadData();
+  }, []);
 
-  // Calcular maxPrice (en USD)
   const maxPrice = useMemo(() => {
     if (products.length === 0) return 10;
-    return Math.max(...products.map(p => toUSD(p.price)));
+    return Math.max(...products.map((p) => toUSD(p.price)));
   }, [products, cupCurrency, defaultCurrency]);
 
-  // Calcular filteredProducts (en USD)
   const filteredProducts = useMemo(() => {
     let filtered = products.filter((product) => {
       const matchesSearch =
@@ -162,9 +166,10 @@ useEffect(() => {
       const matchesZone =
         !userLocation?.municipality ||
         (product.availableMunicipalities || []).length === 0 ||
-        (product.availableMunicipalities || []).includes(userLocation.municipality);
+        (product.availableMunicipalities || []).includes(
+          userLocation.municipality,
+        );
 
-      // Con stock por ubicación definido, una ubicación agotada oculta el producto.
       const matchesLocationStock = !hasLocStock || locStock > 0;
 
       return (
@@ -187,22 +192,28 @@ useEffect(() => {
       case "name":
         filtered = [...filtered].sort((a, b) => a.name.localeCompare(b.name));
         break;
-      default:
-        break;
     }
     return filtered;
-  }, [products, searchQuery, selectedCategories, priceRange, sortBy, showOnlyInStock, cupCurrency, defaultCurrency, userLocation]);
+  }, [
+    products,
+    searchQuery,
+    selectedCategories,
+    priceRange,
+    sortBy,
+    showOnlyInStock,
+    cupCurrency,
+    defaultCurrency,
+    userLocation,
+  ]);
 
-  // Calcular conteo por categorías
   const categoryCounts = useMemo(() => {
     const counts: Record<string, number> = {};
-    products.forEach(p => {
+    products.forEach((p) => {
       counts[p.category] = (counts[p.category] || 0) + 1;
     });
     return counts;
   }, [products]);
 
-  // Funciones de filtro (usando maxPrice)
   const clearFilters = () => {
     setSearchQuery("");
     setSelectedCategories([]);
@@ -212,12 +223,12 @@ useEffect(() => {
   };
 
   const toggleCategory = (category: string) => {
-  setSelectedCategories((prev) =>
-    prev.includes(category)
-      ? prev.filter((c) => c !== category)
-      : [...prev, category]
-  );
-};
+    setSelectedCategories((prev) =>
+      prev.includes(category)
+        ? prev.filter((c) => c !== category)
+        : [...prev, category],
+    );
+  };
 
   const hasActiveFilters =
     searchQuery !== "" ||
@@ -244,12 +255,14 @@ useEffect(() => {
 
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4 px-4">
-        <Loader2 className="h-8 w-8 animate-spin" />
+      <div className="flex min-h-[60vh] flex-col items-center justify-center gap-3 px-4">
+        <Loader2 className="h-7 w-7 animate-spin text-primary" />
         {loadError && (
-          <div className="text-center max-w-md">
-            <p className="text-sm text-destructive font-medium">{loadError}</p>
-            <p className="text-xs text-muted-foreground mt-1">Reintentando conexión...</p>
+          <div className="max-w-md text-center">
+            <p className="text-sm font-medium text-destructive">{loadError}</p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Reintentando conexión…
+            </p>
           </div>
         )}
       </div>
@@ -257,329 +270,178 @@ useEffect(() => {
   }
 
   return (
-    <TooltipProvider>
+    <TooltipProvider delayDuration={300}>
       <div className="min-h-screen bg-background">
         <Header />
 
-        {/* Hero Banner */}
-        <section className="relative overflow-hidden bg-gradient-to-r from-primary/10 via-primary/5 to-accent/10 py-12 md:py-16 lg:py-20">
-          <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex flex-col items-center text-center">
-              <Badge className="mb-4 gap-1.5 bg-primary/10 text-primary hover:bg-primary/20">
-                <Sparkles className="h-3 w-3" />
-                Productos frescos del día
-              </Badge>
-              <h1 className="font-[family-name:var(--font-playfair)] text-3xl font-bold text-foreground sm:text-4xl md:text-5xl lg:text-6xl text-balance">
-                Nuestra Tienda
-              </h1>
-              <p className="mt-4 max-w-2xl text-muted-foreground sm:text-lg md:text-xl">
-                Explora nuestra selección de frutas frescas y productos
-                agrícolas de la más alta calidad
-              </p>
+        {/* Hero compacto */}
+        <section className="border-b bg-gradient-to-b from-primary/5 via-primary/[0.02] to-background">
+          <div className="container mx-auto px-4 py-8 sm:px-6 sm:py-10 lg:px-8 lg:py-12">
+            <div className="flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
+              <div className="max-w-2xl">
+                <h1 className="font-[family-name:var(--font-playfair)] text-3xl font-bold tracking-tight text-foreground sm:text-4xl lg:text-5xl">
+                  Nuestra Tienda
+                </h1>
+                <p className="mt-2 text-sm text-muted-foreground sm:text-base lg:text-lg">
+                  Frutas frescas y productos agrícolas seleccionados del día.
+                </p>
+              </div>
 
-              <div className="mt-8 flex flex-wrap items-center justify-center gap-4 text-sm sm:gap-6">
-                <div className="flex items-center gap-2 text-muted-foreground">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-emerald-100">
-                    <Leaf className="h-4 w-4 text-emerald-600" />
-                  </div>
-                  <span className="text-sm sm:text-base">
-                    {products.length} productos
-                  </span>
-                </div>
-                <div className="flex items-center gap-2 text-muted-foreground">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-100">
-                    <Truck className="h-4 w-4 text-blue-600" />
-                  </div>
-                  <span className="text-sm sm:text-base">
-                    Envío gratis +$20
-                  </span>
-                </div>
-                <div className="flex items-center gap-2 text-muted-foreground">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-amber-100">
-                    <Shield className="h-4 w-4 text-amber-600" />
-                  </div>
-                  <span className="text-sm sm:text-base">
-                    Garantía de frescura
-                  </span>
-                </div>
+              <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-muted-foreground">
+                <span className="flex items-center gap-1.5">
+                  <Leaf className="h-4 w-4 text-emerald-600" />
+                  {products.length} productos
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <Truck className="h-4 w-4 text-blue-600" />
+                  Envío gratis desde ${FREE_SHIPPING_THRESHOLD}
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <Shield className="h-4 w-4 text-amber-600" />
+                  Garantía de frescura
+                </span>
               </div>
             </div>
           </div>
-
-          <div className="pointer-events-none absolute -left-20 top-0 h-40 w-40 rounded-full bg-primary/10 blur-3xl" />
-          <div className="pointer-events-none absolute -right-20 bottom-0 h-40 w-40 rounded-full bg-accent/10 blur-3xl" />
         </section>
 
-        {/* Search and Filters Bar */}
-        {/* Search and Filters Bar - Sticky */}
-        <div className="sticky top-16 z-40 border-b bg-card/95 backdrop-blur-lg supports-[backdrop-filter]:bg-card/80">
-          <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-4">
-            <div className="flex flex-col gap-4">
-              {/* Fila superior: Buscador y botones */}
-              <div className="flex items-center gap-2">
-                {/* Buscador */}
-                <div className="relative flex-1 min-w-0">
-                  <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                  <Input
-                    ref={searchInputRef}
-                    type="text"
-                    placeholder="Buscar..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="h-11 pl-10 pr-10 text-base w-full"
-                  />
-                  {searchQuery && (
-                    <button
-                      onClick={() => setSearchQuery("")}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 rounded-md p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-                    >
-                      <X className="h-4 w-4" />
-                    </button>
-                  )}
-                </div>
-
-                {/* Botones de acción a la derecha */}
-                <div className="flex items-center gap-2 flex-shrink-0">
-                  {/* Vista toggle - solo visible en desktop */}
-                  <div className="hidden sm:flex items-center rounded-lg border bg-background p-1">
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <button
-                          onClick={() => setViewMode("masonry")}
-                          className={`rounded-md p-2.5 transition-colors ${
-                            viewMode === "masonry"
-                              ? "bg-primary text-primary-foreground shadow-sm"
-                              : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                          }`}
-                          aria-label="Vista masonry"
-                        >
-                          <LayoutGrid className="h-4 w-4" />
-                        </button>
-                      </TooltipTrigger>
-                      <TooltipContent>Vista Masonry</TooltipContent>
-                    </Tooltip>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <button
-                          onClick={() => setViewMode("grid")}
-                          className={`rounded-md p-2.5 transition-colors ${
-                            viewMode === "grid"
-                              ? "bg-primary text-primary-foreground shadow-sm"
-                              : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                          }`}
-                          aria-label="Vista cuadrícula"
-                        >
-                          <Grid3X3 className="h-4 w-4" />
-                        </button>
-                      </TooltipTrigger>
-                      <TooltipContent>Vista Cuadrícula</TooltipContent>
-                    </Tooltip>
-                  </div>
-
-                  {/* Botón de filtros */}
-                  <Sheet open={isFiltersOpen} onOpenChange={setIsFiltersOpen}>
-                    <SheetTrigger asChild>
-                      <Button
-                        variant="outline"
-                        className="relative h-11 gap-2 flex-shrink-0"
-                      >
-                        <SlidersHorizontal className="h-4 w-4" />
-                        <span className="hidden sm:inline">
-                          Filtros y orden
-                        </span>
-                        <span className="sm:hidden">Filtros</span>
-                        {activeFiltersCount > 0 && (
-                          <Badge className="absolute -right-1 -top-1 h-5 min-w-5 rounded-full bg-primary px-1.5 text-xs text-primary-foreground">
-                            {activeFiltersCount}
-                          </Badge>
-                        )}
-                      </Button>
-                    </SheetTrigger>
-                    <SheetContent
-                      side="right"
-                      className="w-full max-w-sm overflow-y-auto p-0"
-                    >
-                      <SheetHeader className="p-6 pb-4 border-b">
-                        <SheetTitle className="flex items-center justify-between">
-                          Filtros y Orden
-                          {hasActiveFilters && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={clearFilters}
-                            >
-                              Limpiar todo
-                            </Button>
-                          )}
-                        </SheetTitle>
-                      </SheetHeader>
-                      <div className="p-6">
-                        {/* Selector de ordenamiento dentro del modal */}
-                        <div className="mb-6">
-                          <h4 className="mb-3 text-sm font-semibold text-foreground">
-                            Ordenar por
-                          </h4>
-                          <Select
-                            value={sortBy}
-                            onValueChange={(v) => setSortBy(v as SortOption)}
-                          >
-                            <SelectTrigger className="w-full h-11">
-                              <ArrowUpDown className="h-4 w-4 text-muted-foreground" />
-                              <SelectValue placeholder="Ordenar por" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="default">
-                                Destacados
-                              </SelectItem>
-                              <SelectItem value="price-asc">
-                                Precio: menor a mayor
-                              </SelectItem>
-                              <SelectItem value="price-desc">
-                                Precio: mayor a menor
-                              </SelectItem>
-                              <SelectItem value="name">Nombre A-Z</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-
-                        <FilterContent
-                          categories={categories}
-                          selectedCategories={selectedCategories}
-                          toggleCategory={toggleCategory}
-                          priceRange={priceRange}
-                          setPriceRange={setPriceRange}
-                          maxPrice={maxPrice}
-                          showOnlyInStock={showOnlyInStock}
-                          setShowOnlyInStock={setShowOnlyInStock}
-                          categoryCounts={categoryCounts}
-                        />
-                        <div className="mt-8">
-                          <SheetClose asChild>
-                            <Button className="w-full" size="lg">
-                              Ver {filteredProducts.length} productos
-                            </Button>
-                          </SheetClose>
-                        </div>
-                      </div>
-                    </SheetContent>
-                  </Sheet>
-                </div>
-              </div>
-
-              {/* Category Pills - También sticky, dentro del mismo contenedor */}
-              <div className="relative -mx-4 px-4">
-                <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide snap-x">
-                  <Button
-                    variant={
-                      selectedCategories.length === 0 ? "default" : "outline"
-                    }
-                    size="sm"
-                    onClick={() => setSelectedCategories([])}
-                    className="flex-shrink-0 rounded-full gap-1.5 snap-start"
+        {/* Toolbar sticky: 2 filas limpias */}
+        <div className="sticky top-16 z-40 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
+          <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+            {/* Fila 1: búsqueda + orden + vista + filtros */}
+            <div className="flex items-center gap-2 py-3">
+              <div className="relative min-w-0 flex-1">
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  ref={searchInputRef}
+                  type="text"
+                  placeholder="Buscar productos, origen…"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="h-11 w-full pl-10 pr-10 text-base"
+                />
+                {searchQuery && (
+                  <button
+                    onClick={() => setSearchQuery("")}
+                    aria-label="Limpiar búsqueda"
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded-md p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
                   >
-                    <Sparkles className="h-3.5 w-3.5" />
-                    Todos
+                    <X className="h-4 w-4" />
+                  </button>
+                )}
+              </div>
+
+              {/* Orden (desktop) */}
+              <Select
+                value={sortBy}
+                onValueChange={(v) => setSortBy(v as SortOption)}
+              >
+                <SelectTrigger className="hidden h-11 w-[180px] shrink-0 md:flex">
+                  <ArrowUpDown className="h-4 w-4 text-muted-foreground" />
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent align="end">
+                  {(Object.keys(SORT_LABELS) as SortOption[]).map((key) => (
+                    <SelectItem key={key} value={key}>
+                      {SORT_LABELS[key]}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              {/* Vista (desktop lg) */}
+              <div className="hidden items-center rounded-lg border bg-background p-0.5 lg:flex">
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={() => setViewMode("masonry")}
+                      className={`rounded-md p-2.5 transition-colors ${
+                        viewMode === "masonry"
+                          ? "bg-primary text-primary-foreground"
+                          : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                      }`}
+                      aria-label="Vista masonry"
+                    >
+                      <LayoutGrid className="h-4 w-4" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent>Vista Masonry</TooltipContent>
+                </Tooltip>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={() => setViewMode("grid")}
+                      className={`rounded-md p-2.5 transition-colors ${
+                        viewMode === "grid"
+                          ? "bg-primary text-primary-foreground"
+                          : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                      }`}
+                      aria-label="Vista cuadrícula"
+                    >
+                      <Grid3X3 className="h-4 w-4" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent>Vista Cuadrícula</TooltipContent>
+                </Tooltip>
+              </div>
+
+              {/* Filtros */}
+              <Sheet open={isFiltersOpen} onOpenChange={setIsFiltersOpen}>
+                <SheetTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className="relative h-11 shrink-0 gap-2"
+                  >
+                    <SlidersHorizontal className="h-4 w-4" />
+                    <span className="hidden sm:inline">Filtros</span>
+                    {activeFiltersCount > 0 && (
+                      <Badge className="absolute -right-1.5 -top-1.5 h-5 min-w-5 rounded-full px-1.5 text-xs">
+                        {activeFiltersCount}
+                      </Badge>
+                    )}
                   </Button>
-                  {categories.map((category) => {
-                    const config =
-                      categoryConfig[category] || categoryConfig.Fruits;
-                    const isSelected = selectedCategories.includes(category);
-                    const count = products.filter(
-                      (p) => p.category === category,
-                    ).length;
-
-                    return (
-                      <Button
-                        key={category}
-                        variant={isSelected ? "default" : "outline"}
-                        size="sm"
-                        onClick={() => toggleCategory(category)}
-                        className={`flex-shrink-0 rounded-full gap-1.5 snap-start ${
-                          !isSelected ? `hover:${config.bgColor}` : ""
-                        }`}
-                      >
-                        <span className={!isSelected ? config.color : ""}>
-                          {getCategoryLabel(category)}
-                        </span>
-                        <Badge
-                          variant="secondary"
-                          className={`h-5 min-w-5 rounded-full px-1.5 text-xs ${
-                            isSelected
-                              ? "bg-primary-foreground/20 text-primary-foreground"
-                              : ""
-                          }`}
-                        >
-                          {count}
-                        </Badge>
-                      </Button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Zona de entrega */}
-              <div className="flex items-center justify-center">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setLocationDialogOpen(true)}
-                  className="rounded-full gap-1.5"
+                </SheetTrigger>
+                <SheetContent
+                  side="right"
+                  className="flex w-full max-w-sm flex-col p-0"
                 >
-                  <MapPin className="h-3.5 w-3.5 text-primary" />
-                  Cambiar zona de entrega
-                </Button>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Main Content */}
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-8 lg:py-10">
-          <div className="flex flex-col lg:flex-row gap-6 lg:gap-8">
-            {/* Desktop Filters Sidebar */}
-            <aside className="hidden lg:block w-72 flex-shrink-0">
-              <div className="sticky top-32">
-                <Card className="border-0 shadow-sm">
-                  <CardContent className="p-6">
-                    <div className="mb-6 flex items-center justify-between">
-                      <h3 className="flex items-center gap-2 text-lg font-semibold text-foreground">
-                        <SlidersHorizontal className="h-4 w-4" />
-                        Filtros y Orden
-                      </h3>
+                  <SheetHeader className="border-b p-5">
+                    <SheetTitle className="flex items-center justify-between">
+                      Filtros
                       {hasActiveFilters && (
                         <Button
                           variant="ghost"
                           size="sm"
                           onClick={clearFilters}
-                          className="h-8 text-xs"
+                          className="h-8 text-xs text-muted-foreground"
                         >
                           Limpiar
                         </Button>
                       )}
-                    </div>
+                    </SheetTitle>
+                  </SheetHeader>
 
-                    {/* Selector de ordenamiento en desktop sidebar */}
+                  <div className="flex-1 overflow-y-auto p-5">
                     <div className="mb-6">
-                      <h4 className="mb-3 text-sm font-semibold text-foreground">
+                      <h4 className="mb-2.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                         Ordenar por
                       </h4>
                       <Select
                         value={sortBy}
                         onValueChange={(v) => setSortBy(v as SortOption)}
                       >
-                        <SelectTrigger className="w-full">
+                        <SelectTrigger className="h-11 w-full">
                           <ArrowUpDown className="h-4 w-4 text-muted-foreground" />
-                          <SelectValue placeholder="Ordenar por" />
+                          <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="default">Destacados</SelectItem>
-                          <SelectItem value="price-asc">
-                            Precio: menor a mayor
-                          </SelectItem>
-                          <SelectItem value="price-desc">
-                            Precio: mayor a menor
-                          </SelectItem>
-                          <SelectItem value="name">Nombre A-Z</SelectItem>
+                          {(Object.keys(SORT_LABELS) as SortOption[]).map(
+                            (key) => (
+                              <SelectItem key={key} value={key}>
+                                {SORT_LABELS[key]}
+                              </SelectItem>
+                            ),
+                          )}
                         </SelectContent>
                       </Select>
                     </div>
@@ -593,92 +455,210 @@ useEffect(() => {
                       maxPrice={maxPrice}
                       showOnlyInStock={showOnlyInStock}
                       setShowOnlyInStock={setShowOnlyInStock}
-                      categoryCounts={categoryCounts} // ← agregar
+                      categoryCounts={categoryCounts}
+                    />
+                  </div>
+
+                  <div className="border-t p-4">
+                    <SheetClose asChild>
+                      <Button className="w-full" size="lg">
+                        Ver {filteredProducts.length} producto
+                        {filteredProducts.length !== 1 ? "s" : ""}
+                      </Button>
+                    </SheetClose>
+                  </div>
+                </SheetContent>
+              </Sheet>
+            </div>
+
+            {/* Fila 2: categorías + zona */}
+            <div className="flex items-center gap-2 pb-3">
+              <div className="min-w-0 flex-1 overflow-x-auto scrollbar-hide">
+                <div className="flex gap-2 pr-2">
+                  <Button
+                    variant={selectedCategories.length === 0 ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setSelectedCategories([])}
+                    className="h-8 shrink-0 gap-1.5 rounded-full px-3 text-xs"
+                  >
+                    <Sparkles className="h-3.5 w-3.5" />
+                    Todos
+                  </Button>
+
+                  {categories.map((category) => {
+                    const isSelected = selectedCategories.includes(category);
+                    const count = categoryCounts[category] || 0;
+                    return (
+                      <Button
+                        key={category}
+                        variant={isSelected ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => toggleCategory(category)}
+                        className="h-8 shrink-0 gap-1.5 rounded-full px-3 text-xs"
+                      >
+                        {getCategoryLabel(category)}
+                        <span
+                          className={`rounded-full px-1.5 text-[10px] font-semibold ${
+                            isSelected
+                              ? "bg-primary-foreground/20 text-primary-foreground"
+                              : "bg-muted text-muted-foreground"
+                          }`}
+                        >
+                          {count}
+                        </span>
+                      </Button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Chip de zona */}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setLocationDialogOpen(true)}
+                className="h-8 shrink-0 gap-1.5 rounded-full border-dashed px-3 text-xs"
+                title={userLocation ? "Cambiar zona de entrega" : "Elegir zona"}
+              >
+                <MapPin className="h-3.5 w-3.5 text-primary" />
+                <span className="max-w-[110px] truncate">
+                  {userLocation?.municipality || "Zona"}
+                </span>
+              </Button>
+            </div>
+          </div>
+        </div>
+
+        {/* Contenido */}
+        <div className="container mx-auto px-4 py-6 sm:px-6 md:py-8 lg:px-8 lg:py-10">
+          <div className="flex flex-col gap-6 lg:flex-row lg:gap-8">
+            {/* Sidebar filtros (desktop) */}
+            <aside className="hidden w-64 shrink-0 lg:block">
+              <div className="sticky top-40 space-y-4">
+                <Card className="border shadow-none">
+                  <CardContent className="p-5">
+                    <div className="mb-5 flex items-center justify-between">
+                      <h3 className="text-sm font-semibold">Filtros</h3>
+                      {hasActiveFilters && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={clearFilters}
+                          className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground"
+                        >
+                          Limpiar
+                        </Button>
+                      )}
+                    </div>
+
+                    <div className="mb-6">
+                      <h4 className="mb-2.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                        Ordenar por
+                      </h4>
+                      <Select
+                        value={sortBy}
+                        onValueChange={(v) => setSortBy(v as SortOption)}
+                      >
+                        <SelectTrigger className="h-10 w-full">
+                          <ArrowUpDown className="h-4 w-4 text-muted-foreground" />
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {(Object.keys(SORT_LABELS) as SortOption[]).map(
+                            (key) => (
+                              <SelectItem key={key} value={key}>
+                                {SORT_LABELS[key]}
+                              </SelectItem>
+                            ),
+                          )}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <FilterContent
+                      categories={categories}
+                      selectedCategories={selectedCategories}
+                      toggleCategory={toggleCategory}
+                      priceRange={priceRange}
+                      setPriceRange={setPriceRange}
+                      maxPrice={maxPrice}
+                      showOnlyInStock={showOnlyInStock}
+                      setShowOnlyInStock={setShowOnlyInStock}
+                      categoryCounts={categoryCounts}
                     />
                   </CardContent>
                 </Card>
 
-                <Card className="mt-4 overflow-hidden border-0 bg-gradient-to-br from-primary/10 to-accent/10">
-                  <CardContent className="p-5">
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary">
-                        <Truck className="h-5 w-5 text-primary-foreground" />
-                      </div>
-                      <div>
-                        <p className="font-semibold text-foreground">
-                          Envío Gratis
-                        </p>
-                        <p className="text-sm text-muted-foreground">
-                          En pedidos mayores a $50
-                        </p>
-                      </div>
+                <div className="rounded-xl border bg-gradient-to-br from-primary/10 to-accent/10 p-4">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary">
+                      <Truck className="h-4 w-4 text-primary-foreground" />
                     </div>
-                  </CardContent>
-                </Card>
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold">Envío gratis</p>
+                      <p className="text-xs text-muted-foreground">
+                        Desde ${FREE_SHIPPING_THRESHOLD}
+                      </p>
+                    </div>
+                  </div>
+                </div>
               </div>
             </aside>
 
-            {/* Products Section */}
-            <div className="flex-1 min-w-0">
-              {/* Results Header */}
-              <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <p className="text-lg font-medium text-foreground">
-                    {filteredProducts.length} producto
-                    {filteredProducts.length !== 1 ? "s" : ""}
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    {hasActiveFilters
-                      ? "con los filtros aplicados"
-                      : "disponibles"}
-                  </p>
-                </div>
+            {/* Productos */}
+            <div className="min-w-0 flex-1">
+              {/* Header de resultados */}
+              <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+                <p className="text-sm text-muted-foreground">
+                  <span className="font-semibold text-foreground">
+                    {filteredProducts.length}
+                  </span>{" "}
+                  producto{filteredProducts.length !== 1 ? "s" : ""}
+                  {hasActiveFilters && " · filtrados"}
+                </p>
+
                 {hasActiveFilters && (
-                  <div className="flex flex-wrap items-center gap-2">
-                    {sortBy !== "default" && (
-                      <Badge variant="secondary" className="gap-1">
-                        {sortBy === "price-asc" && "Precio: menor a mayor"}
-                        {sortBy === "price-desc" && "Precio: mayor a menor"}
-                        {sortBy === "name" && "Nombre A-Z"}
-                        <button onClick={() => setSortBy("default")}>
-                          <X className="h-3 w-3 ml-1" />
-                        </button>
-                      </Badge>
-                    )}
-                    {selectedCategories.map((cat) => (
-                      <Badge
-                        key={cat}
-                        variant="secondary"
-                        className="cursor-pointer gap-1 pr-1 hover:bg-destructive/10"
-                        onClick={() => toggleCategory(cat)}
-                      >
-                        {getCategoryLabel(cat)}
-                        <X className="h-3 w-3" />
-                      </Badge>
-                    ))}
-                    {(priceRange[0] > 0 || priceRange[1] < maxPrice) && (
-                      <Badge variant="secondary" className="gap-1">
-                        ${priceRange[0].toFixed(2)} - ${priceRange[1].toFixed(2)}
-                      </Badge>
-                    )}
-                    {showOnlyInStock && (
-                      <Badge variant="secondary" className="gap-1">
-                        En stock
-                      </Badge>
-                    )}
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={clearFilters}
-                      className="h-6 px-2 text-xs text-primary hover:text-primary"
-                    >
-                      Limpiar todo
-                    </Button>
-                  </div>
+                  <button
+                    onClick={clearFilters}
+                    className="text-xs font-medium text-primary hover:underline"
+                  >
+                    Limpiar filtros
+                  </button>
                 )}
               </div>
 
-              {/* Product Grid */}
+              {/* Chips de filtros activos */}
+              {hasActiveFilters && (
+                <div className="mb-5 flex flex-wrap gap-2">
+                  {sortBy !== "default" && (
+                    <ActiveChip
+                      label={SORT_LABELS[sortBy]}
+                      onRemove={() => setSortBy("default")}
+                    />
+                  )}
+                  {selectedCategories.map((cat) => (
+                    <ActiveChip
+                      key={cat}
+                      label={getCategoryLabel(cat)}
+                      onRemove={() => toggleCategory(cat)}
+                    />
+                  ))}
+                  {(priceRange[0] > 0 || priceRange[1] < maxPrice) && (
+                    <ActiveChip
+                      label={`$${priceRange[0].toFixed(2)} – $${priceRange[1].toFixed(2)}`}
+                      onRemove={() => setPriceRange([0, maxPrice])}
+                    />
+                  )}
+                  {showOnlyInStock && (
+                    <ActiveChip
+                      label="Solo en stock"
+                      onRemove={() => setShowOnlyInStock(false)}
+                    />
+                  )}
+                </div>
+              )}
+
+              {/* Grid de productos */}
               {filteredProducts.length > 0 ? (
                 viewMode === "masonry" ? (
                   <MasonryGrid
@@ -690,7 +670,7 @@ useEffect(() => {
                     setHoveredProduct={setHoveredProduct}
                   />
                 ) : (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 lg:gap-6">
                     {filteredProducts.map((product) => (
                       <ProductCard
                         key={product.id}
@@ -712,43 +692,42 @@ useEffect(() => {
         </div>
 
         {/* Footer */}
-        <footer className="border-t bg-card py-8 md:py-10 lg:py-12">
+        <footer className="border-t bg-card py-8 md:py-10">
           <div className="container mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex flex-col items-center justify-between gap-6 md:flex-row">
               <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl shadow-lg shadow-primary/20 overflow-hidden">
-        <Image className="object-cover" src={"/icon-512x512.png"} alt="logo" width={40} height={40} priority/>
+                <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-xl shadow-lg shadow-primary/20">
+                  <Image
+                    className="object-cover"
+                    src={"/icon-512x512.png"}
+                    alt="logo"
+                    width={40}
+                    height={40}
+                    priority
+                  />
                 </div>
                 <div>
                   <span className="font-[family-name:var(--font-playfair)] text-lg font-bold">
-                    <span className="text-primary">Merca</span><span className="text-destructive">Toma</span>
+                    <span className="text-primary">Merca</span>
+                    <span className="text-destructive">Toma</span>
                   </span>
                   <p className="text-xs text-muted-foreground">
                     Del campo a tu mesa
                   </p>
                 </div>
               </div>
-              <div className="flex flex-wrap items-center justify-center gap-4 md:gap-6 text-sm text-muted-foreground">
-                <Link
-                  href="#"
-                  className="transition-colors hover:text-foreground"
-                >
+              <div className="flex flex-wrap items-center justify-center gap-4 text-sm text-muted-foreground md:gap-6">
+                <Link href="#" className="transition-colors hover:text-foreground">
                   Términos
                 </Link>
-                <Link
-                  href="#"
-                  className="transition-colors hover:text-foreground"
-                >
+                <Link href="#" className="transition-colors hover:text-foreground">
                   Privacidad
                 </Link>
-                <Link
-                  href="#"
-                  className="transition-colors hover:text-foreground"
-                >
+                <Link href="#" className="transition-colors hover:text-foreground">
                   Contacto
                 </Link>
               </div>
-              <p className="text-sm text-muted-foreground text-center">
+              <p className="text-center text-sm text-muted-foreground">
                 &copy; {new Date().getFullYear()} MercaToma. Todos los derechos
                 reservados.
               </p>
@@ -757,12 +736,14 @@ useEffect(() => {
         </footer>
       </div>
 
-      {/* Cambiar zona de entrega */}
+      {/* Diálogo de zona */}
       <Dialog open={locationDialogOpen} onOpenChange={setLocationDialogOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle className="pr-8">
-              {userLocation ? "Cambiar zona de entrega" : "¿Dónde entregamos tu pedido?"}
+              {userLocation
+                ? "Cambiar zona de entrega"
+                : "¿Dónde entregamos tu pedido?"}
             </DialogTitle>
             <DialogDescription>
               {userLocation
@@ -783,7 +764,31 @@ useEffect(() => {
   );
 }
 
-// Filter Content Component
+// -------------------------------
+// Chip de filtro activo
+// -------------------------------
+function ActiveChip({
+  label,
+  onRemove,
+}: {
+  label: string;
+  onRemove: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onRemove}
+      className="group inline-flex items-center gap-1.5 rounded-full border bg-muted/50 py-1 pl-2.5 pr-1.5 text-xs text-foreground transition-colors hover:border-destructive/30 hover:bg-destructive/5"
+    >
+      <span>{label}</span>
+      <X className="h-3 w-3 text-muted-foreground transition-colors group-hover:text-destructive" />
+    </button>
+  );
+}
+
+// -------------------------------
+// Filtros (contenido reutilizable)
+// -------------------------------
 function FilterContent({
   categories,
   selectedCategories,
@@ -806,12 +811,12 @@ function FilterContent({
   categoryCounts: Record<string, number>;
 }) {
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       <div>
-        <h4 className="mb-4 text-sm font-semibold text-foreground">
+        <h4 className="mb-2.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
           Categorías
         </h4>
-        <div className="space-y-2">
+        <div className="space-y-0.5">
           {categories.map((category) => {
             const config = categoryConfig[category] || categoryConfig.Fruits;
             const count = categoryCounts[category] || 0;
@@ -820,24 +825,23 @@ function FilterContent({
             return (
               <label
                 key={category}
-                className={`flex cursor-pointer items-center gap-3 rounded-lg p-2.5 transition-colors ${
+                className={`flex cursor-pointer items-center gap-2.5 rounded-md px-2 py-2 text-sm transition-colors ${
                   isSelected ? "bg-primary/10" : "hover:bg-muted"
                 }`}
               >
                 <Checkbox
                   checked={isSelected}
                   onCheckedChange={() => toggleCategory(category)}
-                  className="data-[state=checked]:bg-primary data-[state=checked]:border-primary"
                 />
-                <div
-                  className={`flex h-6 w-6 items-center justify-center rounded-md ${config.bgColor}`}
-                >
-                  <Leaf className={`h-3.5 w-3.5 ${config.color}`} />
-                </div>
-                <span className="flex-1 text-sm font-medium text-foreground">
+                <span className={`flex h-5 w-5 items-center justify-center rounded ${config.bgColor}`}>
+                  <Leaf className={`h-3 w-3 ${config.color}`} />
+                </span>
+                <span className="flex-1 font-medium">
                   {getCategoryLabel(category)}
                 </span>
-                <span className="text-xs text-muted-foreground">{count}</span>
+                <span className="text-xs tabular-nums text-muted-foreground">
+                  {count}
+                </span>
               </label>
             );
           })}
@@ -845,69 +849,58 @@ function FilterContent({
       </div>
 
       <div>
-        <h4 className="mb-4 text-sm font-semibold text-foreground">
-          Rango de Precio
+        <h4 className="mb-2.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+          Rango de precio
         </h4>
-        <div className="space-y-4">
+        <div className="space-y-3">
           <Slider
             value={[priceRange[0], priceRange[1]]}
             onValueChange={(value) => setPriceRange([value[0], value[1]])}
             max={Math.ceil(maxPrice)}
             step={0.5}
-            className="mb-2"
           />
-          <div className="flex items-center gap-3">
-            <div className="flex-1">
-              <label className="mb-1 block text-xs text-muted-foreground">
-                Mínimo
-              </label>
-              <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
-                  $
-                </span>
-                <Input
-                  type="number"
-                  value={priceRange[0]}
-                  onChange={(e) =>
-                    setPriceRange([Number(e.target.value), priceRange[1]])
-                  }
-                  className="h-9 pl-7 text-sm"
-                  min={0}
-                  max={priceRange[1]}
-                />
-              </div>
+          <div className="flex items-center gap-2">
+            <div className="relative flex-1">
+              <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
+                $
+              </span>
+              <Input
+                type="number"
+                value={priceRange[0]}
+                onChange={(e) =>
+                  setPriceRange([Number(e.target.value), priceRange[1]])
+                }
+                className="h-9 pl-6 text-sm"
+                min={0}
+                max={priceRange[1]}
+              />
             </div>
-            <div className="mt-5 text-muted-foreground">-</div>
-            <div className="flex-1">
-              <label className="mb-1 block text-xs text-muted-foreground">
-                Máximo
-              </label>
-              <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
-                  $
-                </span>
-                <Input
-                  type="number"
-                  value={priceRange[1]}
-                  onChange={(e) =>
-                    setPriceRange([priceRange[0], Number(e.target.value)])
-                  }
-                  className="h-9 pl-7 text-sm"
-                  min={priceRange[0]}
-                  max={maxPrice}
-                />
-              </div>
+            <span className="text-muted-foreground">–</span>
+            <div className="relative flex-1">
+              <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
+                $
+              </span>
+              <Input
+                type="number"
+                value={priceRange[1]}
+                onChange={(e) =>
+                  setPriceRange([priceRange[0], Number(e.target.value)])
+                }
+                className="h-9 pl-6 text-sm"
+                min={priceRange[0]}
+                max={maxPrice}
+              />
             </div>
           </div>
         </div>
       </div>
 
       <div>
-        <h4 className="mb-4 text-sm font-semibold text-foreground">
+        <h4 className="mb-2.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
           Disponibilidad
         </h4>
         <label
-          className={`flex cursor-pointer items-center gap-3 rounded-lg p-2.5 transition-colors ${
+          className={`flex cursor-pointer items-center gap-2.5 rounded-md px-2 py-2 text-sm transition-colors ${
             showOnlyInStock ? "bg-primary/10" : "hover:bg-muted"
           }`}
         >
@@ -916,21 +909,20 @@ function FilterContent({
             onCheckedChange={(checked) =>
               setShowOnlyInStock(checked as boolean)
             }
-            className="data-[state=checked]:bg-primary data-[state=checked]:border-primary"
           />
-          <div className="flex h-6 w-6 items-center justify-center rounded-md bg-emerald-50">
-            <Check className="h-3.5 w-3.5 text-emerald-600" />
-          </div>
-          <span className="text-sm font-medium text-foreground">
-            Solo en stock
+          <span className="flex h-5 w-5 items-center justify-center rounded bg-emerald-50">
+            <Check className="h-3 w-3 text-emerald-600" />
           </span>
+          <span className="font-medium">Solo en stock</span>
         </label>
       </div>
     </div>
   );
 }
 
-// Masonry Grid Component
+// -------------------------------
+// Masonry Grid
+// -------------------------------
 function MasonryGrid({
   products,
   addItem,
@@ -993,7 +985,9 @@ function MasonryGrid({
   );
 }
 
-// Masonry Card Component
+// -------------------------------
+// Masonry Card
+// -------------------------------
 function MasonryCard({
   product,
   addItem,
@@ -1014,8 +1008,9 @@ function MasonryCard({
   const mobileHeights = ["h-52", "h-64", "h-56", "h-72"];
   const desktopHeights = ["h-56", "h-72", "h-64", "h-80"];
   const [imageHeight, setImageHeight] = useState(desktopHeights[heightVariant]);
-  const { defaultCurrency, currencies, formatPrice, convertPrice } = useCurrency();
-  const cupCurrency = currencies.find(c => c.code === 'CUP');
+  const { defaultCurrency, currencies, formatPrice, convertPrice } =
+    useCurrency();
+  const cupCurrency = currencies.find((c) => c.code === "CUP");
 
   useEffect(() => {
     const isMobile = window.innerWidth < 640;
@@ -1028,28 +1023,22 @@ function MasonryCard({
 
   return (
     <Card
-      className={`group overflow-hidden border-0 bg-card shadow-sm transition-all duration-300 ${
-        isHovered ? "shadow-xl ring-2 ring-primary/20" : "hover:shadow-lg"
+      className={`group overflow-hidden border bg-card shadow-none transition-all duration-300 ${
+        isHovered ? "shadow-md ring-1 ring-primary/20" : ""
       }`}
       onMouseEnter={() => onHover(product.id)}
       onMouseLeave={() => onHover(null)}
     >
       <Link href={`/product/${product.id}`}>
-        <div className={`relative ${imageHeight} overflow-hidden`}>
+        <div className={`relative ${imageHeight} overflow-hidden bg-muted`}>
           <Image
             src={product.image}
             alt={product.name}
             fill
             className={`object-cover transition-transform duration-500 ${
-              isHovered ? "scale-110" : "group-hover:scale-105"
+              isHovered ? "scale-105" : ""
             }`}
             sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
-          />
-
-          <div
-            className={`absolute inset-0 bg-black/0 transition-colors duration-300 ${
-              isHovered ? "bg-black/10" : ""
-            }`}
           />
 
           {!product.inStock && (
@@ -1060,43 +1049,31 @@ function MasonryCard({
             </div>
           )}
 
-          <div className="absolute left-2 top-2 sm:left-3 sm:top-3">
+          <div className="absolute left-2.5 top-2.5">
             <Badge
-              className={`${config.bgColor} ${config.color} border-0 shadow-sm text-xs sm:text-sm`}
+              className={`${config.bgColor} ${config.color} border-0 shadow-sm text-xs`}
             >
               {getCategoryLabel(product.category)}
             </Badge>
           </div>
 
-          <div
-            className={`absolute right-2 top-2 sm:right-3 sm:top-3 flex flex-col gap-1.5 sm:gap-2 transition-all duration-300 ${
+          <button
+            type="button"
+            aria-label="Agregar a favoritos"
+            onClick={(e) => e.preventDefault()}
+            className={`absolute right-2.5 top-2.5 flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-foreground shadow-md backdrop-blur transition-all duration-300 hover:bg-white hover:text-rose-500 ${
               isHovered
                 ? "translate-x-0 opacity-100"
-                : "translate-x-8 opacity-0"
+                : "translate-x-3 opacity-0"
             }`}
           >
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button className="flex h-7 w-7 sm:h-8 sm:w-8 md:h-9 md:w-9 items-center justify-center rounded-full bg-white/90 text-foreground shadow-md transition-colors hover:bg-white hover:text-rose-500">
-                  <Heart className="h-3 w-3 sm:h-3.5 sm:w-3.5 md:h-4 md:w-4" />
-                </button>
-              </TooltipTrigger>
-              <TooltipContent side="left">Agregar a favoritos</TooltipContent>
-            </Tooltip>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <span className="flex h-7 w-7 sm:h-8 sm:w-8 md:h-9 md:w-9 cursor-pointer items-center justify-center rounded-full bg-white/90 text-foreground shadow-md transition-colors hover:bg-white hover:text-primary">
-                  <Eye className="h-3 w-3 sm:h-3.5 sm:w-3.5 md:h-4 md:w-4" />
-                </span>
-              </TooltipTrigger>
-              <TooltipContent side="left">Ver detalles</TooltipContent>
-            </Tooltip>
-          </div>
+            <Heart className="h-4 w-4" />
+          </button>
 
           {isInCart && (
-            <div className="absolute bottom-2 right-2 sm:bottom-3 sm:right-3">
-              <Badge className="bg-primary text-primary-foreground shadow-lg text-xs sm:text-sm">
-                <ShoppingCart className="mr-1 h-2.5 w-2.5 sm:h-3 sm:w-3" />
+            <div className="absolute bottom-2.5 right-2.5">
+              <Badge className="bg-primary text-primary-foreground shadow-md">
+                <ShoppingCart className="mr-1 h-3 w-3" />
                 {cartQuantity}
               </Badge>
             </div>
@@ -1104,30 +1081,24 @@ function MasonryCard({
         </div>
       </Link>
 
-      <CardContent className="p-2.5 sm:p-3 md:p-4">
+      <CardContent className="p-3">
         <Link href={`/product/${product.id}`}>
-          <h3 className="font-semibold text-sm sm:text-base text-foreground transition-colors hover:text-primary line-clamp-1">
+          <h3 className="line-clamp-1 text-sm font-semibold text-foreground transition-colors hover:text-primary sm:text-base">
             {product.name}
           </h3>
         </Link>
-{/* 
-        <div className="mt-1 flex items-center gap-1 text-[10px] sm:text-xs text-muted-foreground">
-          <MapPin className="h-2.5 w-2.5 sm:h-3 sm:w-3 flex-shrink-0" />
-          <span className="truncate">{product.origin}</span>
-        </div> */}
 
-        {/* <p className="mt-1.5 sm:mt-2 line-clamp-2 text-[11px] sm:text-xs md:text-sm text-muted-foreground leading-relaxed">
-          {product.description}
-        </p> */}
-
-        <div className="mt-2.5 sm:mt-3 md:mt-4 flex items-center justify-between gap-1.5 sm:gap-2">
-          <div>
-            <span className="text-base sm:text-lg md:text-xl font-bold text-foreground">
+        <div className="mt-3 flex items-center justify-between gap-2">
+          <div className="min-w-0">
+            <span className="text-base font-bold text-foreground sm:text-lg">
               {cupCurrency && defaultCurrency
-                ? formatPrice(convertPrice(product.price, cupCurrency, defaultCurrency), defaultCurrency)
+                ? formatPrice(
+                    convertPrice(product.price, cupCurrency, defaultCurrency),
+                    defaultCurrency,
+                  )
                 : formatPrice(product.price, defaultCurrency)}
             </span>
-            <span className="ml-0.5 sm:ml-1 text-[10px] sm:text-xs text-muted-foreground">
+            <span className="ml-1 text-xs text-muted-foreground">
               / {product.unit}
             </span>
           </div>
@@ -1138,19 +1109,19 @@ function MasonryCard({
               addItem(product);
             }}
             disabled={!product.inStock}
-            className={`gap-1 transition-all h-8 sm:h-9 text-xs sm:text-sm ${
+            className={`h-8 shrink-0 gap-1 px-2.5 text-xs transition-colors sm:h-9 sm:text-sm ${
               isInCart ? "bg-emerald-600 text-white hover:bg-emerald-700" : ""
             }`}
           >
             {isInCart ? (
               <>
-                <Check className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
-                <span className="hidden xs:inline">Agregado</span>
+                <Check className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">Agregado</span>
               </>
             ) : (
               <>
-                <Plus className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
-                <span className="hidden xs:inline">Agregar</span>
+                <Plus className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">Agregar</span>
               </>
             )}
           </Button>
@@ -1160,7 +1131,9 @@ function MasonryCard({
   );
 }
 
-// Regular Product Card Component
+// -------------------------------
+// Product Card (grid)
+// -------------------------------
 function ProductCard({
   product,
   addItem,
@@ -1177,33 +1150,28 @@ function ProductCard({
   onHover: (id: string | null) => void;
 }) {
   const config = categoryConfig[product.category] || categoryConfig.Fruits;
-  const { defaultCurrency, currencies, formatPrice, convertPrice } = useCurrency();
-  const cupCurrency = currencies.find(c => c.code === 'CUP');
+  const { defaultCurrency, currencies, formatPrice, convertPrice } =
+    useCurrency();
+  const cupCurrency = currencies.find((c) => c.code === "CUP");
 
   return (
     <Card
-      className={`group overflow-hidden border-0 bg-card shadow-sm transition-all duration-300 ${
-        isHovered ? "shadow-xl ring-2 ring-primary/20" : "hover:shadow-lg"
+      className={`group overflow-hidden border bg-card shadow-none transition-all duration-300 ${
+        isHovered ? "shadow-md ring-1 ring-primary/20" : ""
       }`}
       onMouseEnter={() => onHover(product.id)}
       onMouseLeave={() => onHover(null)}
     >
       <Link href={`/product/${product.id}`}>
-        <div className="relative aspect-square overflow-hidden">
+        <div className="relative aspect-square overflow-hidden bg-muted">
           <Image
             src={product.image}
             alt={product.name}
             fill
             className={`object-cover transition-transform duration-500 ${
-              isHovered ? "scale-110" : "group-hover:scale-105"
+              isHovered ? "scale-105" : ""
             }`}
             sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-          />
-
-          <div
-            className={`absolute inset-0 bg-black/0 transition-colors duration-300 ${
-              isHovered ? "bg-black/10" : ""
-            }`}
           />
 
           {!product.inStock && (
@@ -1214,30 +1182,31 @@ function ProductCard({
             </div>
           )}
 
-          <div className="absolute left-2 top-2 sm:left-3 sm:top-3">
+          <div className="absolute left-2.5 top-2.5">
             <Badge
-              className={`${config.bgColor} ${config.color} border-0 shadow-sm text-xs sm:text-sm`}
+              className={`${config.bgColor} ${config.color} border-0 shadow-sm text-xs`}
             >
               {getCategoryLabel(product.category)}
             </Badge>
           </div>
 
-          <div
-            className={`absolute right-2 top-2 sm:right-3 sm:top-3 transition-all duration-300 ${
+          <button
+            type="button"
+            aria-label="Agregar a favoritos"
+            onClick={(e) => e.preventDefault()}
+            className={`absolute right-2.5 top-2.5 flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-foreground shadow-md backdrop-blur transition-all duration-300 hover:bg-white hover:text-rose-500 ${
               isHovered
                 ? "translate-x-0 opacity-100"
-                : "translate-x-8 opacity-0"
+                : "translate-x-3 opacity-0"
             }`}
           >
-            <button className="flex h-7 w-7 sm:h-8 sm:w-8 md:h-9 md:w-9 items-center justify-center rounded-full bg-white/90 text-foreground shadow-md transition-colors hover:bg-white hover:text-rose-500">
-              <Heart className="h-3 w-3 sm:h-3.5 sm:w-3.5 md:h-4 md:w-4" />
-            </button>
-          </div>
+            <Heart className="h-4 w-4" />
+          </button>
 
           {isInCart && (
-            <div className="absolute bottom-2 right-2 sm:bottom-3 sm:right-3">
-              <Badge className="bg-primary text-primary-foreground shadow-lg text-xs sm:text-sm">
-                <ShoppingCart className="mr-1 h-2.5 w-2.5 sm:h-3 sm:w-3" />
+            <div className="absolute bottom-2.5 right-2.5">
+              <Badge className="bg-primary text-primary-foreground shadow-md">
+                <ShoppingCart className="mr-1 h-3 w-3" />
                 {cartQuantity}
               </Badge>
             </div>
@@ -1245,26 +1214,29 @@ function ProductCard({
         </div>
       </Link>
 
-      <CardContent className="p-2.5 sm:p-3 md:p-4">
+      <CardContent className="p-3">
         <Link href={`/product/${product.id}`}>
-          <h3 className="font-semibold text-sm sm:text-base text-foreground transition-colors hover:text-primary line-clamp-1">
+          <h3 className="line-clamp-1 text-sm font-semibold text-foreground transition-colors hover:text-primary sm:text-base">
             {product.name}
           </h3>
         </Link>
 
-        <div className="mt-1 flex items-center gap-1 text-[10px] sm:text-xs text-muted-foreground">
-          <MapPin className="h-2.5 w-2.5 sm:h-3 sm:w-3 flex-shrink-0" />
+        <div className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
+          <MapPin className="h-3 w-3 shrink-0" />
           <span className="truncate">{product.origin}</span>
         </div>
 
-        <div className="mt-2.5 sm:mt-3 md:mt-4 flex items-center justify-between gap-1.5 sm:gap-2">
-          <div>
-            <span className="text-base sm:text-lg md:text-xl font-bold text-foreground">
+        <div className="mt-3 flex items-center justify-between gap-2">
+          <div className="min-w-0">
+            <span className="text-base font-bold text-foreground sm:text-lg">
               {cupCurrency && defaultCurrency
-                ? formatPrice(convertPrice(product.price, cupCurrency, defaultCurrency), defaultCurrency)
+                ? formatPrice(
+                    convertPrice(product.price, cupCurrency, defaultCurrency),
+                    defaultCurrency,
+                  )
                 : formatPrice(product.price, defaultCurrency)}
             </span>
-            <span className="ml-0.5 sm:ml-1 text-[10px] sm:text-xs text-muted-foreground">
+            <span className="ml-1 text-xs text-muted-foreground">
               / {product.unit}
             </span>
           </div>
@@ -1275,14 +1247,20 @@ function ProductCard({
               addItem(product);
             }}
             disabled={!product.inStock}
-            className={`gap-1 transition-all h-8 sm:h-9 text-xs sm:text-sm ${
+            className={`h-8 shrink-0 gap-1 px-2.5 text-xs transition-colors sm:h-9 sm:text-sm ${
               isInCart ? "bg-emerald-600 text-white hover:bg-emerald-700" : ""
             }`}
           >
             {isInCart ? (
-              <Check className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+              <>
+                <Check className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">Agregado</span>
+              </>
             ) : (
-              <Plus className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+              <>
+                <Plus className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">Agregar</span>
+              </>
             )}
           </Button>
         </div>
@@ -1291,9 +1269,9 @@ function ProductCard({
   );
 }
 
-// Empty State Component
-
-// Empty State Component
+// -------------------------------
+// Empty State
+// -------------------------------
 function EmptyState({
   onClear,
   searchQuery,
@@ -1302,26 +1280,21 @@ function EmptyState({
   searchQuery: string;
 }) {
   return (
-    <div className="flex flex-col items-center justify-center py-16 sm:py-20 text-center">
-      <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-2xl bg-muted">
-        <Search className="h-10 w-10 text-muted-foreground" />
+    <div className="flex flex-col items-center justify-center py-16 text-center sm:py-20">
+      <div className="mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-muted">
+        <Search className="h-8 w-8 text-muted-foreground" />
       </div>
-      <h3 className="mb-2 text-xl font-semibold text-foreground">
+      <h3 className="mb-1.5 text-lg font-semibold text-foreground sm:text-xl">
         No se encontraron productos
       </h3>
-      <p className="mb-6 max-w-md text-muted-foreground px-4">
+      <p className="mb-6 max-w-md px-4 text-sm text-muted-foreground">
         {searchQuery
-          ? `No encontramos resultados para "${searchQuery}". Intenta con otros términos o ajusta los filtros.`
-          : "Intenta ajustar tus filtros para encontrar lo que buscas."}
+          ? `Sin resultados para "${searchQuery}". Prueba con otros términos o ajusta los filtros.`
+          : "Ajusta los filtros para encontrar lo que buscas."}
       </p>
-      <div className="flex gap-3">
-        <Button variant="outline" onClick={onClear}>
-          Limpiar filtros
-        </Button>
-        <Button asChild>
-          <Link href="/">Volver al inicio</Link>
-        </Button>
-      </div>
+      <Button variant="outline" onClick={onClear}>
+        Limpiar filtros
+      </Button>
     </div>
   );
 }

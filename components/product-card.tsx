@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Product, useCartStore } from "@/lib/store";
 import { useState } from "react";
 import { useCurrency } from "@/lib/currency";
+import { optimizedImageUrl } from "@/lib/image";
 
 interface ProductCardProps {
   product: Product;
@@ -31,7 +32,7 @@ export function ProductCard({ product }: ProductCardProps) {
       <Link href={`/product/${product.id}`}>
         <div className="relative aspect-square overflow-hidden">
           <Image
-            src={product.image || '/placeholder.svg'}
+            src={optimizedImageUrl(product.image || '/placeholder.svg', 640)}
             alt={product.name}
             fill
             className="object-cover transition-transform duration-300 group-hover:scale-105"

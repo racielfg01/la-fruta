@@ -1,253 +1,284 @@
-
 "use client";
 
 import { Header } from "@/components/header";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { useCartStore } from "@/lib/store";
 import { useCurrency } from "@/lib/currency";
-import { Minus, Plus, Trash2, ShoppingBag, ArrowRight, Truck, Shield, DollarSign } from "lucide-react";
+import { optimizedImageUrl } from "@/lib/image";
+import {
+  Minus,
+  Plus,
+  Trash2,
+  ShoppingBag,
+  ArrowRight,
+  Truck,
+  Shield,
+  Loader2,
+} from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+
+const FREE_SHIPPING_THRESHOLD = 20;
 
 export default function CartPage() {
   const { items, updateQuantity, removeItem, getTotalPrice } = useCartStore();
   const { currencies, defaultCurrency, formatPrice, convertPrice } = useCurrency();
-  const cupCurrency = currencies.find(c => c.code === 'CUP');
+  const cupCurrency = currencies.find((c) => c.code === "CUP");
 
+  // Helper único de conversión (product.price está en CUP)
+  const formatCup = (cupAmount: number) => {
+    if (!cupCurrency || !defaultCurrency) {
+      return formatPrice(cupAmount, defaultCurrency || cupCurrency);
+    }
+    const converted = convertPrice(cupAmount, cupCurrency, defaultCurrency);
+    return formatPrice(converted, defaultCurrency);
+  };
+
+  const subtotal = getTotalPrice();
+  const isCupDisplay = defaultCurrency?.code === "CUP";
+
+  // -------------------------------
+  // Carrito vacío
+  // -------------------------------
   if (items.length === 0) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-background to-muted/20">
+      <div className="min-h-screen bg-background">
         <Header />
-        <main className="container mx-auto px-4 py-12 md:py-16 lg:py-20">
-          <div className="flex flex-col items-center justify-center text-center max-w-md mx-auto">
-            <div className="mb-6 flex h-28 w-28 items-center justify-center rounded-full bg-gradient-to-br from-muted to-muted/50 shadow-inner">
-              <ShoppingBag className="h-14 w-14 text-muted-foreground" />
+        <main className="container mx-auto max-w-md px-4 py-16">
+          <div className="flex flex-col items-center text-center">
+            <div className="mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-muted">
+              <ShoppingBag className="h-8 w-8 text-muted-foreground" />
             </div>
-            <h1 className="mb-3 text-2xl md:text-3xl font-bold text-foreground">
+            <h1 className="mb-2 text-xl font-semibold sm:text-2xl">
               Tu carrito está vacío
             </h1>
-            <p className="mb-8 text-muted-foreground text-sm md:text-base">
-              Parece que aún no has agregado ningún producto. 
-              ¡Explora nuestra selección de frutas frescas!
+            <p className="mb-6 text-sm text-muted-foreground">
+              Aún no has agregado productos. Explora nuestra selección de frutas
+              frescas.
             </p>
-            <Link href="/#products" className="w-full sm:w-auto">
-              <Button size="lg" className="w-full sm:w-auto gap-2">
-                Explorar productos
-                <ArrowRight className="h-4 w-4" />
-              </Button>
-            </Link>
+            <Button asChild>
+              <Link href="/#products">
+                Explorar productos <ArrowRight className="ml-2 h-4 w-4" />
+              </Link>
+            </Button>
           </div>
         </main>
       </div>
     );
   }
 
-  const totalWithDelivery = getTotalPrice();
-
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background to-muted/20">
+    <div className="min-h-screen bg-background">
       <Header />
-      
-      <main className="container mx-auto px-4 py-6 md:py-8 lg:py-10">
-        {/* Header con contador móvil */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6 md:mb-8">
-          <h1 className="font-[family-name:var(--font-playfair)] text-2xl md:text-3xl lg:text-4xl font-bold text-foreground">
-            Mi Carrito
-            <span className="ml-2 text-base md:text-lg font-normal text-muted-foreground">
-              ({items.length} {items.length === 1 ? 'producto' : 'productos'})
-            </span>
+
+      <main className="container mx-auto max-w-6xl px-4 pb-28 pt-6 sm:pt-8 lg:pb-12">
+        {/* Título */}
+        <div className="mb-6 sm:mb-8">
+          <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
+            Mi carrito
           </h1>
-          
-          {/* Badge de envío gratis - visible en móvil */}
-          {getTotalPrice() < 50 && (
-            <div className="flex items-center justify-center gap-2 rounded-full bg-amber-50 px-3 py-1.5 text-xs md:text-sm text-amber-700 w-full sm:w-auto">
-              <DollarSign className="h-3.5 w-3.5" />
-              <span>Todos los productos se pueden pagar también CUP en efectivo</span>
-            </div>
-          )}
+          <p className="mt-1 text-sm text-muted-foreground">
+            {items.length} {items.length === 1 ? "producto" : "productos"} en tu
+            pedido
+          </p>
         </div>
 
-        {/* Layout de una sola columna - Resumen siempre abajo */}
-        <div className="flex flex-col gap-6 lg:gap-8">
-          {/* Productos - Siempre arriba */}
-          <div>
-            <Card className="border-0 shadow-sm lg:shadow-md">
-              <CardHeader className="border-b  px-4 py-3 md:px-6 md:py-4">
-                <CardTitle className="text-base md:text-lg font-semibold">
-                  Productos
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="divide-y divide-border p-0">
-                {items.map((item) => (
-                  <div 
-                    key={item.product.id} 
-                    className="flex gap-3 md:gap-4 p-4 md:p-6 hover:bg-muted/20 transition-colors"
-                  >
-                    {/* Imagen del producto - responsive */}
-                    <div className="relative h-20 w-20 md:h-24 md:w-24 flex-shrink-0 overflow-hidden rounded-lg bg-muted">
-                      <Image
-                        src={item.product.image}
-                        alt={item.product.name}
-                        fill
-                        className="object-cover transition-transform duration-300 group-hover:scale-105"
-                        sizes="(max-width: 768px) 80px, 96px"
-                      />
-                    </div>
-                    
-                    {/* Detalles del producto */}
-                    <div className="flex flex-1 flex-col justify-between gap-2">
-                      <div>
-                        <Link
-                          href={`/product/${item.product.id}`}
-                          className="font-semibold text-sm md:text-base text-foreground hover:text-primary transition-colors line-clamp-2"
-                        >
-                          {item.product.name}
-                        </Link>
-                        <p className="text-xs md:text-sm text-muted-foreground mt-0.5">
-                          {item.product.origin}
-                        </p>
-                        <p className="text-sm md:text-base font-medium text-primary mt-1">
-                          {cupCurrency && defaultCurrency
-                            ? formatPrice(convertPrice(item.product.price, cupCurrency, defaultCurrency), defaultCurrency)
-                            : formatPrice(item.product.price, cupCurrency || defaultCurrency)} <span className="text-xs text-muted-foreground">/ {item.product.unit}</span>
-                        </p>
-                      </div>
-                      
-                      {/* Controles de cantidad y precio */}
-                      <div className="flex flex-col xs:flex-row items-start xs:items-center justify-between gap-3">
-                        <div className="flex items-center gap-2">
-                          <Button
-                            variant="outline"
-                            size="icon"
-                            className="h-8 w-8 md:h-9 md:w-9 rounded-full"
-                            onClick={() => updateQuantity(item.product.id, item.quantity - 1)}
-                            aria-label="Disminuir cantidad"
-                          >
-                            <Minus className="h-3 w-3 md:h-3.5 md:w-3.5" />
-                          </Button>
-                          <span className="w-8 text-center font-medium text-sm md:text-base">
-                            {item.quantity}
-                          </span>
-                          <Button
-                            variant="outline"
-                            size="icon"
-                            className="h-8 w-8 md:h-9 md:w-9 rounded-full"
-                            onClick={() => updateQuantity(item.product.id, item.quantity + 1)}
-                            aria-label="Aumentar cantidad"
-                          >
-                            <Plus className="h-3 w-3 md:h-3.5 md:w-3.5" />
-                          </Button>
-                        </div>
-                        
-                        <div className="flex items-center justify-between w-full xs:w-auto gap-4">
-                          <span className="font-bold text-base md:text-lg text-foreground">
-                          {cupCurrency && defaultCurrency
-                            ? formatPrice(convertPrice(item.product.price * item.quantity, cupCurrency, defaultCurrency), defaultCurrency)
-                            : formatPrice(item.product.price * item.quantity, cupCurrency || defaultCurrency)}
-                          </span>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 md:h-9 md:w-9 text-destructive hover:bg-destructive/10 hover:text-destructive"
+        <div className="grid gap-6 lg:grid-cols-[1fr_360px] lg:gap-8">
+          {/* Columna izquierda — productos */}
+          <section className="overflow-hidden rounded-xl border bg-card">
+            <ul className="divide-y">
+              {items.map((item) => {
+                const lineTotal = item.product.price * item.quantity;
+                return (
+                  <li key={item.product.id} className="group p-4 sm:p-5">
+                    <div className="flex gap-4">
+                      {/* Imagen */}
+                      <Link
+                        href={`/product/${item.product.id}`}
+                        className="relative h-20 w-20 shrink-0 overflow-hidden rounded-lg bg-muted sm:h-24 sm:w-24"
+                      >
+                        <Image
+                          src={optimizedImageUrl(item.product.image, 192)}
+                          alt={item.product.name}
+                          fill
+                          className="object-cover"
+                          sizes="96px"
+                        />
+                      </Link>
+
+                      {/* Detalles */}
+                      <div className="flex min-w-0 flex-1 flex-col">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0">
+                            <Link
+                              href={`/product/${item.product.id}`}
+                              className="line-clamp-2 text-sm font-semibold text-foreground transition-colors hover:text-primary sm:text-base"
+                            >
+                              {item.product.name}
+                            </Link>
+                            {item.product.origin && (
+                              <p className="mt-0.5 text-xs text-muted-foreground">
+                                {item.product.origin}
+                              </p>
+                            )}
+                          </div>
+
+                          {/* Delete — discreto, aparece al hover en desktop */}
+                          <button
+                            type="button"
+                            aria-label={`Eliminar ${item.product.name}`}
                             onClick={() => removeItem(item.product.id)}
-                            aria-label="Eliminar producto"
+                            className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive sm:opacity-0 sm:group-hover:opacity-100 sm:focus-visible:opacity-100"
                           >
                             <Trash2 className="h-4 w-4" />
-                          </Button>
+                          </button>
+                        </div>
+
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          {formatCup(item.product.price)} / {item.product.unit}
+                        </p>
+
+                        {/* Cantidad + total */}
+                        <div className="mt-auto flex items-end justify-between gap-3 pt-3">
+                          <div className="flex items-center rounded-full border">
+                            <button
+                              type="button"
+                              aria-label="Disminuir cantidad"
+                              onClick={() =>
+                                updateQuantity(
+                                  item.product.id,
+                                  Math.max(1, item.quantity - 1),
+                                )
+                              }
+                              disabled={item.quantity <= 1}
+                              className="flex h-8 w-8 items-center justify-center rounded-l-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40"
+                            >
+                              <Minus className="h-3.5 w-3.5" />
+                            </button>
+                            <span className="w-8 text-center text-sm font-medium tabular-nums">
+                              {item.quantity}
+                            </span>
+                            <button
+                              type="button"
+                              aria-label="Aumentar cantidad"
+                              onClick={() =>
+                                updateQuantity(item.product.id, item.quantity + 1)
+                              }
+                              className="flex h-8 w-8 items-center justify-center rounded-r-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                            >
+                              <Plus className="h-3.5 w-3.5" />
+                            </button>
+                          </div>
+
+                          <p className="text-base font-semibold text-foreground sm:text-lg">
+                            {formatCup(lineTotal)}
+                          </p>
                         </div>
                       </div>
                     </div>
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
-          </div>
+                  </li>
+                );
+              })}
+            </ul>
+          </section>
 
-          {/* Resumen del pedido - Siempre abajo (sin sticky) */}
-          <div>
-            <Card className="border-0 shadow-sm lg:shadow-md">
-              <CardHeader className="border-b  px-4 py-3 md:px-6 md:py-4">
-                <CardTitle className="text-base md:text-lg font-semibold">
-                  Resumen del pedido
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="p-4 md:p-6 space-y-4">
-                {/* Detalles de precios */}
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm md:text-base">
-                    <span className="text-muted-foreground">Subtotal</span>
-                    <span className="font-medium">
-                      {cupCurrency && defaultCurrency
-                        ? formatPrice(convertPrice(getTotalPrice(), cupCurrency, defaultCurrency), defaultCurrency)
-                        : formatPrice(getTotalPrice(), cupCurrency || defaultCurrency)}
-                    </span>
-                  </div>
-                  
-                  <div className="flex justify-between text-sm md:text-base">
-                    <span className="text-muted-foreground flex items-center gap-1">
-                      <Truck className="h-3.5 w-3.5" />
-                      Envío
-                    </span>
-                    <span className="text-muted-foreground text-xs italic">
-                      Se calculará según la zona
-                    </span>
-                  </div>
+          {/* Columna derecha — resumen sticky */}
+          <aside className="lg:sticky lg:top-20 lg:h-fit">
+            <div className="overflow-hidden rounded-xl border bg-card">
+              <div className="border-b px-5 py-3.5">
+                <h2 className="text-sm font-semibold">Resumen del pedido</h2>
+              </div>
+
+              <div className="space-y-3 px-5 py-4">
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Subtotal</span>
+                  <span className="font-medium">{formatCup(subtotal)}</span>
                 </div>
 
-                {/* Total */}
-                <div className="border-t pt-4 space-y-2">
-                  <div className="flex justify-between items-baseline">
-                    <span className="font-semibold text-base md:text-lg">Total</span>
-                    <span className="font-bold text-xl md:text-2xl text-primary">
-                      {cupCurrency && defaultCurrency
-                        ? formatPrice(convertPrice(totalWithDelivery, cupCurrency, defaultCurrency), defaultCurrency)
-                        : formatPrice(totalWithDelivery, cupCurrency || defaultCurrency)}
-                    </span>
-                  </div>
-                  {cupCurrency && (
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Total en CUP</span>
-                      <span className="font-medium">{formatPrice(totalWithDelivery, cupCurrency)}</span>
-                    </div>
-                  )}
-                  <p className="text-xs text-muted-foreground text-right">
-                    Incluye impuestos y tarifas
+                <div className="flex items-start justify-between gap-3 text-sm">
+                  <span className="flex items-center gap-1.5 text-muted-foreground">
+                    <Truck className="h-3.5 w-3.5" /> Envío
+                  </span>
+                  <span className="text-right text-xs text-muted-foreground">
+                    Según zona, en el checkout
+                  </span>
+                </div>
+
+                {subtotal > 0 && subtotal < FREE_SHIPPING_THRESHOLD && (
+                  <p className="rounded-md bg-amber-50 px-2.5 py-1.5 text-xs text-amber-700 dark:bg-amber-500/10 dark:text-amber-500">
+                    Añade {formatCup(FREE_SHIPPING_THRESHOLD - subtotal)} más
+                    para envío gratis
                   </p>
-                </div>
+                )}
+              </div>
 
-                {/* Botones de acción */}
-                <div className="space-y-3 pt-2">
-                  <Link href="/checkout" className="block">
-                    <Button className="w-full gap-2 bg-green-600 hover:bg-green-700 text-white shadow-md" size="lg">
-                      Proceder al pago
-                      <ArrowRight className="h-4 w-4" />
-                    </Button>
-                  </Link>
-                  
-                  <Link href="/#products" className="block">
-                    <Button variant="outline" className="w-full gap-2" size="default">
-                      Seguir comprando
-                    </Button>
-                  </Link>
+              <div className="border-t px-5 py-4">
+                <div className="flex items-baseline justify-between">
+                  <span className="text-sm font-semibold">Total</span>
+                  <span className="text-xl font-bold text-primary">
+                    {formatCup(subtotal)}
+                  </span>
                 </div>
+                {!isCupDisplay && cupCurrency && (
+                  <div className="mt-1 flex justify-between text-xs text-muted-foreground">
+                    <span>Equivalente en {cupCurrency.code}</span>
+                    <span>
+                      {cupCurrency.symbol}
+                      {subtotal.toFixed(2)}
+                    </span>
+                  </div>
+                )}
+              </div>
 
-                {/* Sellos de confianza */}
-                <div className="flex justify-center gap-4 pt-4 border-t">
-                  <div className="flex items-center gap-1.5 text-[11px] md:text-xs text-muted-foreground">
-                    <Shield className="h-3.5 w-3.5" />
-                    <span>Pago seguro</span>
-                  </div>
-                  <div className="flex items-center gap-1.5 text-[11px] md:text-xs text-muted-foreground">
-                    <Truck className="h-3.5 w-3.5" />
-                    <span>Envío garantizado</span>
-                  </div>
+              <div className="hidden border-t px-5 py-4 lg:block">
+                <Button
+                  asChild
+                  size="lg"
+                  className="min-h-[44px] w-full gap-2"
+                >
+                  <Link href="/checkout">
+                    Proceder al pago <ArrowRight className="h-4 w-4" />
+                  </Link>
+                </Button>
+
+                <Link
+                  href="/#products"
+                  className="mt-3 block text-center text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
+                >
+                  Seguir comprando
+                </Link>
+
+                <div className="mt-4 flex items-center justify-center gap-4 text-[10px] text-muted-foreground">
+                  <span className="flex items-center gap-1">
+                    <Shield className="h-3 w-3" /> Pago seguro
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <Truck className="h-3 w-3" /> Envío garantizado
+                  </span>
                 </div>
-              </CardContent>
-            </Card>
-          </div>
+              </div>
+            </div>
+          </aside>
         </div>
       </main>
+
+      {/* Barra inferior fija en móvil */}
+      <div className="fixed inset-x-0 bottom-0 z-40 border-t bg-background/95 backdrop-blur lg:hidden">
+        <div className="container mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3">
+          <div className="min-w-0">
+            <p className="text-xs text-muted-foreground">Total</p>
+            <p className="truncate text-lg font-bold text-primary">
+              {formatCup(subtotal)}
+            </p>
+          </div>
+          <Button asChild size="lg" className="min-h-[44px] shrink-0 gap-2">
+            <Link href="/checkout">
+              Proceder al pago <ArrowRight className="h-4 w-4" />
+            </Link>
+          </Button>
+        </div>
+      </div>
     </div>
   );
 }

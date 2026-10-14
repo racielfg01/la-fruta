@@ -127,3 +127,6 @@ pnpm-lock.yaml
 .opencode/commands/verify.md
 .opencode/rsc/connect-tool
 .opencode/agents/finding-verifier.md
+
+# Playwright MCP debug artifacts
+/.playwright-mcp/

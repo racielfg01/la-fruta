@@ -16,6 +16,14 @@ function hostAllowed(hostname: string) {
   return hostname === "utfs.io" || hostname.endsWith(".ufs.sh");
 }
 
+function isRemote(src: string) {
+  return src.startsWith("http://") || src.startsWith("https://");
+}
+
+function redirectTo(src: string) {
+  return NextResponse.redirect(src, 302);
+}
+
 async function readSource(src: string): Promise<Buffer> {
   if (src.startsWith("/")) {
     const rel = decodeURIComponent(src.split("?")[0]).replace(/^\/+/, "");
@@ -51,10 +59,13 @@ export async function GET(req: NextRequest) {
 
   if (!src) return new NextResponse("missing src", { status: 400 });
 
+  const remote = isRemote(src);
+
   let input: Buffer;
   try {
     input = await readSource(src);
   } catch {
+    if (remote) return redirectTo(src);
     return new NextResponse("not found", { status: 404 });
   }
 
@@ -79,6 +90,7 @@ export async function GET(req: NextRequest) {
     }
     return webpResponse(out);
   } catch {
+    if (remote) return redirectTo(src);
     return new NextResponse("cannot process image", { status: 415 });
   }
 }

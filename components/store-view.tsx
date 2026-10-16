@@ -31,6 +31,8 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { useCartStore, Product, availableStock } from "@/lib/store";
 import { useCurrency } from "@/lib/currency";
+import { useCurrencyStore, useSelectedCurrency } from "@/lib/currency-store";
+import { optimizedImageUrl } from "@/lib/image";
 import {
   Search,
   SlidersHorizontal,
@@ -48,6 +50,7 @@ import {
   ArrowUpDown,
   Sparkles,
   Loader2,
+  Globe,
 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
@@ -62,9 +65,6 @@ import {
 } from "@/components/ui/dialog";
 
 type SortOption = "default" | "price-asc" | "price-desc" | "name";
-
-// Copy unificado — un solo umbral para toda la app
-const FREE_SHIPPING_THRESHOLD = 20;
 
 const categoryConfig: Record<
   string,
@@ -94,6 +94,8 @@ export function StoreView() {
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 100]);
   const [sortBy, setSortBy] = useState<SortOption>("default");
   const { currencies, defaultCurrency, convertPrice } = useCurrency();
+  const setCurrency = useCurrencyStore((s) => s.setCurrency);
+  const selectedCurrency = useSelectedCurrency();
   const cupCurrency = currencies.find((c) => c.code === "CUP");
   const toUSD = (cupPrice: number) =>
     cupCurrency && defaultCurrency
@@ -142,6 +144,11 @@ export function StoreView() {
     if (products.length === 0) return 10;
     return Math.max(...products.map((p) => toUSD(p.price)));
   }, [products, cupCurrency, defaultCurrency]);
+
+  // Sin filtro por defecto: el rango sigue a maxPrice (carga de productos o cambio de moneda).
+  useEffect(() => {
+    setPriceRange([0, maxPrice]);
+  }, [maxPrice]);
 
   const filteredProducts = useMemo(() => {
     let filtered = products.filter((product) => {
@@ -294,7 +301,7 @@ export function StoreView() {
                 </span>
                 <span className="flex items-center gap-1.5">
                   <Truck className="h-4 w-4 text-blue-600" />
-                  Envío gratis desde ${FREE_SHIPPING_THRESHOLD}
+                  Envío por zona
                 </span>
                 <span className="flex items-center gap-1.5">
                   <Shield className="h-4 w-4 text-amber-600" />
@@ -512,20 +519,44 @@ export function StoreView() {
                 </div>
               </div>
 
-              {/* Chip de zona */}
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setLocationDialogOpen(true)}
-                className="h-8 shrink-0 gap-1.5 rounded-full border-dashed px-3 text-xs"
-                title={userLocation ? "Cambiar zona de entrega" : "Elegir zona"}
-              >
-                <MapPin className="h-3.5 w-3.5 text-primary" />
-                <span className="max-w-[110px] truncate">
-                  {userLocation?.municipality || "Zona"}
-                </span>
-              </Button>
+             
+
             </div>
+             {/* Zona + moneda */}
+              <div className="flex shrink-0 items-center gap-2 pb-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setLocationDialogOpen(true)}
+                  className="h-8 gap-1.5 rounded-full border-dashed px-3 text-xs"
+                  title={userLocation ? "Cambiar zona de entrega" : "Elegir zona"}
+                >
+                  <MapPin className="h-3.5 w-3.5 text-primary" />
+                  <span className="max-w-[110px] truncate">
+                    {userLocation?.municipalityName ||
+                      userLocation?.provinceName ||
+                      "Zona"}
+                  </span>
+                </Button>
+                {currencies.length > 0 && (
+                  <Select
+                    value={selectedCurrency?.id}
+                    onValueChange={setCurrency}
+                  >
+                    <SelectTrigger className="h-8 gap-1.5 rounded-full text-xs">
+                      <Globe className="h-3.5 w-3.5 text-muted-foreground" />
+                      <SelectValue placeholder="Moneda" />
+                    </SelectTrigger>
+                    <SelectContent align="end">
+                      {currencies.map((c) => (
+                        <SelectItem key={c.id} value={c.id}>
+                          {c.symbol} {c.code}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              </div>
           </div>
         </div>
 
@@ -595,9 +626,9 @@ export function StoreView() {
                       <Truck className="h-4 w-4 text-primary-foreground" />
                     </div>
                     <div className="min-w-0">
-                      <p className="text-sm font-semibold">Envío gratis</p>
+                      <p className="text-sm font-semibold">Envío por zona</p>
                       <p className="text-xs text-muted-foreground">
-                        Desde ${FREE_SHIPPING_THRESHOLD}
+                        El costo se calcula en el checkout
                       </p>
                     </div>
                   </div>
@@ -1032,7 +1063,7 @@ function MasonryCard({
       <Link href={`/product/${product.id}`}>
         <div className={`relative ${imageHeight} overflow-hidden bg-muted`}>
           <Image
-            src={product.image}
+            src={optimizedImageUrl(product.image, 640)}
             alt={product.name}
             fill
             className={`object-cover transition-transform duration-500 ${
@@ -1165,7 +1196,7 @@ function ProductCard({
       <Link href={`/product/${product.id}`}>
         <div className="relative aspect-square overflow-hidden bg-muted">
           <Image
-            src={product.image}
+            src={optimizedImageUrl(product.image, 640)}
             alt={product.name}
             fill
             className={`object-cover transition-transform duration-500 ${

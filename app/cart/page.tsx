@@ -19,8 +19,6 @@ import {
 import Image from "next/image";
 import Link from "next/link";
 
-const FREE_SHIPPING_THRESHOLD = 20;
-
 export default function CartPage() {
   const { items, updateQuantity, removeItem, getTotalPrice } = useCartStore();
   const { currencies, defaultCurrency, formatPrice, convertPrice } = useCurrency();
@@ -204,13 +202,6 @@ export default function CartPage() {
                     Según zona, en el checkout
                   </span>
                 </div>
-
-                {subtotal > 0 && subtotal < FREE_SHIPPING_THRESHOLD && (
-                  <p className="rounded-md bg-amber-50 px-2.5 py-1.5 text-xs text-amber-700 dark:bg-amber-500/10 dark:text-amber-500">
-                    Añade {formatCup(FREE_SHIPPING_THRESHOLD - subtotal)} más
-                    para envío gratis
-                  </p>
-                )}
               </div>
 
               <div className="border-t px-5 py-4">

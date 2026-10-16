@@ -80,6 +80,8 @@ export interface Order {
   userId: string;
   userName: string;
   userEmail: string;
+  contactPhone?: string;
+  contactCarnet?: string;
   items: OrderItem[];
   subtotal: number;
   deliveryFee: number;
@@ -160,7 +162,7 @@ interface AdminStore {
   updateUser: (id: string, user: Partial<User>) => Promise<void>;
   deleteUser: (id: string) => Promise<void>;
 
-  updateOrderStatus: (id: string, status: Order["status"]) => Promise<void>;
+  updateOrderStatus: (id: string, status: Order["status"], reason?: string) => Promise<void>;
   updatePaymentStatus: (id: string, status: Order["paymentStatus"]) => Promise<void>;
 
   addCurrency: (currency: Currency) => Promise<Currency | undefined>;
@@ -291,12 +293,19 @@ const data = await withTimeout(getAdminData(token), 15000);
     set({ users: get().users.filter((u) => u.id !== id) });
   },
 
-  updateOrderStatus: async (id, status) => {
+  updateOrderStatus: async (id, status, reason) => {
     const token = getAuthToken();
-    await setOrderStatusAction(id, status, token);
+    await setOrderStatusAction(id, status, token, reason);
     set({
       orders: get().orders.map((o) =>
-        o.id === id ? { ...o, status, updatedAt: new Date().toISOString() } : o
+        o.id === id
+          ? {
+              ...o,
+              status,
+              cancelReason: status === 'cancelled' ? reason?.trim() || o.cancelReason : o.cancelReason,
+              updatedAt: new Date().toISOString(),
+            }
+          : o
       ),
     });
   },

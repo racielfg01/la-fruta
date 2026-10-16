@@ -2,6 +2,7 @@
 
 import { decodePocketBaseToken, getRoleIds } from '@/lib/auth';
 import { getAdminPB, getTokenPB, getAllRecords, sanitize } from '@/lib/pocketbase';
+import { restoreOrderStock } from '@/lib/order-stock';
 import type PocketBase from 'pocketbase';
 import { Product } from '@/lib/store';
 import { Category, DeliveryZone, User, Order, Currency } from '@/lib/admin-store';
@@ -90,6 +91,8 @@ function mapOrder(o: any) {
     userId: o.user_id,
     userName: o.user_name,
     userEmail: o.user_email,
+    contactPhone: o.contact_phone || '',
+    contactCarnet: o.contact_carnet || '',
     subtotal: Number(o.subtotal),
     deliveryFee: Number(o.delivery_fee),
     total: Number(o.total),
@@ -355,13 +358,31 @@ const VALID_ORDER_TRANSITIONS: Record<string, string[]> = {
   cancelled: [],
 };
 
-export async function setOrderStatusAction(orderId: string, status: Order['status'], token: string) {
+export async function setOrderStatusAction(
+  orderId: string,
+  status: Order['status'],
+  token: string,
+  reason?: string
+) {
   await verifyAdminAndGetUserId(token);
   const pb = await getDataPB(token);
   const order = await pb.collection('orders').getOne(orderId);
   const allowed = VALID_ORDER_TRANSITIONS[order.status] || [];
   if (!allowed.includes(status)) {
     throw new Error(`No se puede cambiar de "${order.status}" a "${status}"`);
+  }
+  if (status === 'cancelled') {
+    if (!reason || !reason.trim()) {
+      throw new Error('El motivo de cancelación es obligatorio');
+    }
+    await pb.collection('orders').update(orderId, {
+      status,
+      cancel_reason: reason.trim(),
+    });
+    // ponytail: reposición fuera del mutex de creación (orden manual y rara);
+    // si se necesitara consistencia total, compartir el lock de orders.ts.
+    await restoreOrderStock(pb, order);
+    return;
   }
   await pb.collection('orders').update(orderId, { status });
 }

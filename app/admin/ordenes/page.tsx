@@ -44,6 +44,8 @@ import {
   CreditCard,
   MapPin,
   User,
+  UserCheck,
+  Phone,
   Calendar,
   Info,
   ChevronLeft,
@@ -63,6 +65,18 @@ export default function OrdersPage() {
   const { orders, deliveryZones, updateOrderStatus, updatePaymentStatus } = useAdminStore();
   const { defaultCurrency, currencies, formatPrice, convertPrice } = useCurrency();
   const cupCurrency = currencies.find(c => c.code === 'CUP');
+
+  // Los montos de las órdenes se guardan en la moneda base (CUP). Los mostramos
+  // convertidos a la moneda con la que pagó el cliente, con la base como apoyo.
+  const orderMoney = (cupAmount: number, code: string) => {
+    const target = currencies.find((c) => c.code === code);
+    if (cupCurrency && target && target.code !== cupCurrency.code) {
+      return formatPrice(convertPrice(cupAmount, cupCurrency, target), target);
+    }
+    return formatPrice(cupAmount, target || cupCurrency || null);
+  };
+  const showCupBase = (code: string) =>
+    !!cupCurrency && code !== cupCurrency.code;
 
   const getZoneName = (zoneId: string) => {
     const zone = deliveryZones.find((z) => z.id === zoneId);
@@ -240,8 +254,11 @@ export default function OrdersPage() {
     if (!viewingOrder || !cancelReason.trim()) return;
     setCancelling(true);
     try {
-      await updateOrderStatus(viewingOrder.id, "cancelled");
-      setViewingOrder((o) => (o ? { ...o, status: "cancelled" as Order["status"] } : o));
+      const reason = cancelReason.trim();
+      await updateOrderStatus(viewingOrder.id, "cancelled", reason);
+      setViewingOrder((o) =>
+        o ? { ...o, status: "cancelled" as Order["status"], cancelReason: reason } : o
+      );
       setCancelDialogOpen(false);
     } finally {
       setCancelling(false);
@@ -461,10 +478,10 @@ export default function OrdersPage() {
                       {getStatusBadge(order.status)}
                       {getPaymentBadge(order.paymentStatus)}
                     </div>
-                    <p className="font-bold text-lg">{order.total.toFixed(2)} {order.currencyCode}</p>
-                    {cupCurrency && defaultCurrency && (
+                    <p className="font-bold text-lg">{orderMoney(order.total, order.currencyCode)}</p>
+                    {showCupBase(order.currencyCode) && (
                       <p className="text-xs text-muted-foreground">
-                        {formatPrice(convertPrice(order.total, cupCurrency, defaultCurrency), defaultCurrency)}
+                        {formatPrice(order.total, cupCurrency)}
                       </p>
                     )}
                   </div>
@@ -524,10 +541,10 @@ export default function OrdersPage() {
                           </span>
                         </TableCell>
                         <TableCell className="text-right font-medium">
-                          {order.total.toFixed(2)} {order.currencyCode}
-                          {cupCurrency && defaultCurrency && (
+                          {orderMoney(order.total, order.currencyCode)}
+                          {showCupBase(order.currencyCode) && (
                             <p className="text-xs text-muted-foreground">
-                              {formatPrice(convertPrice(order.total, cupCurrency, defaultCurrency), defaultCurrency)}
+                              {formatPrice(order.total, cupCurrency)}
                             </p>
                           )}
                         </TableCell>
@@ -617,7 +634,7 @@ export default function OrdersPage() {
 
         {/* Order Detail Dialog (sin cambios) */}
         <Dialog open={isDetailOpen} onOpenChange={setIsDetailOpen}>
-          <DialogContent className="max-w-2xl">
+          <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 <Package className="h-5 w-5" />
@@ -778,6 +795,52 @@ export default function OrdersPage() {
                   </CardContent>
                 </Card>
 
+                {/* Beneficiary: persona que recoge el pedido */}
+                <Card>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <UserCheck className="h-4 w-4" />
+                      Beneficiario (recoge el pedido)
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="grid gap-3 sm:grid-cols-2">
+                    <div>
+                      <p className="text-sm text-muted-foreground">Nombre</p>
+                      <p className="font-medium">{viewingOrder.userName}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Teléfono</p>
+                      {viewingOrder.contactPhone ? (
+                        <p className="font-medium flex items-center gap-1.5">
+                          <Phone className="h-3.5 w-3.5 text-muted-foreground" />
+                          <a
+                            href={`tel:${viewingOrder.contactPhone}`}
+                            className="hover:underline"
+                          >
+                            {viewingOrder.contactPhone}
+                          </a>
+                        </p>
+                      ) : (
+                        <p className="font-medium text-muted-foreground">
+                          No registrado
+                        </p>
+                      )}
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">
+                        Carnet de identidad
+                      </p>
+                      <p className="font-medium">
+                        {viewingOrder.contactCarnet || (
+                          <span className="text-muted-foreground">
+                            No registrado
+                          </span>
+                        )}
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+
                 {/* Delivery Info */}
                 <Card>
                   <CardHeader className="pb-3">
@@ -822,11 +885,11 @@ export default function OrdersPage() {
                           <div>
                             <p className="font-medium">{item.productName}</p>
                             <p className="text-sm text-muted-foreground">
-                              {item.price.toFixed(2)} {viewingOrder.currencyCode} x {item.quantity}
+                              {orderMoney(item.price, viewingOrder.currencyCode)} x {item.quantity}
                             </p>
                           </div>
                           <p className="font-medium">
-                            {(item.price * item.quantity).toFixed(2)} {viewingOrder.currencyCode}
+                            {orderMoney(item.price * item.quantity, viewingOrder.currencyCode)}
                           </p>
                         </div>
                       ))}
@@ -835,10 +898,10 @@ export default function OrdersPage() {
                       <div className="flex justify-between text-sm">
                         <span className="text-muted-foreground">Subtotal</span>
                         <span className="text-right">
-                          <div>{viewingOrder.subtotal.toFixed(2)} {viewingOrder.currencyCode}</div>
-                          {cupCurrency && defaultCurrency && (
+                          <div>{orderMoney(viewingOrder.subtotal, viewingOrder.currencyCode)}</div>
+                          {showCupBase(viewingOrder.currencyCode) && (
                             <div className="text-xs text-muted-foreground">
-                              {formatPrice(convertPrice(viewingOrder.subtotal, cupCurrency, defaultCurrency), defaultCurrency)}
+                              {formatPrice(viewingOrder.subtotal, cupCurrency)}
                             </div>
                           )}
                         </span>
@@ -846,10 +909,10 @@ export default function OrdersPage() {
                       <div className="flex justify-between text-sm">
                         <span className="text-muted-foreground">Envío</span>
                         <span className="text-right">
-                          <div>{viewingOrder.deliveryFee.toFixed(2)} {viewingOrder.currencyCode}</div>
-                          {cupCurrency && defaultCurrency && (
+                          <div>{orderMoney(viewingOrder.deliveryFee, viewingOrder.currencyCode)}</div>
+                          {showCupBase(viewingOrder.currencyCode) && (
                             <div className="text-xs text-muted-foreground">
-                              {formatPrice(convertPrice(viewingOrder.deliveryFee, cupCurrency, defaultCurrency), defaultCurrency)}
+                              {formatPrice(viewingOrder.deliveryFee, cupCurrency)}
                             </div>
                           )}
                         </span>
@@ -857,10 +920,10 @@ export default function OrdersPage() {
                       <div className="flex justify-between font-bold text-lg pt-2 border-t">
                         <span>Total</span>
                         <span className="text-right">
-                          <div>{viewingOrder.total.toFixed(2)} {viewingOrder.currencyCode}</div>
-                          {cupCurrency && defaultCurrency && (
+                          <div>{orderMoney(viewingOrder.total, viewingOrder.currencyCode)}</div>
+                          {showCupBase(viewingOrder.currencyCode) && (
                             <div className="text-xs font-normal text-muted-foreground">
-                              {formatPrice(convertPrice(viewingOrder.total, cupCurrency, defaultCurrency), defaultCurrency)}
+                              {formatPrice(viewingOrder.total, cupCurrency)}
                             </div>
                           )}
                         </span>

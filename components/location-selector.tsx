@@ -25,7 +25,12 @@ export function LocationSelector({
   onComplete,
   initial,
 }: {
-  onComplete: (loc: { province: string; municipality: string }) => void;
+  onComplete: (loc: {
+    province: string;
+    municipality: string;
+    provinceName?: string;
+    municipalityName?: string;
+  }) => void;
   initial?: { province: string; municipality: string };
 }) {
   const provinceId = useId();
@@ -47,9 +52,12 @@ export function LocationSelector({
     getPublicLocations()
       .then((data) => {
         if (cancelled) return;
-        setProvinces(data.provinces);
-        setMunicipalities(data.municipalities);
-        if (data.provinces.length === 0) setError("empty");
+        const activeMunicipalities = data.municipalities.filter((m) => m.active !== false);
+        const activeProvinceIds = new Set(activeMunicipalities.map((m) => m.province));
+        const activeProvinces = data.provinces.filter((p) => activeProvinceIds.has(p.id));
+        setProvinces(activeProvinces);
+        setMunicipalities(activeMunicipalities);
+        if (activeProvinces.length === 0) setError("empty");
       })
       .catch((e) => {
         if (cancelled) return;
@@ -205,7 +213,14 @@ export function LocationSelector({
           className="w-full"
           disabled={!ready}
           aria-describedby={hintId}
-          onClick={() => onComplete({ province, municipality })}
+          onClick={() =>
+            onComplete({
+              province,
+              municipality,
+              provinceName: provinces.find((p) => p.id === province)?.name,
+              municipalityName: municipalities.find((m) => m.id === municipality)?.name,
+            })
+          }
         >
           {isEdit ? "Guardar ubicación" : "Ver productos disponibles"}
           <ChevronRight className="ml-2 h-4 w-4" />

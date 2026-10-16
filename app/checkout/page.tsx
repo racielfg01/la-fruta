@@ -6,6 +6,7 @@ import { Header } from "@/components/header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -24,7 +25,7 @@ import {
   ArrowRight,
   CreditCard,
   User,
-  Mail,
+  IdCard,
   Phone,
   MapPin,
   Truck,
@@ -188,7 +189,7 @@ function SavedChip({
 
 export default function CheckoutPage() {
   const router = useRouter();
-  const { items, getTotalPrice, clearCart, setDeliveryLocation } =
+  const { items, getTotalPrice, clearCart, setDeliveryLocation, userLocation } =
     useCartStore();
   const {
     user,
@@ -239,6 +240,7 @@ export default function CheckoutPage() {
   const zoneRef = useRef<HTMLButtonElement>(null);
   const addressRef = useRef<HTMLInputElement>(null);
   const nameRef = useRef<HTMLInputElement>(null);
+  const carnetRef = useRef<HTMLInputElement>(null);
   const phoneRef = useRef<HTMLInputElement>(null);
   const receiptRef = useRef<HTMLDivElement>(null);
 
@@ -268,6 +270,11 @@ export default function CheckoutPage() {
       if (!value.trim()) message = "El teléfono del receptor es obligatorio";
       else if (!isValidPhone(value))
         message = "Ingresa un teléfono válido, por ejemplo +53 5123 4567";
+    }
+    if (field === "carnet") {
+      if (!value.trim()) message = "El carnet de identidad es obligatorio";
+      else if (!/^\d{11}$/.test(value))
+        message = "El carnet de identidad debe tener 11 dígitos";
     }
     setFieldErrors((prev) => {
       const next = { ...prev };
@@ -308,7 +315,11 @@ export default function CheckoutPage() {
     try {
       const fd = new FormData();
       fd.append("file", file);
-      const res = await fetch("/api/upload", { method: "POST", body: fd });
+      const res = await fetch("/api/upload", {
+        method: "POST",
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+        body: fd,
+      });
       const json = await res.json();
       if (res.ok && json.success) {
         setReceiptUrl(json.url);
@@ -341,11 +352,13 @@ export default function CheckoutPage() {
   const [saveAddress, setSaveAddress] = useState(false);
   const [alias, setAlias] = useState("");
   const [zone, setZone] = useState("");
+  const [deliveryNotes, setDeliveryNotes] = useState("");
 
   // Contacto
   const [formData, setFormData] = useState({
     name: "",
     email: "",
+    carnet: "",
     phone: "",
   });
   const [saveContact, setSaveContact] = useState(false);
@@ -459,6 +472,13 @@ export default function CheckoutPage() {
   const handleUseAddress = (d: UserAddress) => {
     setAddress(d.address);
     setZone(d.zone || "");
+    // Si la zona guardada coincide con una zona activa, seleccionarla para no
+    // forzar al usuario a elegirla de nuevo (y calcular el envío).
+    const match = activeZones.find((z) => z.name === d.zone);
+    if (match) {
+      setSelectedZoneId(match.id);
+      clearFieldError("zone");
+    }
     clearFieldError("address");
     toast.success(`Dirección "${d.alias}" aplicada`);
   };
@@ -567,6 +587,10 @@ export default function CheckoutPage() {
       errors.phone = "El teléfono del receptor es obligatorio";
     else if (!isValidPhone(formData.phone))
       errors.phone = "Ingresa un teléfono válido, por ejemplo +53 5123 4567";
+    if (!formData.carnet.trim())
+      errors.carnet = "El carnet de identidad es obligatorio";
+    else if (!/^\d{11}$/.test(formData.carnet))
+      errors.carnet = "El carnet de identidad debe tener 11 dígitos";
     if (!selectedCurrency) errors.currency = "Selecciona una moneda de pago";
     if (selectedPaymentMethod === "transfer" && !transferAccountId)
       errors.bank = "Selecciona la cuenta a la que harás la transferencia";
@@ -580,6 +604,7 @@ export default function CheckoutPage() {
         address: true,
         name: true,
         phone: true,
+        carnet: true,
         receipt: true,
       });
       const refMap: Record<string, React.RefObject<HTMLElement | null>> = {
@@ -587,6 +612,7 @@ export default function CheckoutPage() {
         address: addressRef,
         name: nameRef,
         phone: phoneRef,
+        carnet: carnetRef,
         receipt: receiptRef,
       };
       const firstError = Object.keys(errors).find((k) => refMap[k]);
@@ -617,15 +643,19 @@ export default function CheckoutPage() {
         userId: user!.id,
         userName: formData.name,
         userEmail: formData.email,
+        contactPhone: formData.phone,
+        contactCarnet: formData.carnet,
         items: orderItems,
         subtotal: subtotalBase,
         deliveryFee: deliveryFeeBase,
         total: totalBase,
         paymentMethod: selectedPaymentMethod,
         deliveryAddress,
-        deliveryNotes: "",
+        deliveryNotes: deliveryNotes.trim(),
         currencyCode: selectedCurrency.code,
         zoneId: selectedZone.id,
+        municipalityId: userLocation?.municipality,
+        provinceId: userLocation?.province,
         ...(selectedPaymentMethod === "transfer"
           ? {
               bankAccountId: transferAccountId,
@@ -857,6 +887,17 @@ export default function CheckoutPage() {
                   )}
                 </div>
 
+                <div className="space-y-2">
+                  <Label htmlFor="deliveryNotes">Notas para la entrega</Label>
+                  <Textarea
+                    id="deliveryNotes"
+                    placeholder="Instrucciones, referencias, horario preferido…"
+                    className="min-h-[72px]"
+                    value={deliveryNotes}
+                    onChange={(e) => setDeliveryNotes(e.target.value)}
+                  />
+                </div>
+
                 {/* Guardar dirección (con su propio campo dirección, sincronizado) */}
                 <div className="rounded-lg border border-dashed bg-muted/30 p-3">
                   <label className="flex cursor-pointer items-center gap-2 text-sm">
@@ -1051,19 +1092,41 @@ export default function CheckoutPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="contactEmail">Correo electrónico</Label>
+                  <Label htmlFor="contactCarnet">
+                    Carnet de identidad{" "}
+                    <span className="text-destructive">*</span>
+                  </Label>
                   <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                    <IdCard className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                     <Input
-                      id="contactEmail"
-                      type="email"
-                      className="h-11 pl-10"
-                      value={formData.email}
-                      onChange={(e) =>
-                        setFormData({ ...formData, email: e.target.value })
-                      }
+                      id="contactCarnet"
+                      ref={carnetRef}
+                      inputMode="numeric"
+                      placeholder="11 dígitos"
+                      className={`h-11 pl-10 ${
+                        touchedFields.carnet && fieldErrors.carnet
+                          ? "border-destructive focus-visible:ring-destructive"
+                          : ""
+                      }`}
+                      value={formData.carnet}
+                      onChange={(e) => {
+                        const digits = e.target.value
+                          .replace(/\D/g, "")
+                          .slice(0, 11);
+                        setFormData({ ...formData, carnet: digits });
+                        if (fieldErrors.carnet) clearFieldError("carnet");
+                      }}
+                      onBlur={() => {
+                        markTouched("carnet");
+                        validateField("carnet", formData.carnet);
+                      }}
                     />
                   </div>
+                  {touchedFields.carnet && fieldErrors.carnet && (
+                    <p className="flex items-center gap-1 text-xs text-destructive">
+                      <AlertCircle className="h-3 w-3" /> {fieldErrors.carnet}
+                    </p>
+                  )}
                 </div>
 
                 <label className="flex cursor-pointer items-center gap-2 text-sm">

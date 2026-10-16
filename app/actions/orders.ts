@@ -2,6 +2,7 @@
 
 import { decodePocketBaseToken } from "@/lib/auth";
 import { getAdminPB, getAllRecords, sanitize } from "@/lib/pocketbase";
+import { parseLocations, matchLocationIndex, StoredLocation } from "@/lib/order-stock";
 import { randomUUID } from "crypto";
 
 export interface OrderActionResult {
@@ -30,6 +31,8 @@ export interface CreateOrderInput {
   userId: string;
   userName: string;
   userEmail: string;
+  contactPhone?: string;
+  contactCarnet?: string;
   items: {
     productId: string;
     productName: string;
@@ -44,12 +47,28 @@ export interface CreateOrderInput {
   deliveryNotes?: string;
   currencyCode: string;
   zoneId: string;
+  municipalityId?: string;
+  provinceId?: string;
   bankAccountId?: string;
   bankName?: string;
   accountNumber?: string;
   receipt?: string;
   reference?: string;
   transferAmount?: number;
+}
+
+// Stock efectivo para la zona del cliente. Sin zonas configuradas cae al stock
+// global; con zonas configuradas pero fuera de cobertura devuelve 0.
+function effectiveStock(
+  locs: StoredLocation[],
+  municipalityId: string | undefined,
+  provinceId: string | undefined,
+  globalStock: number
+): number {
+  if (locs.length === 0) return globalStock;
+  const idx = matchLocationIndex(locs, municipalityId, provinceId);
+  if (idx < 0) return municipalityId ? 0 : globalStock;
+  return Math.max(0, Number(locs[idx].stock) || 0);
 }
 
 export async function createOrderAction(
@@ -60,10 +79,24 @@ export async function createOrderAction(
   if (!payload) {
     return { success: false, error: "No autorizado" };
   }
+  if (payload.userId !== orderData.userId) {
+    return { success: false, error: "No autorizado" };
+  }
 
   try {
     return await withOrderLock(async () => {
       const pb = await getAdminPB();
+
+      // La zona de envío manda el precio; los totales se recalculan aquí, nunca
+      // se confía en subtotal/deliveryFee/total del cliente.
+      const zone = await pb
+        .collection('delivery_zones')
+        .getOne(orderData.zoneId)
+        .catch(() => null);
+      if (!zone) {
+        return { success: false, error: 'Zona de envío inválida.' };
+      }
+      const deliveryFee = Math.max(0, Number(zone.price) || 0);
 
       // Validación de stock server-side con datos frescos + precio real del producto
       // (evita vender a precio/stock desactualizados del carrito del cliente).
@@ -89,32 +122,65 @@ export async function createOrderAction(
             error: `El producto "${item.productName}" ya no está disponible.`,
           };
         }
-        const stock = Math.max(0, Number(product.stock) || 0);
+        const productName = product.name || item.productName;
+
+        // Disponibilidad por zona: si el producto lista municipios, el pedido
+        // debe entregarse en uno de ellos (el filtrado del cliente no basta).
+        const availableMuns = String(product.available_municipalities || '')
+          .split(',')
+          .map((s: string) => s.trim())
+          .filter(Boolean);
+        if (
+          availableMuns.length > 0 &&
+          orderData.municipalityId &&
+          !availableMuns.includes(orderData.municipalityId)
+        ) {
+          return {
+            success: false,
+            error: `"${productName}" no está disponible en tu zona de entrega.`,
+          };
+        }
+
+        const locs = parseLocations(product.product_locations);
+        const stock = effectiveStock(
+          locs,
+          orderData.municipalityId,
+          orderData.provinceId,
+          Math.max(0, Number(product.stock) || 0)
+        );
         if (stock < item.quantity) {
           return {
             success: false,
             error:
-              `Stock insuficiente para "${item.productName}". ` +
+              `Stock insuficiente para "${productName}". ` +
               `Solo quedan ${stock} disponible(s).`,
           };
         }
         validatedItems.push({
           productId: item.productId,
-          productName: product.name || item.productName,
+          productName,
           quantity: Math.floor(item.quantity),
           price: Number(product.price) || 0,
         });
       }
 
+      const subtotal = validatedItems.reduce(
+        (sum, item) => sum + item.price * item.quantity,
+        0
+      );
+      const total = subtotal + deliveryFee;
+
       const order = await pb.collection('orders').create({
-        // id único con sufijo aleatorio: evita colisión entre pedidos del mismo ms
-        id: randomUUID(),
+        // id único: [a-z0-9] sin guiones (PB orders.id exige ^[a-z0-9]+$)
+        id: randomUUID().replace(/-/g, ''),
         user_id: orderData.userId,
         user_name: orderData.userName,
         user_email: orderData.userEmail,
-        subtotal: orderData.subtotal,
-        delivery_fee: orderData.deliveryFee,
-        total: orderData.total,
+        contact_phone: orderData.contactPhone || '',
+        contact_carnet: orderData.contactCarnet || '',
+        subtotal,
+        delivery_fee: deliveryFee,
+        total,
         status: 'pending',
         payment_method: orderData.paymentMethod,
         payment_status: 'pending',
@@ -122,6 +188,8 @@ export async function createOrderAction(
         delivery_notes: orderData.deliveryNotes || '',
         currency_code: orderData.currencyCode,
         zone_id: orderData.zoneId,
+        delivery_municipality: orderData.municipalityId || '',
+        delivery_province: orderData.provinceId || '',
         bank_account_id: orderData.bankAccountId || '',
         bank_name: orderData.bankName || '',
         account_number: orderData.accountNumber || '',
@@ -142,20 +210,29 @@ export async function createOrderAction(
         });
       }
 
-      // Decremento de stock: dentro del lock, sin doble venta entre pedidos concurrentes
+      // Decremento de stock: dentro del lock, sin doble venta entre pedidos concurrentes.
+      // Baja el stock global y, si hay zonas configuradas, la del municipio/provincia.
       for (const item of validatedItems) {
         const product = await pb.collection('products').getOne(item.productId);
         const newStock = Math.max(0, (Number(product.stock) || 0) - item.quantity);
-        await pb.collection('products').update(item.productId, {
-          stock: newStock,
-          in_stock: newStock > 0,
-        });
+        const update: any = { stock: newStock, in_stock: newStock > 0 };
+
+        const locs = parseLocations(product.product_locations);
+        const idx = matchLocationIndex(locs, orderData.municipalityId, orderData.provinceId);
+        if (idx >= 0) {
+          locs[idx] = {
+            ...locs[idx],
+            stock: Math.max(0, (Number(locs[idx].stock) || 0) - item.quantity),
+          };
+          update.product_locations = JSON.stringify(locs);
+        }
+        await pb.collection('products').update(item.productId, update);
       }
 
       const user = await pb.collection('users').getOne(orderData.userId);
       await pb.collection('users').update(orderData.userId, {
         total_orders: ((user as any).total_orders || 0) + 1,
-        total_spent: Number((user as any).total_spent || 0) + orderData.total,
+        total_spent: Number((user as any).total_spent || 0) + total,
       });
 
       // Contabilidad de cuentas bancarias en transferencias (best-effort)
@@ -254,61 +331,4 @@ export async function updateUserProfile(
   });
 
   return { success: true, user: updatedUser };
-}
-
-export async function cancelOrderAction(
-  orderId: string,
-  reason: string,
-  token: string
-): Promise<OrderActionResult> {
-  const payload = decodePocketBaseToken(token);
-  if (!payload) {
-    return { success: false, error: "No autorizado" };
-  }
-  if (!reason || !reason.trim()) {
-    return { success: false, error: "El motivo de cancelación es obligatorio" };
-  }
-
-  try {
-    return await withOrderLock(async () => {
-      const pb = await getAdminPB();
-      const order = await pb.collection('orders').getOne(orderId);
-      if (order.user_id !== payload.userId) {
-        return { success: false, error: "No autorizado para cancelar esta orden" };
-      }
-      if (order.status === 'delivered' || order.status === 'cancelled') {
-        return { success: false, error: "Esta orden ya no puede cancelarse" };
-      }
-      if (order.payment_status === 'paid' || order.payment_status === 'confirmed') {
-        return { success: false, error: "No se puede cancelar una orden con pago confirmado" };
-      }
-
-      await pb.collection('orders').update(orderId, {
-        status: 'cancelled',
-        cancel_reason: reason.trim(),
-      });
-
-      // Restaurar inventario al cancelar (dentro del lock)
-      const items = await getAllRecords(pb, 'order_items', {
-        filter: `order_id = "${sanitize(orderId)}"`,
-      });
-      for (const item of items) {
-        try {
-          const product = await pb.collection('products').getOne(item.product_id);
-          const newStock = (Number(product.stock) || 0) + item.quantity;
-          await pb.collection('products').update(item.product_id, {
-            stock: newStock,
-            in_stock: true,
-          });
-        } catch {
-          // producto eliminado, ignorar
-        }
-      }
-
-      return { success: true };
-    });
-  } catch (error: any) {
-    console.error('Error cancelling order:', error);
-    return { success: false, error: error?.message || 'Error al cancelar la orden' };
-  }
 }

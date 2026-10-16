@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import sharp from "sharp";
 import { promises as fs } from "fs";
 import path from "path";
 import { createHash } from "crypto";
@@ -22,6 +21,30 @@ function isRemote(src: string) {
 
 function redirectTo(src: string) {
   return NextResponse.redirect(src, 302);
+}
+
+const CONTENT_TYPES: Record<string, string> = {
+  ".jpg": "image/jpeg",
+  ".jpeg": "image/jpeg",
+  ".png": "image/png",
+  ".webp": "image/webp",
+  ".gif": "image/gif",
+  ".avif": "image/avif",
+  ".svg": "image/svg+xml",
+};
+
+function contentTypeFor(src: string) {
+  const ext = path.extname(src.split("?")[0]).toLowerCase();
+  return CONTENT_TYPES[ext] || "application/octet-stream";
+}
+
+function originalResponse(src: string, buf: Buffer) {
+  return new NextResponse(new Uint8Array(buf), {
+    headers: {
+      "Content-Type": contentTypeFor(src),
+      "Cache-Control": "public, max-age=31536000, immutable",
+    },
+  });
 }
 
 async function readSource(src: string): Promise<Buffer> {
@@ -51,6 +74,18 @@ function webpResponse(buf: Buffer) {
   });
 }
 
+// sharp es nativo: no está garantizado en todos los runtimes serverless
+// (p. ej. Vercel). Se carga perezosamente para que su ausencia no tumbe la
+// ruta; sin él servimos la imagen original (o redirigimos a su CDN).
+async function loadSharp() {
+  try {
+    const mod = await import("sharp");
+    return mod.default ?? mod;
+  } catch {
+    return null;
+  }
+}
+
 export async function GET(req: NextRequest) {
   const sp = new URL(req.url).searchParams;
   const src = sp.get("src");
@@ -60,6 +95,18 @@ export async function GET(req: NextRequest) {
   if (!src) return new NextResponse("missing src", { status: 400 });
 
   const remote = isRemote(src);
+  const sharp = await loadSharp();
+
+  // Sin optimizador: no gastamos egress de servidor; el navegador va directo al
+  // origen para las remotas, y para las locales servimos el archivo tal cual.
+  if (!sharp) {
+    if (remote) return redirectTo(src);
+    try {
+      return originalResponse(src, await readSource(src));
+    } catch {
+      return new NextResponse("not found", { status: 404 });
+    }
+  }
 
   let input: Buffer;
   try {
@@ -91,6 +138,6 @@ export async function GET(req: NextRequest) {
     return webpResponse(out);
   } catch {
     if (remote) return redirectTo(src);
-    return new NextResponse("cannot process image", { status: 415 });
+    return originalResponse(src, input);
   }
 }

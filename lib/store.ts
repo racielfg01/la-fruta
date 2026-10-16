@@ -31,6 +31,8 @@ export interface Product {
 export interface UserLocation {
   province: string;
   municipality: string;
+  provinceName?: string;
+  municipalityName?: string;
 }
 
 export interface CartItem {
@@ -46,19 +48,22 @@ export interface DeliveryLocation {
 }
 
 // Stock disponible del producto en la ubicación actual del cliente.
-// Sin stock por ubicación configurado, cae al stock global del producto.
+// Sin stock por ubicación configurado, cae al stock global del producto. Con
+// ubicaciones configuradas pero sin cubrir la del cliente, no hay stock (0).
 export function availableStock(
   loc: UserLocation | null,
   product: Product
 ): number {
   const locs = product.productLocations;
-  if (locs?.length && loc) {
-    const mun = locs.find((l) => l.municipality === loc.municipality);
-    if (mun) return mun.stock;
-    const prov = locs.find((l) => !l.municipality && l.province === loc.province);
-    if (prov) return prov.stock;
-  }
-  return product.stock ?? 0;
+  if (!locs?.length) return product.stock ?? 0;
+  // Sin ubicación conocida no podemos confirmar la zona: usamos el stock global.
+  if (!loc) return product.stock ?? 0;
+  const mun = locs.find((l) => l.municipality && l.municipality === loc.municipality);
+  if (mun) return mun.stock;
+  const prov = locs.find((l) => !l.municipality && l.province === loc.province);
+  if (prov) return prov.stock;
+  // El producto se entrega en otras zonas: agotado aquí.
+  return 0;
 }
 
 interface CartStore {
@@ -114,11 +119,14 @@ export const useCartStore = create<CartStore>()(
         }
         const { userLocation } = get();
         set({
-          items: get().items.map((item) => {
-            if (item.product.id !== productId) return item;
-            const available = availableStock(userLocation, item.product);
-            return { ...item, quantity: Math.min(quantity, Math.max(available, 1)) };
-          }),
+          items: get()
+            .items.map((item) => {
+              if (item.product.id !== productId) return item;
+              const available = availableStock(userLocation, item.product);
+              if (available <= 0) return null;
+              return { ...item, quantity: Math.min(quantity, available) };
+            })
+            .filter((item): item is CartItem => item !== null),
         });
       },
       clearCart: () => set({ items: [], deliveryLocation: null }),

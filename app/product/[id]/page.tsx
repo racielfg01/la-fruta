@@ -7,10 +7,9 @@ import { Header } from "@/components/header";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { getProductById, products } from "@/lib/products";
+import { getPublicProductById, getPublicProducts } from "@/app/actions/public-products";
 import { useCartStore, availableStock } from "@/lib/store";
 import { ProductCard } from "@/components/product-card";
-import { getPublicProductById } from "@/app/actions/public-products";
 import { Product } from "@/lib/store";
 import { useCurrency } from "@/lib/currency";
 import { optimizedImageUrl } from "@/lib/image";
@@ -28,8 +27,9 @@ import {
 
 export default function ProductPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
-  const [product, setProduct] = useState<Product | undefined>(getProductById(id));
-  const [loading, setLoading] = useState(!product);
+  const [product, setProduct] = useState<Product | undefined>(undefined);
+  const [loading, setLoading] = useState(true);
+  const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
   const addItem = useCartStore((state) => state.addItem);
   const [quantity, setQuantity] = useState(1);
   const [added, setAdded] = useState(false);
@@ -38,13 +38,34 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
   const userLocation = useCartStore((state) => state.userLocation);
 
   useEffect(() => {
-    if (!product) {
-      getPublicProductById(id).then((p) => {
-        if (p) setProduct(p);
-        setLoading(false);
-      });
-    }
-  }, [id, product]);
+    let cancelled = false;
+    setLoading(true);
+    getPublicProductById(id).then((p) => {
+      if (cancelled) return;
+      setProduct(p || undefined);
+      setLoading(false);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [id]);
+
+  // Relacionados: productos reales de la misma categoría (no la semilla estática).
+  useEffect(() => {
+    if (!product) return;
+    let cancelled = false;
+    getPublicProducts().then(({ products: all }) => {
+      if (cancelled) return;
+      setRelatedProducts(
+        all
+          .filter((p) => p.category === product.category && p.id !== product.id)
+          .slice(0, 4)
+      );
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [product]);
 
   if (loading) {
     return (
@@ -89,10 +110,6 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
     setAdded(true);
     setTimeout(() => setAdded(false), 2000);
   };
-
-  const relatedProducts = products
-    .filter((p) => p.category === product.category && p.id !== product.id)
-    .slice(0, 4);
 
   return (
     <div className="min-h-screen bg-background">

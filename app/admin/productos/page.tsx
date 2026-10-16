@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useState, useEffect, useCallback } from "react";
+import { Suspense, useState, useEffect, useCallback, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import { useAdminStore } from "@/lib/admin-store";
 import { Product, Unit, ProductLocation } from "@/lib/store";
@@ -73,6 +73,7 @@ import { usePagination } from "@/lib/use-pagination";
 import { PaginationBar } from "@/components/pagination-bar";
 import { useCurrency } from "@/lib/currency";
 import { getPublicLocations } from "@/app/actions/public";
+import { toast } from "sonner";
 
 const emptyProduct: Omit<Product, "id"> = {
   name: "",
@@ -111,6 +112,7 @@ function ProductsAdmin() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [formData, setFormData] = useState(emptyProduct);
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [productToDelete, setProductToDelete] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [imageUploaded, setImageUploaded] = useState(false);
@@ -135,14 +137,19 @@ function ProductsAdmin() {
     });
   }, []);
 
-  const handleNewProduct = useCallback(() => {
+  const resetDialog = useCallback(() => {
     setEditingProduct(null);
     setFormData(emptyProduct);
+    setFormErrors({});
     setImageUploaded(false);
     setProductLocations([]);
     setStep(1);
-    setDialogOpen(true);
   }, []);
+
+  const handleNewProduct = useCallback(() => {
+    resetDialog();
+    setDialogOpen(true);
+  }, [resetDialog]);
 
   useEffect(() => {
     if (searchParams.get("action") === "new") {
@@ -174,6 +181,20 @@ function ProductsAdmin() {
     changePerPage,
   } = usePagination(filteredProducts, 10);
 
+  // Reset de paginación al cambiar filtros (evita quedar en una página vacía)
+  const isFirstFilter = useRef(true);
+  useEffect(() => {
+    if (isFirstFilter.current) {
+      isFirstFilter.current = false;
+      return;
+    }
+    goToPage(1);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [search, categoryFilter]);
+
+  // -------------------------------
+  // Imagen
+  // -------------------------------
   const handleImageUpload = (url: string) => {
     setFormData((prev) => ({ ...prev, image: url }));
     setImageUploaded(true);
@@ -189,6 +210,9 @@ function ProductsAdmin() {
     setImageUploaded(false);
   };
 
+  // -------------------------------
+  // Abrir/editar
+  // -------------------------------
   const handleEditProduct = (product: Product) => {
     setEditingProduct(product);
     setFormData({
@@ -203,12 +227,73 @@ function ProductsAdmin() {
       inStock: product.stock > 0,
       visible: product.visible,
     });
+    setFormErrors({});
     setImageUploaded(false);
     setProductLocations(product.productLocations || []);
     setStep(1);
     setDialogOpen(true);
   };
 
+  const handleDialogOpenChange = (open: boolean) => {
+    setDialogOpen(open);
+    if (!open) resetDialog();
+  };
+
+  // -------------------------------
+  // Validación
+  // -------------------------------
+  const validateStep1 = () => {
+    const errors: Record<string, string> = {};
+    if (!formData.name.trim()) errors.name = "El nombre es obligatorio";
+    if (!formData.category) errors.category = "Selecciona una categoría";
+    if (!formData.description.trim())
+      errors.description = "La descripción es obligatoria";
+    if (!formData.price || formData.price <= 0)
+      errors.price = "El precio debe ser mayor a 0";
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const validateStep3 = () => {
+    const errors: Record<string, string> = {};
+    if (formData.stock < 0) errors.stock = "El stock no puede ser negativo";
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const validateAll = () => {
+    const errors: Record<string, string> = {};
+    if (!formData.name.trim()) errors.name = "El nombre es obligatorio";
+    if (!formData.category) errors.category = "Selecciona una categoría";
+    if (!formData.description.trim())
+      errors.description = "La descripción es obligatoria";
+    if (!formData.price || formData.price <= 0)
+      errors.price = "El precio debe ser mayor a 0";
+    setFormErrors(errors);
+    if (Object.keys(errors).length > 0) {
+      setStep(1);
+      return false;
+    }
+    return true;
+  };
+
+  const goNext = () => {
+    if (step === 1 && !validateStep1()) return;
+    if (step === 2 && !validateStep3) {
+      // no-op: paso 2 sin validación estricta
+    }
+    setFormErrors({});
+    setStep((s) => Math.min(3, s + 1));
+  };
+
+  const goBack = () => {
+    setFormErrors({});
+    setStep((s) => Math.max(1, s - 1));
+  };
+
+  // -------------------------------
+  // Borrado
+  // -------------------------------
   const handleDeleteClick = (id: string) => {
     setProductToDelete(id);
     setDeleteDialogOpen(true);
@@ -216,14 +301,24 @@ function ProductsAdmin() {
 
   const handleConfirmDelete = () => {
     if (productToDelete) {
+      const name =
+        products.find((p) => p.id === productToDelete)?.name ?? "Producto";
       deleteProduct(productToDelete);
       setProductToDelete(null);
+      toast.success(`"${name}" eliminado`);
     }
     setDeleteDialogOpen(false);
   };
 
+  // -------------------------------
+  // Guardar
+  // -------------------------------
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!validateAll()) {
+      toast.error("Revisa los campos obligatorios");
+      return;
+    }
     setIsLoading(true);
 
     const data = { ...formData, inStock: formData.stock > 0 };
@@ -244,21 +339,17 @@ function ProductsAdmin() {
     try {
       if (editingProduct) {
         await updateProduct(editingProduct.id, data);
+        toast.success("Producto actualizado");
       } else {
-        const newProduct: Product = {
-          ...data,
-          id: Date.now().toString(),
-        };
+        const newProduct: Product = { ...data, id: Date.now().toString() };
         await addProduct(newProduct);
+        toast.success("Producto creado");
       }
       setDialogOpen(false);
-      setFormData(emptyProduct);
-      setEditingProduct(null);
-      setImageUploaded(false);
-      setStep(1);
+      resetDialog();
     } catch (err) {
       console.error("Error al guardar producto:", err);
-      alert("Error al guardar el producto. Intenta de nuevo.");
+      toast.error("Error al guardar el producto. Intenta de nuevo.");
     } finally {
       setIsLoading(false);
     }
@@ -271,16 +362,23 @@ function ProductsAdmin() {
 
   const formatStock = (product: Product) => {
     if (product.stock <= 0) return "Agotado";
-    // "50 por lb" en lugar de "50(por lb)"
-    const unitLabel = product.unit.replace(/^por\s+/, "por ");
-    return `${product.stock} ${unitLabel}`;
+    return `${product.stock} ${product.unit}`;
   };
+
+  const dialogTitle =
+    step === 1
+      ? editingProduct
+        ? "Editar producto · Información"
+        : "Nuevo producto · Información"
+      : step === 2
+        ? "Imagen y visibilidad"
+        : "Stock y ubicaciones";
 
   return (
     <TooltipProvider delayDuration={300}>
       <div className="space-y-6">
         {/* Header */}
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        {/* <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h2 className="text-2xl font-serif font-bold">Productos</h2>
             <p className="text-muted-foreground">
@@ -291,10 +389,10 @@ function ProductsAdmin() {
             <Plus className="h-4 w-4" />
             Agregar producto
           </Button>
-        </div>
+        </div> */}
 
         {/* Toolbar: búsqueda + filtro */}
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+        {/* <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
@@ -339,14 +437,114 @@ function ProductsAdmin() {
               Limpiar
             </Button>
           )}
-        </div>
+        </div> */}
+
+        {/* Header */}
+<div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+  <div className="min-w-0">
+    <h2 className="font-serif text-2xl font-bold tracking-tight">
+      Productos
+    </h2>
+    <p className="mt-1 text-sm text-muted-foreground">
+      {hasActiveFilters ? (
+        <>
+          <span className="font-medium text-foreground">
+            {filteredProducts.length}
+          </span>{" "}
+          de {products.length} coinciden
+        </>
+      ) : products.length > 0 ? (
+        <>
+          <span className="font-medium text-foreground">
+            {products.length}
+          </span>{" "}
+          {products.length === 1 ? "producto" : "productos"} en tu catálogo
+        </>
+      ) : (
+        "Gestiona el catálogo de productos"
+      )}
+    </p>
+  </div>
+
+  <Button
+    onClick={handleNewProduct}
+    className="w-full shrink-0 gap-2 sm:w-auto"
+  >
+    <Plus className="h-4 w-4" />
+    Agregar producto
+  </Button>
+</div>
+
+{/* Toolbar: búsqueda + filtro */}
+<div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+  {/* Buscador */}
+  <div className="relative flex-1">
+    <Search
+      aria-hidden
+      className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+    />
+    <Input
+      type="search"
+      inputMode="search"
+      enterKeyHint="search"
+      aria-label="Buscar productos"
+      placeholder="Buscar por nombre o descripción…"
+      value={search}
+      onChange={(e) => setSearch(e.target.value)}
+      className="h-10 pl-9 pr-9"
+    />
+    {search && (
+      <button
+        type="button"
+        onClick={() => setSearch("")}
+        aria-label="Limpiar búsqueda"
+        className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+      >
+        <X className="h-3.5 w-3.5" />
+      </button>
+    )}
+  </div>
+
+  {/* Filtro de categoría */}
+  <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+    <SelectTrigger
+      className="h-10 w-full sm:w-56"
+      aria-label="Filtrar por categoría"
+    >
+      <SelectValue placeholder="Categoría" />
+    </SelectTrigger>
+    <SelectContent>
+      <SelectItem value="all">Todas las categorías</SelectItem>
+      {uniqueCategories
+        .filter((cat) => cat)
+        .map((cat) => (
+          <SelectItem key={cat} value={cat}>
+            {cat}
+          </SelectItem>
+        ))}
+    </SelectContent>
+  </Select>
+
+  {/* Limpiar: siempre presente (evita layout shift), oculto si no hay resultados */}
+  {filteredProducts.length > 0 && (
+    <Button
+      variant="ghost"
+      size="sm"
+      onClick={clearFilters}
+      disabled={!hasActiveFilters}
+      className="h-10 shrink-0 text-muted-foreground hover:text-foreground disabled:opacity-40"
+    >
+      Limpiar
+    </Button>
+  )}
+</div>
 
         {/* Mobile: cards */}
         <div className="block space-y-3 md:hidden">
           {paginatedProducts.map((product) => (
             <Card
               key={product.id}
-              className={product.stock <= 0 ? "opacity-60" : ""}
+              className={product.stock <= 0 ? "bg-muted/30" : ""}
             >
               <CardContent className="p-4">
                 <div className="flex items-start justify-between gap-3">
@@ -436,6 +634,11 @@ function ProductsAdmin() {
               <Package className="h-4 w-4" />
               {filteredProducts.length} producto
               {filteredProducts.length !== 1 ? "s" : ""}
+              {hasActiveFilters && products.length !== filteredProducts.length && (
+                <span className="text-sm font-normal text-muted-foreground">
+                  · de {products.length}
+                </span>
+              )}
             </CardTitle>
           </CardHeader>
           <CardContent className="p-0">
@@ -458,7 +661,7 @@ function ProductsAdmin() {
                     {paginatedProducts.map((product) => (
                       <TableRow
                         key={product.id}
-                        className={product.stock <= 0 ? "opacity-60" : ""}
+                        className={product.stock <= 0 ? "bg-muted/20" : ""}
                       >
                         <TableCell className="pl-6">
                           <Link
@@ -562,211 +765,327 @@ function ProductsAdmin() {
           </CardContent>
         </Card>
 
-        {/* Diálogo de producto */}
-        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-          <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
-            <DialogHeader>
-              <DialogTitle>
-                {editingProduct ? "Editar producto" : "Nuevo producto"}
-              </DialogTitle>
+        {/* Diálogo de producto — header/footer sticky, body scrollable */}
+        <Dialog open={dialogOpen} onOpenChange={handleDialogOpenChange}>
+          <DialogContent className="flex max-h-[90vh] flex-col gap-0 overflow-hidden p-0 sm:max-w-lg">
+            <DialogHeader className="border-b px-6 py-4">
+              <DialogTitle className="text-base">{dialogTitle}</DialogTitle>
             </DialogHeader>
 
-            {/* Step indicator */}
-            <div className="flex items-center gap-2">
-              <StepIndicator
-                active={step === 1}
-                done={step > 1}
-                number={1}
-                label="Información"
-              />
-              <div className="h-px flex-1 bg-border" />
-              <StepIndicator
-                active={step === 2}
-                done={false}
-                number={2}
-                label="Imagen y disponibilidad"
-              />
-            </div>
+            <div className="flex-1 overflow-y-auto px-6 py-5">
+              {/* Step indicator */}
+              <div className="mb-5 flex items-center gap-2">
+                <StepIndicator
+                  active={step === 1}
+                  done={step > 1}
+                  number={1}
+                  label="Información"
+                />
+                <div className="h-px flex-1 bg-border" />
+                <StepIndicator
+                  active={step === 2}
+                  done={step > 2}
+                  number={2}
+                  label="Imagen"
+                />
+                <div className="h-px flex-1 bg-border" />
+                <StepIndicator
+                  active={step === 3}
+                  done={false}
+                  number={3}
+                  label="Stock"
+                />
+              </div>
 
-            <form onSubmit={handleSubmit} className="space-y-5">
-              {/* Paso 1: Información */}
-              {step === 1 && (
-                <div className="space-y-4">
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <Field>
-                      <FieldLabel htmlFor="name">
-                        Nombre <span className="text-destructive">*</span>
-                      </FieldLabel>
-                      <Input
-                        id="name"
-                        value={formData.name}
-                        onChange={(e) =>
-                          setFormData({ ...formData, name: e.target.value })
-                        }
-                        required
-                      />
-                    </Field>
-                    <Field>
-                      <FieldLabel htmlFor="category">
-                        Categoría <span className="text-destructive">*</span>
-                      </FieldLabel>
-                      <Select
-                        value={formData.category}
-                        onValueChange={(value) =>
-                          setFormData({ ...formData, category: value })
-                        }
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Seleccionar" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {categories
-                            .filter((cat) => cat.name)
-                            .map((cat) => (
-                              <SelectItem key={cat.id} value={cat.name}>
-                                {cat.name}
-                              </SelectItem>
-                            ))}
-                        </SelectContent>
-                      </Select>
-                    </Field>
-                  </div>
+              <form
+                id="product-form"
+                onSubmit={handleSubmit}
+                className="space-y-4"
+              >
+                {/* Paso 1: Información */}
+                {step === 1 && (
+                  <div className="space-y-4">
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <Field>
+                        <FieldLabel htmlFor="name">
+                          Nombre <span className="text-destructive">*</span>
+                        </FieldLabel>
+                        <Input
+                          id="name"
+                          value={formData.name}
+                          onChange={(e) => {
+                            setFormData({ ...formData, name: e.target.value });
+                            if (formErrors.name)
+                              setFormErrors((p) => {
+                                const n = { ...p };
+                                delete n.name;
+                                return n;
+                              });
+                          }}
+                          aria-invalid={!!formErrors.name}
+                          className={
+                            formErrors.name
+                              ? "border-destructive focus-visible:ring-destructive"
+                              : ""
+                          }
+                        />
+                        {formErrors.name && (
+                          <p className="mt-1 text-xs text-destructive">
+                            {formErrors.name}
+                          </p>
+                        )}
+                      </Field>
+                      <Field>
+                        <FieldLabel htmlFor="category">
+                          Categoría <span className="text-destructive">*</span>
+                        </FieldLabel>
+                        <Select
+                          value={formData.category}
+                          onValueChange={(value) => {
+                            setFormData({ ...formData, category: value });
+                            if (formErrors.category)
+                              setFormErrors((p) => {
+                                const n = { ...p };
+                                delete n.category;
+                                return n;
+                              });
+                          }}
+                        >
+                          <SelectTrigger
+                            className={
+                              formErrors.category
+                                ? "border-destructive focus:ring-destructive"
+                                : ""
+                            }
+                          >
+                            <SelectValue placeholder="Seleccionar" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {categories
+                              .filter((cat) => cat.name)
+                              .map((cat) => (
+                                <SelectItem key={cat.id} value={cat.name}>
+                                  {cat.name}
+                                </SelectItem>
+                              ))}
+                          </SelectContent>
+                        </Select>
+                        {formErrors.category && (
+                          <p className="mt-1 text-xs text-destructive">
+                            {formErrors.category}
+                          </p>
+                        )}
+                        {categories.filter((cat) => cat.name).length === 0 && (
+                          <p className="mt-1 text-xs text-muted-foreground">
+                            No hay categorías.{" "}
+                            <Link
+                              href="/admin/categorias"
+                              className="text-primary underline-offset-2 hover:underline"
+                            >
+                              Crear una
+                            </Link>
+                          </p>
+                        )}
+                      </Field>
+                    </div>
 
-                  <Field>
-                    <FieldLabel htmlFor="description">
-                      Descripción <span className="text-destructive">*</span>
-                    </FieldLabel>
-                    <Textarea
-                      id="description"
-                      value={formData.description}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          description: e.target.value,
-                        })
-                      }
-                      rows={3}
-                      required
-                    />
-                  </Field>
-
-                  <div className="grid gap-4 sm:grid-cols-3">
                     <Field>
-                      <FieldLabel htmlFor="price">
-                        Precio ({cupCurrency?.code || "CUP"}){" "}
-                        <span className="text-destructive">*</span>
+                      <FieldLabel htmlFor="description">
+                        Descripción <span className="text-destructive">*</span>
                       </FieldLabel>
-                      <Input
-                        id="price"
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        value={formData.price}
-                        onChange={(e) =>
+                      <Textarea
+                        id="description"
+                        value={formData.description}
+                        onChange={(e) => {
                           setFormData({
                             ...formData,
-                            price: parseFloat(e.target.value) || 0,
-                          })
+                            description: e.target.value,
+                          });
+                          if (formErrors.description)
+                            setFormErrors((p) => {
+                              const n = { ...p };
+                              delete n.description;
+                              return n;
+                            });
+                        }}
+                        rows={3}
+                        aria-invalid={!!formErrors.description}
+                        className={
+                          formErrors.description
+                            ? "border-destructive focus-visible:ring-destructive"
+                            : ""
                         }
-                        required
                       />
-                      {usdCurrency && cupCurrency && (
-                        <p className="mt-1.5 text-xs text-muted-foreground">
-                          ≈{" "}
-                          {formatPrice(
-                            (formData.price / cupCurrency.exchangeRate) *
-                              usdCurrency.exchangeRate,
-                            usdCurrency,
-                          )}
+                      {formErrors.description && (
+                        <p className="mt-1 text-xs text-destructive">
+                          {formErrors.description}
                         </p>
                       )}
                     </Field>
+
+                    <div className="grid gap-4 sm:grid-cols-3">
+                      <Field>
+                        <FieldLabel htmlFor="price">
+                          Precio ({cupCurrency?.code || "CUP"}){" "}
+                          <span className="text-destructive">*</span>
+                        </FieldLabel>
+                        <Input
+                          id="price"
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          value={formData.price}
+                          onChange={(e) => {
+                            setFormData({
+                              ...formData,
+                              price: parseFloat(e.target.value) || 0,
+                            });
+                            if (formErrors.price)
+                              setFormErrors((p) => {
+                                const n = { ...p };
+                                delete n.price;
+                                return n;
+                              });
+                          }}
+                          aria-invalid={!!formErrors.price}
+                          className={
+                            formErrors.price
+                              ? "border-destructive focus-visible:ring-destructive"
+                              : ""
+                          }
+                        />
+                        {formErrors.price && (
+                          <p className="mt-1 text-xs text-destructive">
+                            {formErrors.price}
+                          </p>
+                        )}
+                        {!formErrors.price &&
+                          usdCurrency &&
+                          cupCurrency &&
+                          formData.price > 0 && (
+                            <p className="mt-1.5 text-xs text-muted-foreground">
+                              ≈{" "}
+                              {formatPrice(
+                                (formData.price / cupCurrency.exchangeRate) *
+                                  usdCurrency.exchangeRate,
+                                usdCurrency,
+                              )}
+                            </p>
+                          )}
+                      </Field>
+                      <Field>
+                        <FieldLabel htmlFor="unit">Unidad</FieldLabel>
+                        <Select
+                          value={formData.unit}
+                          onValueChange={(value) =>
+                            setFormData({ ...formData, unit: value as Unit })
+                          }
+                        >
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="por lb">por lb</SelectItem>
+                            <SelectItem value="por kg">por kg</SelectItem>
+                            <SelectItem value="c/u">c/u</SelectItem>
+                            <SelectItem value="por pinta">por pinta</SelectItem>
+                            <SelectItem value="por docena">por docena</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </Field>
+                      <Field>
+                        <FieldLabel htmlFor="origin">Origen</FieldLabel>
+                        <Input
+                          id="origin"
+                          value={formData.origin}
+                          onChange={(e) =>
+                            setFormData({ ...formData, origin: e.target.value })
+                          }
+                          placeholder="Ej: Villa Clara"
+                        />
+                      </Field>
+                    </div>
+                  </div>
+                )}
+
+                {/* Paso 2: Imagen y visibilidad */}
+                {step === 2 && (
+                  <div className="space-y-4">
                     <Field>
-                      <FieldLabel htmlFor="unit">Unidad</FieldLabel>
-                      <Select
-                        value={formData.unit}
-                        onValueChange={(value) =>
-                          setFormData({ ...formData, unit: value as Unit })
-                        }
-                      >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="por lb">por lb</SelectItem>
-                          <SelectItem value="por kg">por kg</SelectItem>
-                          <SelectItem value="c/u">c/u</SelectItem>
-                          <SelectItem value="por pinta">por pinta</SelectItem>
-                          <SelectItem value="por docena">por docena</SelectItem>
-                        </SelectContent>
-                      </Select>
+                      <FieldLabel htmlFor="image">Imagen</FieldLabel>
+                      <div className="space-y-3">
+                        <div className="flex gap-2">
+                          <Input
+                            id="image"
+                            type="url"
+                            value={formData.image}
+                            onChange={handleImageUrlChange}
+                            placeholder="Pega una URL o sube un archivo"
+                            className="flex-1"
+                          />
+                          <ImageUpload
+                            endpoint="productImage"
+                            onUploadComplete={handleImageUpload}
+                          />
+                        </div>
+
+                        {imageUploaded && (
+                          <p className="flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-500">
+                            <Check className="h-3.5 w-3.5" />
+                            Imagen subida correctamente
+                          </p>
+                        )}
+
+                        {formData.image && (
+                          <div className="relative aspect-square overflow-hidden rounded-lg border bg-muted">
+                            <img
+                              src={formData.image}
+                              alt="Vista previa"
+                              className="h-full w-full object-cover"
+                            />
+                            <Button
+                              type="button"
+                              variant="secondary"
+                              size="sm"
+                              onClick={clearImage}
+                              className="absolute right-2 top-2 h-8 gap-1.5 px-2.5 shadow-md"
+                            >
+                              <X className="h-3.5 w-3.5" />
+                              Quitar
+                            </Button>
+                          </div>
+                        )}
+                      </div>
                     </Field>
+
                     <Field>
-                      <FieldLabel htmlFor="origin">Origen</FieldLabel>
-                      <Input
-                        id="origin"
-                        value={formData.origin}
-                        onChange={(e) =>
-                          setFormData({ ...formData, origin: e.target.value })
-                        }
-                        placeholder="Ej: Villa Clara"
-                      />
+                      <FieldLabel>Visibilidad</FieldLabel>
+                      <div className="flex h-10 items-center gap-3 rounded-md border px-3">
+                        <Switch
+                          id="visible"
+                          checked={formData.visible}
+                          onCheckedChange={(checked) =>
+                            setFormData({ ...formData, visible: checked })
+                          }
+                        />
+                        <label
+                          htmlFor="visible"
+                          className="cursor-pointer text-sm font-medium"
+                        >
+                          {formData.visible ? "Visible en la tienda" : "Oculto"}
+                        </label>
+                      </div>
+                      <p className="mt-1.5 text-xs text-muted-foreground">
+                        Los productos ocultos no aparecen en la tienda pero se
+                        conservan en tu catálogo.
+                      </p>
                     </Field>
                   </div>
-                </div>
-              )}
+                )}
 
-              {/* Paso 2: Imagen, stock, visibilidad y ubicaciones */}
-              {step === 2 && (
-                <div className="space-y-4">
-                  <Field>
-                    <FieldLabel htmlFor="image">Imagen</FieldLabel>
-                    <div className="space-y-3">
-                      <div className="flex gap-2">
-                        <Input
-                          id="image"
-                          type="url"
-                          value={formData.image}
-                          onChange={handleImageUrlChange}
-                          placeholder="Pega una URL o sube un archivo"
-                          className="flex-1"
-                        />
-                        <ImageUpload
-                          endpoint="productImage"
-                          onUploadComplete={handleImageUpload}
-                        />
-                      </div>
-
-                      {imageUploaded && (
-                        <p className="flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-500">
-                          <Check className="h-3.5 w-3.5" />
-                          Imagen subida correctamente
-                        </p>
-                      )}
-
-                      {formData.image && (
-                        <div className="relative aspect-video overflow-hidden rounded-lg border bg-muted">
-                          <img
-                            src={formData.image}
-                            alt="Vista previa"
-                            className="h-full w-full object-cover"
-                          />
-                          <Button
-                            type="button"
-                            variant="secondary"
-                            size="sm"
-                            onClick={clearImage}
-                            className="absolute right-2 top-2 h-8 gap-1.5 px-2.5 shadow-md"
-                          >
-                            <X className="h-3.5 w-3.5" />
-                            Quitar
-                          </Button>
-                        </div>
-                      )}
-                    </div>
-                  </Field>
-
-                  <div className="grid gap-4 sm:grid-cols-2">
+                {/* Paso 3: Stock y disponibilidad por ubicación */}
+                {step === 3 && (
+                  <div className="space-y-4">
                     <Field>
                       <FieldLabel htmlFor="stock">Stock disponible</FieldLabel>
                       <Input
@@ -782,54 +1101,69 @@ function ProductsAdmin() {
                             stock,
                             inStock: stock > 0,
                           });
+                          if (formErrors.stock)
+                            setFormErrors((p) => {
+                              const n = { ...p };
+                              delete n.stock;
+                              return n;
+                            });
                         }}
-                        required
+                        aria-invalid={!!formErrors.stock}
+                        className={
+                          formErrors.stock
+                            ? "border-destructive focus-visible:ring-destructive"
+                            : ""
+                        }
                       />
+                      {formErrors.stock && (
+                        <p className="mt-1 text-xs text-destructive">
+                          {formErrors.stock}
+                        </p>
+                      )}
+                      <p className="mt-1.5 text-xs text-muted-foreground">
+                        {formData.stock > 0
+                          ? "Se mostrará como disponible en la tienda."
+                          : "Se mostrará como agotado."}
+                      </p>
                     </Field>
+
                     <Field>
-                      <FieldLabel>Visibilidad</FieldLabel>
-                      <div className="flex h-10 items-center gap-3 rounded-md border px-3">
-                        <Switch
-                          id="visible"
-                          checked={formData.visible}
-                          onCheckedChange={(checked) =>
-                            setFormData({ ...formData, visible: checked })
-                          }
-                        />
-                        <label
-                          htmlFor="visible"
-                          className="cursor-pointer text-sm font-medium"
-                        >
-                          {formData.visible
-                            ? "Visible en la tienda"
-                            : "Oculto"}
-                        </label>
-                      </div>
+                      <FieldLabel className="flex items-center gap-1.5">
+                        <MapPin className="h-3.5 w-3.5 text-primary" />
+                        Disponibilidad por ubicación
+                      </FieldLabel>
+                      <ProductLocationsField
+                        value={productLocations}
+                        onChange={setProductLocations}
+                        provinces={provinces}
+                        municipalities={municipalities}
+                        defaultStock={formData.stock}
+                      />
+                      <p className="mt-1.5 text-xs text-muted-foreground">
+                        {productLocations.length === 0
+                          ? "Sin selección = disponible en todas las zonas."
+                          : `${productLocations.length} zona${productLocations.length !== 1 ? "s" : ""} configurada${productLocations.length !== 1 ? "s" : ""}.`}
+                      </p>
                     </Field>
                   </div>
+                )}
+              </form>
+            </div>
 
-                  <Field>
-                    <FieldLabel className="flex items-center gap-1.5">
-                      <MapPin className="h-3.5 w-3.5 text-primary" />
-                      Disponibilidad por ubicación
-                    </FieldLabel>
-                    <ProductLocationsField
-                      value={productLocations}
-                      onChange={setProductLocations}
-                      provinces={provinces}
-                      municipalities={municipalities}
-                      defaultStock={formData.stock}
-                    />
-                    <p className="mt-1.5 text-xs text-muted-foreground">
-                      {productLocations.length === 0
-                        ? "Sin selección = disponible en todas las zonas."
-                        : `${productLocations.length} zona${productLocations.length !== 1 ? "s" : ""} configurada${productLocations.length !== 1 ? "s" : ""}.`}
-                    </p>
-                  </Field>
-                </div>
-              )}
-
-              <DialogFooter className="gap-2">
+            <DialogFooter className="border-t bg-background px-6 py-4 sm:justify-between">
+              <div>
+                {step > 1 && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    onClick={goBack}
+                    className="gap-1.5"
+                  >
+                    Atrás
+                  </Button>
+                )}
+              </div>
+              <div className="flex gap-2">
                 {step === 1 && (
                   <>
                     <DialogClose asChild>
@@ -837,31 +1171,27 @@ function ProductsAdmin() {
                         Cancelar
                       </Button>
                     </DialogClose>
-                    <Button type="button" onClick={() => setStep(2)}>
+                    <Button type="button" onClick={goNext}>
                       Siguiente
                     </Button>
                   </>
                 )}
                 {step === 2 && (
-                  <>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => setStep(1)}
-                    >
-                      Anterior
-                    </Button>
-                    <Button type="submit" disabled={isLoading}>
-                      {isLoading
-                        ? "Guardando…"
-                        : editingProduct
-                          ? "Guardar cambios"
-                          : "Crear producto"}
-                    </Button>
-                  </>
+                  <Button type="button" onClick={goNext}>
+                    Siguiente
+                  </Button>
                 )}
-              </DialogFooter>
-            </form>
+                {step === 3 && (
+                  <Button type="submit" form="product-form" disabled={isLoading}>
+                    {isLoading
+                      ? "Guardando…"
+                      : editingProduct
+                        ? "Guardar cambios"
+                        : "Crear producto"}
+                  </Button>
+                )}
+              </div>
+            </DialogFooter>
           </DialogContent>
         </Dialog>
 

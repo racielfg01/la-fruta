@@ -62,6 +62,7 @@ export async function getPublicProductById(id: string) {
     const product = await loadWithRetry(() =>
       pb.collection('products').getOne(id, { expand: 'category' })
     );
+    if (product.is_visible === false) return null;
     return mapProduct(product);
   } catch (error) {
     console.error(`Error fetching product ${id}:`, error);
@@ -88,6 +89,8 @@ export async function getPublicProducts() {
           expand: 'category',
         })
       );
+      // El fallback (sin filtro server-side) no debe exponer productos ocultos.
+      products = products.filter((p: any) => p.is_visible !== false);
     }
     const categories = await loadWithRetry(() =>
       getAllRecords(pb, 'categories', { sort: 'name' })

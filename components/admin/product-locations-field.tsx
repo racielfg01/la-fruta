@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
-import { ChevronDown } from "lucide-react";
+import { useMemo, useState } from "react";
+import { CheckCheck, ChevronDown, Eraser, Search, X } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -19,16 +20,26 @@ interface Props {
   defaultStock?: number;
 }
 
-const stockNum = (stock?: number) => (Number.isFinite(stock) ? (stock as number) : 0);
+const stockNum = (stock?: number) =>
+  Number.isFinite(stock) ? (stock as number) : 0;
 
 export function ProductLocationsField({
   value,
   onChange,
-  provinces,
+  provinces: allProvinces,
   municipalities,
   defaultStock = 0,
 }: Props) {
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  const [query, setQuery] = useState("");
+
+  // Solo se ofrecen provincias habilitadas (Configuración → Ubicaciones).
+  const provinces = useMemo(
+    () => allProvinces.filter((p) => p.active),
+    [allProvinces]
+  );
+
+  const q = query.trim().toLowerCase();
 
   const toggleExpand = (provId: string) =>
     setExpanded((prev) => {
@@ -61,7 +72,15 @@ export function ProductLocationsField({
     const exists = hasMun(provId, munId);
     const next = exists
       ? value.filter((l) => !(l.province === provId && l.municipality === munId))
-      : [...value, { id: uid(), province: provId, municipality: munId, stock: defaultStock }];
+      : [
+          ...value,
+          {
+            id: uid(),
+            province: provId,
+            municipality: munId,
+            stock: defaultStock,
+          },
+        ];
     onChange(next);
   };
   const setMunStock = (provId: string, munId: string, stock: number) =>
@@ -71,105 +90,216 @@ export function ProductLocationsField({
       )
     );
 
+  const selectAll = () =>
+    onChange(
+      provinces.map((p) => ({
+        id: uid(),
+        province: p.id,
+        stock: defaultStock,
+      }))
+    );
+  const clearAll = () => onChange([]);
+
+  const coveredCount = provinces.filter((p) => fullOf(p.id)).length;
+  const allCovered = provinces.length > 0 && coveredCount === provinces.length;
+
+  const rows = useMemo(() => {
+    return provinces
+      .map((prov) => {
+        const allMuns = municipalities.filter(
+          (m) => m.id_provincia === prov.id
+        );
+        if (!q) return { prov, shownMuns: allMuns, allMuns };
+        const provMatch = prov.name.toLowerCase().includes(q);
+        const shownMuns = provMatch
+          ? allMuns
+          : allMuns.filter((m) => m.name.toLowerCase().includes(q));
+        if (!provMatch && shownMuns.length === 0) return null;
+        return { prov, shownMuns, allMuns };
+      })
+      .filter((r): r is NonNullable<typeof r> => r !== null);
+  }, [provinces, municipalities, q]);
+
+  if (provinces.length === 0) {
+    return (
+      <p className="text-xs text-muted-foreground">
+        {allProvinces.length === 0
+          ? "No hay provincias registradas. Gestiónalas en Configuración."
+          : "No hay provincias habilitadas. Actívalas en Configuración."}
+      </p>
+    );
+  }
+
   return (
     <div className="space-y-2">
-      {provinces.length === 0 && (
-        <p className="text-xs text-muted-foreground">
-          No hay provincias registradas. Gestiona las provincias en Configuración.
+      {/* Buscador + acciones masivas */}
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+        <div className="relative flex-1">
+          <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Buscar provincia o municipio"
+            aria-label="Buscar provincia o municipio"
+            className="pl-8 pr-8"
+          />
+          {query && (
+            <button
+              type="button"
+              onClick={() => setQuery("")}
+              aria-label="Limpiar búsqueda"
+              className="absolute right-2 top-1/2 -translate-y-1/2 rounded-sm text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          )}
+        </div>
+        <div className="flex shrink-0 items-center gap-2">
+          <span className="text-xs text-muted-foreground">
+            {coveredCount} de {provinces.length} provincias
+          </span>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={selectAll}
+            disabled={allCovered}
+          >
+            <CheckCheck className="h-3.5 w-3.5" />
+            Todas
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={clearAll}
+            disabled={value.length === 0}
+          >
+            <Eraser className="h-3.5 w-3.5" />
+            Limpiar
+          </Button>
+        </div>
+      </div>
+
+      {rows.length === 0 && (
+        <p className="py-4 text-center text-xs text-muted-foreground">
+          Sin coincidencias para “{query.trim()}”.
         </p>
       )}
-      {provinces.map((prov) => {
-        const muns = municipalities.filter((m) => m.id_provincia === prov.id);
-        const full = fullOf(prov.id);
-        const isExpanded = expanded.has(prov.id);
-        const selectedMuns = muns.filter((m) => hasMun(prov.id, m.id));
-        return (
-          <div
-            key={prov.id}
-            className="rounded-lg border bg-card p-3 shadow-sm"
-          >
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex min-w-0 items-center gap-2">
-                <Checkbox
-                  id={`pl-full-${prov.id}`}
-                  checked={!!full}
-                  onCheckedChange={(c) => setFull(prov.id, !!c)}
-                />
-                <Label
-                  htmlFor={`pl-full-${prov.id}`}
-                  className="cursor-pointer font-medium"
-                >
-                  {prov.name}
-                </Label>
-                <span className="text-xs text-muted-foreground">
-                  (toda la provincia)
-                </span>
-              </div>
-              {full && (
-                <div className="flex shrink-0 items-center gap-2 pl-6 sm:pl-0">
-                  <Label
-                    htmlFor={`pl-stock-${prov.id}`}
-                    className="text-xs text-muted-foreground"
-                  >
-                    Stock
-                  </Label>
-                  <Input
-                    id={`pl-stock-${prov.id}`}
-                    type="number"
-                    min={0}
-                    inputMode="numeric"
-                    value={stockNum(full.stock)}
-                    onChange={(e) =>
-                      setFullStock(prov.id, Number(e.target.value) || 0)
-                    }
-                    className="h-8 w-24"
-                  />
-                </div>
-              )}
-            </div>
 
-            {muns.length > 0 && (
-              <div className="mt-2">
-                <button
-                  type="button"
-                  onClick={() => toggleExpand(prov.id)}
-                  className="flex cursor-pointer items-center gap-1 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
-                >
-                  <ChevronDown
-                    className={`h-3.5 w-3.5 transition-transform ${
-                      isExpanded ? "rotate-180" : ""
-                    }`}
-                  />
-                  Municipios{selectedMuns.length > 0 ? ` (${selectedMuns.length})` : ""}
-                </button>
-                {isExpanded && (
-                  <div className="mt-2 space-y-1">
-                    {muns.map((m) => {
+      {rows.length > 0 && (
+        <div className="divide-y overflow-hidden rounded-lg border">
+          {rows.map(({ prov, shownMuns, allMuns }) => {
+            const full = fullOf(prov.id);
+            const selectedCount = allMuns.filter((m) =>
+              hasMun(prov.id, m.id)
+            ).length;
+            const isExpanded = q ? true : expanded.has(prov.id);
+            const canExpand = !full && allMuns.length > 0;
+            const stateLabel = full
+              ? "Toda la provincia"
+              : selectedCount > 0
+                ? `${selectedCount}/${allMuns.length} municipios`
+                : allMuns.length > 0
+                  ? `${allMuns.length} municipios`
+                  : "";
+            return (
+              <div key={prov.id}>
+                <div className="flex min-h-11 flex-wrap items-center gap-x-3 gap-y-2 px-3 py-2">
+                  <div className="flex min-w-0 items-center gap-2.5">
+                    <Checkbox
+                      id={`pl-full-${prov.id}`}
+                      checked={
+                        full
+                          ? true
+                          : selectedCount > 0
+                            ? "indeterminate"
+                            : false
+                      }
+                      onCheckedChange={(c) => setFull(prov.id, c === true)}
+                    />
+                    <Label
+                      htmlFor={`pl-full-${prov.id}`}
+                      className="min-w-0 cursor-pointer truncate font-medium"
+                    >
+                      {prov.name}
+                    </Label>
+                    <span className="shrink-0 text-xs text-muted-foreground">
+                      {stateLabel}
+                    </span>
+                  </div>
+
+                  {full && (
+                    <div className="flex shrink-0 items-center gap-2">
+                      <Label
+                        htmlFor={`pl-stock-${prov.id}`}
+                        className="text-xs text-muted-foreground"
+                      >
+                        Stock
+                      </Label>
+                      <Input
+                        id={`pl-stock-${prov.id}`}
+                        type="number"
+                        min={0}
+                        inputMode="numeric"
+                        value={stockNum(full.stock)}
+                        onChange={(e) =>
+                          setFullStock(prov.id, Number(e.target.value) || 0)
+                        }
+                        className="w-24"
+                      />
+                    </div>
+                  )}
+
+                  {canExpand && (
+                    <button
+                      type="button"
+                      onClick={() => toggleExpand(prov.id)}
+                      aria-expanded={isExpanded}
+                      aria-controls={`pl-munlist-${prov.id}`}
+                      className="-mr-1 flex items-center gap-1 rounded-md px-1 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+                    >
+                      <ChevronDown
+                        className={`h-3.5 w-3.5 transition-transform ${
+                          isExpanded ? "rotate-180" : ""
+                        }`}
+                      />
+                      Municipios
+                    </button>
+                  )}
+                </div>
+
+                {isExpanded && canExpand && (
+                  <div
+                    id={`pl-munlist-${prov.id}`}
+                    className="divide-y divide-border/60 border-t bg-muted/30"
+                  >
+                    {shownMuns.length === 0 && (
+                      <p className="px-3 py-2 pl-9 text-xs text-muted-foreground">
+                        Sin municipios que coincidan.
+                      </p>
+                    )}
+                    {shownMuns.map((m) => {
                       const checked = hasMun(prov.id, m.id);
                       const loc = munOf(prov.id, m.id);
                       return (
                         <div
                           key={m.id}
-                          className="flex flex-col gap-1 rounded-md p-1 sm:flex-row sm:items-center sm:justify-between"
+                          className="flex min-h-9 flex-wrap items-center gap-x-3 gap-y-1 py-1.5 pl-9 pr-3"
                         >
-                          <div className="flex min-w-0 items-center gap-2">
+                          <div className="flex min-w-0 items-center gap-2.5">
                             <Checkbox
                               id={`pl-mun-${m.id}`}
                               checked={checked}
-                              disabled={!!full}
                               onCheckedChange={() => toggleMun(prov.id, m.id)}
                             />
                             <Label
                               htmlFor={`pl-mun-${m.id}`}
-                              className={`cursor-pointer text-sm font-normal ${
-                                full ? "cursor-not-allowed text-muted-foreground" : ""
-                              }`}
+                              className="min-w-0 cursor-pointer truncate text-sm font-normal"
                             >
                               {m.name}
                             </Label>
                           </div>
                           {checked && (
-                            <div className="flex shrink-0 items-center gap-2 pl-6 sm:pl-0">
+                            <div className="flex shrink-0 items-center gap-2">
                               <Label
                                 htmlFor={`pl-mun-stock-${m.id}`}
                                 className="text-xs text-muted-foreground"
@@ -183,9 +313,13 @@ export function ProductLocationsField({
                                 inputMode="numeric"
                                 value={stockNum(loc?.stock)}
                                 onChange={(e) =>
-                                  setMunStock(prov.id, m.id, Number(e.target.value) || 0)
+                                  setMunStock(
+                                    prov.id,
+                                    m.id,
+                                    Number(e.target.value) || 0
+                                  )
                                 }
-                                className="h-8 w-24"
+                                className="w-24"
                               />
                             </div>
                           )}
@@ -195,10 +329,10 @@ export function ProductLocationsField({
                   </div>
                 )}
               </div>
-            )}
-          </div>
-        );
-      })}
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

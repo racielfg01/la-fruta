@@ -3,6 +3,7 @@
 import "@uploadthing/react/styles.css";
 import { UploadButton } from "@uploadthing/react";
 import type { OurFileRouter } from "@/app/api/uploadthing/core";
+import { useAuthStore } from "@/lib/auth-context";
 
 type Endpoint = keyof OurFileRouter;
 
@@ -17,9 +18,11 @@ export function ImageUpload({
   onUploadError?: (error: Error) => void;
   disabled?: boolean;
 }) {
+  const token = useAuthStore((state) => state.token);
   return (
     <UploadButton<OurFileRouter, Endpoint>
       endpoint={endpoint}
+      headers={token ? { Authorization: `Bearer ${token}` } : undefined}
       onClientUploadComplete={(res) => {
         if (res?.[0]) onUploadComplete(res[0].url);
       }}

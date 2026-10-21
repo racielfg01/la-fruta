@@ -1063,7 +1063,7 @@ function MasonryCard({
       <Link href={`/product/${product.id}`}>
         <div className={`relative ${imageHeight} overflow-hidden bg-muted`}>
           <Image
-            src={optimizedImageUrl(product.image, 640)}
+            src={optimizedImageUrl(product.image || '/placeholder.svg', 640)}
             alt={product.name}
             fill
             className={`object-cover transition-transform duration-500 ${
@@ -1196,7 +1196,7 @@ function ProductCard({
       <Link href={`/product/${product.id}`}>
         <div className="relative aspect-square overflow-hidden bg-muted">
           <Image
-            src={optimizedImageUrl(product.image, 640)}
+            src={optimizedImageUrl(product.image || '/placeholder.svg', 640)}
             alt={product.name}
             fill
             className={`object-cover transition-transform duration-500 ${

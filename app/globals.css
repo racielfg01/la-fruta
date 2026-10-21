@@ -131,7 +131,7 @@
 /* Fuentes locales */
 @font-face {
   font-family: 'Playfair Display';
-  src: url('/fonts/playfair-display-regular.woff2') format('woff2');
+  src: url('/fonts/Playfair_Display/static/PlayfairDisplay-Regular.ttf') format('truetype');
   font-weight: 400;
   font-style: normal;
   font-display: swap;
@@ -139,7 +139,7 @@
 
 @font-face {
   font-family: 'Playfair Display';
-  src: url('/fonts/playfair-display-medium.woff2') format('woff2');
+  src: url('/fonts/Playfair_Display/static/PlayfairDisplay-Medium.ttf') format('truetype');
   font-weight: 500;
   font-style: normal;
   font-display: swap;
@@ -147,7 +147,7 @@
 
 @font-face {
   font-family: 'Playfair Display';
-  src: url('/fonts/playfair-display-semibold.woff2') format('woff2');
+  src: url('/fonts/Playfair_Display/static/PlayfairDisplay-SemiBold.ttf') format('truetype');
   font-weight: 600;
   font-style: normal;
   font-display: swap;
@@ -155,7 +155,7 @@
 
 @font-face {
   font-family: 'Playfair Display';
-  src: url('/fonts/playfair-display-bold.woff2') format('woff2');
+  src: url('/fonts/Playfair_Display/static/PlayfairDisplay-Bold.ttf') format('truetype');
   font-weight: 700;
   font-style: normal;
   font-display: swap;
@@ -163,7 +163,7 @@
 
 @font-face {
   font-family: 'Poppins';
-  src: url('/fonts/poppins-regular.woff2') format('woff2');
+  src: url('/fonts/Poppins/Poppins-Regular.ttf') format('truetype');
   font-weight: 400;
   font-style: normal;
   font-display: swap;
@@ -171,7 +171,7 @@
 
 @font-face {
   font-family: 'Poppins';
-  src: url('/fonts/poppins-medium.woff2') format('woff2');
+  src: url('/fonts/Poppins/Poppins-Medium.ttf') format('truetype');
   font-weight: 500;
   font-style: normal;
   font-display: swap;
@@ -179,7 +179,7 @@
 
 @font-face {
   font-family: 'Poppins';
-  src: url('/fonts/poppins-semibold.woff2') format('woff2');
+  src: url('/fonts/Poppins/Poppins-SemiBold.ttf') format('truetype');
   font-weight: 600;
   font-style: normal;
   font-display: swap;
@@ -187,7 +187,7 @@
 
 @font-face {
   font-family: 'Poppins';
-  src: url('/fonts/poppins-bold.woff2') format('woff2');
+  src: url('/fonts/Poppins/Poppins-Bold.ttf') format('truetype');
   font-weight: 700;
   font-style: normal;
   font-display: swap;

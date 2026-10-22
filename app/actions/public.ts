@@ -61,6 +61,30 @@ export async function getPublicTransferData() {
 
 // ── Settings (public) ──
 
+/** Zonas de envío para el checkout: la colección es de lectura pública. */
+export async function getPublicDeliveryZones() {
+  try {
+    const pb = getPB();
+    const zones = await getAllRecords(pb, 'delivery_zones', {
+      sort: 'min_distance',
+    });
+    return zones.map((z: any) => ({
+      id: z.id,
+      name: z.name || '',
+      minDistance: Number(z.min_distance) || 0,
+      maxDistance: Number(z.max_distance) || 0,
+      price: Number(z.price),
+      estimatedTime: z.estimated_time || '',
+      active: z.active !== false,
+      province: z.province || '',
+      municipality: z.municipality || '',
+    }));
+  } catch (error) {
+    console.error('Error fetching delivery zones:', error);
+    return [];
+  }
+}
+
 export async function getPublicSettings() {
   try {
     const pb = getPB();
@@ -83,9 +107,11 @@ export async function getPublicSettings() {
       light_success_color: s.light_success_color || '',
       light_warning_color: s.light_warning_color || '',
       font_family: s.font_family || '',
+      priceMargin: Number(s.price_margin) || 0,
+      operationalCost: Math.round(Number(s.operational_cost) || 0),
     };
   } catch (error) {
     console.error('Error fetching settings:', error);
-    return { storeName: '', storeDescription: '', logo: '', theme: 'system', font: 'poppins', background_color: '', primary_color: '', accent_color: '', success_color: '', warning_color: '', light_background_color: '', light_primary_color: '', light_accent_color: '', light_success_color: '', light_warning_color: '', font_family: '' };
+    return { storeName: '', storeDescription: '', logo: '', theme: 'system', font: 'poppins', background_color: '', primary_color: '', accent_color: '', success_color: '', warning_color: '', light_background_color: '', light_primary_color: '', light_accent_color: '', light_success_color: '', light_warning_color: '', font_family: '', priceMargin: 0, operationalCost: 0 };
   }
 }

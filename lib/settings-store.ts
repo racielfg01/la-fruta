@@ -19,6 +19,10 @@ export interface StoreSettings {
   light_success_color: string;
   light_warning_color: string;
   font_family: string;
+  /** Margen de ganancia (%) sobre el precio CUP. */
+  priceMargin?: number;
+  /** Costo operativo (CUP) agregado a cada orden. */
+  operationalCost?: number;
 }
 
 const EMPTY: StoreSettings = {
@@ -26,6 +30,8 @@ const EMPTY: StoreSettings = {
   background_color: '', primary_color: '', accent_color: '', success_color: '', warning_color: '',
   light_background_color: '', light_primary_color: '', light_accent_color: '', light_success_color: '', light_warning_color: '',
   font_family: '',
+  priceMargin: 0,
+  operationalCost: 0,
 };
 
 interface SettingsState {
@@ -60,6 +66,8 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
       light_success_color: data.light_success_color || '',
       light_warning_color: data.light_warning_color || '',
       font_family: data.font_family || '',
+      priceMargin: Number(data.priceMargin) || 0,
+      operationalCost: Number(data.operationalCost) || 0,
     };
     set({ settings: s, loading: false, initialized: true });
     applyBrandCSS(s);

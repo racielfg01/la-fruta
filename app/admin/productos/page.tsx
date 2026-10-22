@@ -87,6 +87,7 @@ const emptyProduct: Omit<Product, "id"> = {
   inStock: false,
   visible: true,
   productLocations: [],
+  priceMargin: null,
 };
 
 export default function ProductsAdminPage() {
@@ -226,6 +227,7 @@ function ProductsAdmin() {
       stock: product.stock,
       inStock: product.stock > 0,
       visible: product.visible,
+      priceMargin: product.priceMargin ?? null,
     });
     setFormErrors({});
     setImageUploaded(false);
@@ -972,6 +974,31 @@ function ProductsAdmin() {
                               )}
                             </p>
                           )}
+                      </Field>
+                      <Field>
+                        <FieldLabel htmlFor="priceMargin">
+                          Margen de ganancia ({'"%"'})
+                        </FieldLabel>
+                        <Input
+                          id="priceMargin"
+                          type="number"
+                          step="0.1"
+                          min="0"
+                          value={formData.priceMargin ?? ''}
+                          onChange={(e) => {
+                            const v = e.target.value;
+                            setFormData({
+                              ...formData,
+                              priceMargin: v === '' ? null : Math.max(0, parseFloat(v) || 0),
+                            });
+                          }}
+                          placeholder="Vacío = usa el margen global"
+                        />
+                        <p className="mt-1.5 text-xs text-muted-foreground">
+                          Se aplica solo al precio en CUP. USD muestra el precio
+                          base. Vacío o 0 = usa el margen global de la
+                          configuración.
+                        </p>
                       </Field>
                       <Field>
                         <FieldLabel htmlFor="unit">Unidad</FieldLabel>

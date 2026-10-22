@@ -26,6 +26,8 @@ export interface Product {
   visible: boolean;
   availableMunicipalities?: string[];
   productLocations?: ProductLocation[];
+  /** Margen de ganancia opcional (%); null/undefined = usa el global. */
+  priceMargin?: number | null;
 }
 
 export interface UserLocation {

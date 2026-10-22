@@ -30,6 +30,7 @@ function mapProduct(p: any) {
       .map((s: string) => s.trim())
       .filter(Boolean),
     productLocations: parseJson(p.product_locations, []),
+    priceMargin: p.price_margin ? Number(p.price_margin) : null,
   };
 }
 

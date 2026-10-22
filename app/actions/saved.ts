@@ -9,6 +9,7 @@ export interface Beneficiary {
   id: string;
   fullName: string;
   phone: string;
+  carnet: string;
   isDefault: boolean;
 }
 
@@ -17,6 +18,7 @@ export interface UserAddress {
   alias: string;
   address: string;
   zone: string;
+  notes: string;
   isDefault: boolean;
 }
 
@@ -45,12 +47,13 @@ export async function getBeneficiariesAction(token: string): Promise<Beneficiary
     id: b.id,
     fullName: b.full_name || "",
     phone: b.phone || "",
+    carnet: b.carnet || "",
     isDefault: !!b.is_default,
   }));
 }
 
 export async function createBeneficiaryAction(
-  data: { fullName: string; phone: string; isDefault?: boolean },
+  data: { fullName: string; phone: string; carnet?: string; isDefault?: boolean },
   token: string
 ) {
   const userId = await requireUserId(token);
@@ -59,6 +62,7 @@ export async function createBeneficiaryAction(
     user: userId,
     full_name: data.fullName,
     phone: data.phone,
+    carnet: data.carnet || "",
     is_default: !!data.isDefault,
   });
   return { success: true, id: created.id };
@@ -84,12 +88,13 @@ export async function getUserAddressesAction(token: string): Promise<UserAddress
     alias: a.alias || "",
     address: a.address || "",
     zone: a.zone || "",
+    notes: a.notes || "",
     isDefault: !!a.is_default,
   }));
 }
 
 export async function createUserAddressAction(
-  data: { alias: string; address: string; zone?: string; isDefault?: boolean },
+  data: { alias: string; address: string; zone?: string; notes?: string; isDefault?: boolean },
   token: string
 ) {
   const userId = await requireUserId(token);
@@ -99,6 +104,7 @@ export async function createUserAddressAction(
     alias: data.alias,
     address: data.address,
     zone: data.zone || "",
+    notes: data.notes || "",
     is_default: !!data.isDefault,
   });
   return { success: true, id: created.id };

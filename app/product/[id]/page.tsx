@@ -11,8 +11,10 @@ import { useCartStore, availableStock } from "@/lib/store";
 import { ProductCard } from "@/components/product-card";
 import { Product } from "@/lib/store";
 import { useCurrency } from "@/lib/currency";
-import { displayProductCupPrice } from "@/lib/price-margin";
+import { displayProductCupPrice, effectiveMargin } from "@/lib/price-margin";
+import { productSavingCup } from "@/lib/usd-saving";
 import { useMarginConfig } from "@/lib/use-price-margin";
+import SavingHint from "@/components/saving-hint";
 import { ProductImage } from "@/components/product-image";
 import {
   ArrowLeft,
@@ -36,6 +38,7 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
   const [added, setAdded] = useState(false);
   const { defaultCurrency, currencies, formatPrice, convertPrice } = useCurrency();
   const cupCurrency = currencies.find(c => c.code === 'CUP');
+  const usdCurrency = currencies.find(c => c.code === 'USD');
   const marginCfg = useMarginConfig(product);
   const shownCup = product ? displayProductCupPrice(product.price, marginCfg, defaultCurrency?.code) : 0;
   const userLocation = useCartStore((state) => state.userLocation);
@@ -160,6 +163,19 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
               </span>
               <span className="text-muted-foreground"> / {product.unit}</span>
             </div>
+
+            {defaultCurrency?.code === "CUP" &&
+              productSavingCup(product.price, effectiveMargin(marginCfg)) > 0 &&
+              cupCurrency &&
+              usdCurrency && (
+                <SavingHint
+                  className="mt-2"
+                  currencyCode="USD"
+                  currencySymbol={usdCurrency.symbol}
+                  amount={convertPrice(product.price, cupCurrency, usdCurrency)}
+                  savingCup={productSavingCup(product.price, effectiveMargin(marginCfg))}
+                />
+              )}
 
             <p className="mt-6 text-muted-foreground leading-relaxed">{product.description}</p>
 

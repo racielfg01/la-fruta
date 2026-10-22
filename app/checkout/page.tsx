@@ -67,7 +67,10 @@ import {
 import { getPublicTransferData } from "@/app/actions/public";
 import { isValidPhone } from "@/lib/contact-validation";
 import { useCurrencyStore } from "@/lib/currency-store";
+import { effectiveMargin } from "@/lib/price-margin";
+import { cupSavingForItems } from "@/lib/usd-saving";
 import { ProductImage } from "@/components/product-image";
+import SavingHint from "@/components/saving-hint";
 import { toast } from "sonner";
 
 // -------------------------------
@@ -607,6 +610,31 @@ export default function CheckoutPage() {
   const deliveryFeeBase = selectedZone ? selectedZone.price : 0;
   const totalBase = subtotalBase + deliveryFeeBase + operationalCostBase;
 
+  // Ahorro por pagar en USD: el margen solo se aplica a las órdenes en CUP
+  // (ver orderItemPrice), así que en otra moneda la orden sale más barata.
+  const usdCurrency = useMemo(
+    () => currencies.find((c) => c.code === "USD") || null,
+    [currencies],
+  );
+  const saving = useMemo(
+    () =>
+      cupSavingForItems(
+        items.map((it) => ({
+          basePriceCup: it.product.price,
+          quantity: it.quantity,
+          marginPct: effectiveMargin({
+            globalMargin: marginState.globalMargin,
+            productMargin: it.product.priceMargin ?? null,
+          }),
+        })),
+        {
+          deliveryFeeCup: deliveryFeeBase,
+          operationalCostCup: operationalCostBase,
+        },
+      ),
+    [items, marginState.globalMargin, deliveryFeeBase, operationalCostBase],
+  );
+
   const convertAmount = (amountInCUP: number): number => {
     if (!selectedCurrency || !cupCurrency) return amountInCUP;
     return (
@@ -616,6 +644,40 @@ export default function CheckoutPage() {
           100,
       ) / 100
     );
+  };
+
+  // Tasa de cambio bien orientada: "1 USD = 610 CUP" o "1 CUP = 0.0016 USD".
+  const rateLine = useMemo(() => {
+    if (!selectedCurrency || !cupCurrency) return null;
+    if (selectedCurrency.code === "CUP") {
+      const other = currencies.find((c) => c.code !== "CUP");
+      if (!other) return null;
+      const perCup = (1 / cupCurrency.exchangeRate) * other.exchangeRate;
+      return `1 ${cupCurrency.code} = ${perCup.toFixed(4)} ${other.code}`;
+    }
+    const perUnit = cupCurrency.exchangeRate / selectedCurrency.exchangeRate;
+    return `1 ${selectedCurrency.code} = ${perUnit.toFixed(4)} ${cupCurrency.code}`;
+  }, [selectedCurrency, cupCurrency, currencies]);
+
+  // Importe en una moneda concreta (no la seleccionada).
+  const convertTo = (amountInCUP: number, target: Currency | null): number => {
+    if (!target || !cupCurrency) return amountInCUP;
+    return (
+      Math.round(
+        (amountInCUP / cupCurrency.exchangeRate) * target.exchangeRate * 100,
+      ) / 100
+    );
+  };
+
+  // Lo que se pagaría realmente en USD (sin el margen de las órdenes en CUP).
+  const usdTotal = usdCurrency
+    ? convertTo(saving.totalWithoutMarginCup, usdCurrency)
+    : 0;
+
+  const switchToUsd = () => {
+    if (!usdCurrency) return;
+    setSelectedCurrency(usdCurrency);
+    useCurrencyStore.getState().setCurrency(usdCurrency.id);
   };
 
   const subtotalConverted = convertAmount(subtotalBase);
@@ -1270,13 +1332,23 @@ export default function CheckoutPage() {
                       ))}
                     </SelectContent>
                   </Select>
-                  {selectedCurrency && cupCurrency && (
-                    <p className="text-xs text-muted-foreground">
-                      1 {cupCurrency.code} ={" "}
-                      {selectedCurrency.exchangeRate.toFixed(4)}{" "}
-                      {selectedCurrency.code}
-                    </p>
+                  {rateLine && (
+                    <p className="text-xs text-muted-foreground">{rateLine}</p>
                   )}
+                  {selectedCurrency?.code === "CUP" &&
+                    saving.savingCup > 0 &&
+                    usdCurrency && (
+                      <SavingHint
+                        className="mt-1"
+                        currencyCode="USD"
+                        currencySymbol={usdCurrency.symbol}
+                        amount={usdTotal}
+                        savingCup={saving.savingCup}
+                        savingPct={saving.savingPct}
+                        actionLabel="Ver en USD"
+                        onAction={switchToUsd}
+                      />
+                    )}
                 </div>
 
                 <div className="space-y-3">
@@ -1325,6 +1397,19 @@ export default function CheckoutPage() {
                       );
                     })}
                   </RadioGroup>
+                  {selectedCurrency?.code === "CUP" &&
+                    saving.savingCup > 0 &&
+                    usdCurrency && (
+                      <SavingHint
+                        className="mt-3"
+                        currencyCode="USD"
+                        currencySymbol={usdCurrency.symbol}
+                        amount={usdTotal}
+                        savingCup={saving.savingCup}
+                        savingPct={saving.savingPct}
+                        showAmount={false}
+                      />
+                    )}
                 </div>
 
                 {selectedMethod && !selectedMethod.disabled && (
@@ -1574,19 +1659,25 @@ export default function CheckoutPage() {
                 {currencies.length > 1 && totalBase > 0 && (
                   <div className="rounded-lg border bg-muted/20 p-3">
                     <p className="mb-2 text-xs text-muted-foreground">
-                      Equivalente en otras monedas
+                      Precio en otras monedas
                     </p>
                     <div className="flex flex-wrap gap-2">
                       {currencies
                         .filter((c) => c.id !== selectedCurrency?.id)
                         .map((c) => {
+                          // Importe real de esa moneda: en CUP se cobra con
+                          // margen, en el resto de monedas sin margen.
+                          const base =
+                            c.code === "CUP"
+                              ? saving.totalWithMarginCup
+                              : saving.totalWithoutMarginCup;
                           const converted = cupCurrency
                             ? Math.round(
-                                (totalBase / cupCurrency.exchangeRate) *
+                                (base / cupCurrency.exchangeRate) *
                                   c.exchangeRate *
                                   100,
                               ) / 100
-                            : totalBase;
+                            : base;
                           return (
                             <div
                               key={c.id}
@@ -1603,6 +1694,17 @@ export default function CheckoutPage() {
                           );
                         })}
                     </div>
+                    {selectedCurrency?.code === "CUP" && saving.savingCup > 0 && (
+                      <SavingHint
+                        className="mt-2"
+                        currencyCode="USD"
+                        currencySymbol={usdCurrency?.symbol || "$"}
+                        amount={usdTotal}
+                        savingCup={saving.savingCup}
+                        savingPct={saving.savingPct}
+                        showAmount={false}
+                      />
+                    )}
                   </div>
                 )}
               </div>
@@ -1692,10 +1794,10 @@ export default function CheckoutPage() {
 
                 {cupCurrency && selectedCurrency?.code !== "CUP" && (
                   <div className="flex justify-between text-xs text-muted-foreground">
-                    <span>Equivalente en {cupCurrency.code}</span>
+                    <span>En {cupCurrency.code} serían</span>
                     <span>
                       {cupCurrency.symbol}
-                      {totalBase.toFixed(2)}
+                      {saving.totalWithMarginCup.toFixed(2)}
                     </span>
                   </div>
                 )}

@@ -5,10 +5,12 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { useCartStore } from "@/lib/store";
 import { useCurrency } from "@/lib/currency";
-import { displayProductCupPrice } from "@/lib/price-margin";
+import { displayProductCupPrice, effectiveMargin } from "@/lib/price-margin";
+import { cupSavingForItems } from "@/lib/usd-saving";
 import { useMarginConfig } from "@/lib/use-price-margin";
 import type { Product } from "@/lib/store";
 import { ProductImage } from "@/components/product-image";
+import SavingHint from "@/components/saving-hint";
 import {
   Minus,
   Plus,
@@ -49,6 +51,27 @@ export default function CartPage() {
     0
   );
   const isCupDisplay = defaultCurrency?.code === "CUP";
+
+  // Ahorro por pagar en USD: el margen solo se aplica a las órdenes en CUP.
+  const usdCurrency = currencies.find((c) => c.code === "USD");
+  const saving = cupSavingForItems(
+    items.map((it) => ({
+      basePriceCup: it.product.price,
+      quantity: it.quantity,
+      marginPct: effectiveMargin({
+        globalMargin: marginCfg.globalMargin,
+        productMargin: it.product.priceMargin ?? null,
+      }),
+    }))
+  );
+  const itemsBaseTotal = items.reduce(
+    (sum, it) => sum + it.product.price * it.quantity,
+    0
+  );
+  const usdTotal =
+    cupCurrency && usdCurrency
+      ? convertPrice(itemsBaseTotal, cupCurrency, usdCurrency)
+      : 0;
 
   // -------------------------------
   // Carrito vacío
@@ -226,12 +249,22 @@ export default function CartPage() {
                 </div>
                 {!isCupDisplay && cupCurrency && (
                   <div className="mt-1 flex justify-between text-xs text-muted-foreground">
-                    <span>Equivalente en {cupCurrency.code}</span>
+                    <span>En {cupCurrency.code} serían</span>
                     <span>
                       {cupCurrency.symbol}
-                      {subtotal.toFixed(2)}
+                      {saving.totalWithMarginCup.toFixed(2)}
                     </span>
                   </div>
+                )}
+                {isCupDisplay && saving.savingCup > 0 && usdCurrency && (
+                  <SavingHint
+                    className="mt-2"
+                    currencyCode="USD"
+                    currencySymbol={usdCurrency.symbol}
+                    amount={usdTotal}
+                    savingCup={saving.savingCup}
+                    savingPct={saving.savingPct}
+                  />
                 )}
               </div>
 

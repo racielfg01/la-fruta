@@ -5,7 +5,10 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { useCartStore } from "@/lib/store";
 import { useCurrency } from "@/lib/currency";
-import { optimizedImageUrl } from "@/lib/image";
+import { displayProductCupPrice } from "@/lib/price-margin";
+import { useMarginConfig } from "@/lib/use-price-margin";
+import type { Product } from "@/lib/store";
+import { ProductImage } from "@/components/product-image";
 import {
   Minus,
   Plus,
@@ -16,13 +19,21 @@ import {
   Shield,
   Loader2,
 } from "lucide-react";
-import Image from "next/image";
 import Link from "next/link";
 
 export default function CartPage() {
-  const { items, updateQuantity, removeItem, getTotalPrice } = useCartStore();
+  const { items, updateQuantity, removeItem } = useCartStore();
   const { currencies, defaultCurrency, formatPrice, convertPrice } = useCurrency();
   const cupCurrency = currencies.find((c) => c.code === "CUP");
+  const marginCfg = useMarginConfig();
+
+  // Precio CUP a mostrar por producto: márgened solo si el display es CUP.
+  const itemCup = (p: Product) =>
+    displayProductCupPrice(
+      p.price,
+      { globalMargin: marginCfg.globalMargin, productMargin: p.priceMargin ?? null },
+      defaultCurrency?.code
+    );
 
   // Helper único de conversión (product.price está en CUP)
   const formatCup = (cupAmount: number) => {
@@ -33,7 +44,10 @@ export default function CartPage() {
     return formatPrice(converted, defaultCurrency);
   };
 
-  const subtotal = getTotalPrice();
+  const subtotal = items.reduce(
+    (sum, it) => sum + itemCup(it.product) * it.quantity,
+    0
+  );
   const isCupDisplay = defaultCurrency?.code === "CUP";
 
   // -------------------------------
@@ -87,7 +101,7 @@ export default function CartPage() {
           <section className="overflow-hidden rounded-xl border bg-card">
             <ul className="divide-y">
               {items.map((item) => {
-                const lineTotal = item.product.price * item.quantity;
+                const lineTotal = itemCup(item.product) * item.quantity;
                 return (
                   <li key={item.product.id} className="group p-4 sm:p-5">
                     <div className="flex gap-4">
@@ -96,11 +110,10 @@ export default function CartPage() {
                         href={`/product/${item.product.id}`}
                         className="relative h-20 w-20 shrink-0 overflow-hidden rounded-lg bg-muted sm:h-24 sm:w-24"
                       >
-                        <Image
-                          src={optimizedImageUrl(item.product.image, 192)}
+                        <ProductImage
+                          image={item.product.image}
                           alt={item.product.name}
-                          fill
-                          className="object-cover"
+                          width={192}
                           sizes="96px"
                         />
                       </Link>
@@ -134,7 +147,7 @@ export default function CartPage() {
                         </div>
 
                         <p className="mt-1 text-xs text-muted-foreground">
-                          {formatCup(item.product.price)} / {item.product.unit}
+                          {formatCup(itemCup(item.product))} / {item.product.unit}
                         </p>
 
                         {/* Cantidad + total */}

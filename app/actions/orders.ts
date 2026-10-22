@@ -3,6 +3,8 @@
 import { decodePocketBaseToken } from "@/lib/auth";
 import { getAdminPB, getAllRecords, sanitize } from "@/lib/pocketbase";
 import { parseLocations, matchLocationIndex, StoredLocation } from "@/lib/order-stock";
+import { orderItemPrice } from "@/lib/price-margin";
+import { orderTotalCup } from "@/lib/order-total";
 import { randomUUID } from "crypto";
 
 export interface OrderActionResult {
@@ -98,6 +100,15 @@ export async function createOrderAction(
       }
       const deliveryFee = Math.max(0, Number(zone.price) || 0);
 
+      // Margen de ganancia global (%) de la configuración de la tienda.
+      // Solo se aplica a órdenes pagadas en CUP (orderItemPrice).
+      const settingsRec = (
+        await getAllRecords(pb, 'settings', {}).catch(() => [] as any[])
+      )[0] as any;
+      const globalMargin = settingsRec?.price_margin ?? null;
+      // Costo operativo de la tienda (CUP) que se suma a TODAS las órdenes.
+      const operationalCost = Math.max(0, Math.round(Number(settingsRec?.operational_cost) || 0));
+
       // Validación de stock server-side con datos frescos + precio real del producto
       // (evita vender a precio/stock desactualizados del carrito del cliente).
       const validatedItems: {
@@ -160,7 +171,16 @@ export async function createOrderAction(
           productId: item.productId,
           productName,
           quantity: Math.floor(item.quantity),
-          price: Number(product.price) || 0,
+          price: orderItemPrice(
+            Number(product.price) || 0,
+            {
+              globalMargin,
+              productMargin: product.price_margin
+                ? Number(product.price_margin)
+                : null,
+            },
+            orderData.currencyCode
+          ),
         });
       }
 
@@ -168,7 +188,7 @@ export async function createOrderAction(
         (sum, item) => sum + item.price * item.quantity,
         0
       );
-      const total = subtotal + deliveryFee;
+      const total = orderTotalCup(subtotal, deliveryFee, operationalCost);
 
       const order = await pb.collection('orders').create({
         // id único: [a-z0-9] sin guiones (PB orders.id exige ^[a-z0-9]+$)
@@ -180,6 +200,7 @@ export async function createOrderAction(
         contact_carnet: orderData.contactCarnet || '',
         subtotal,
         delivery_fee: deliveryFee,
+        operational_cost: operationalCost,
         total,
         status: 'pending',
         payment_method: orderData.paymentMethod,

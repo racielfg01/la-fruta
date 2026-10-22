@@ -129,10 +129,14 @@ async function setup() {
     T.text("light_success_color"),
     T.text("light_warning_color"),
     T.text("font_family"),
+    T.number("price_margin"),
+    T.number("operational_cost"),
+    T.bool("payment_cash_enabled"),
+    T.bool("payment_transfer_enabled"),
   ]);
 
   // 7. products: zonas disponibles (CSV de ids de municipio)
-  await addFields(pb, "products", [T.text("available_municipalities"), T.json("product_locations")]);
+  await addFields(pb, "products", [T.text("available_municipalities"), T.json("product_locations"), T.number("price_margin")]);
 
   // 8. orders: datos de transferencia y cancelación
   await addFields(pb, "orders", [
@@ -142,11 +146,15 @@ async function setup() {
     T.text("receipt"),
     T.text("reference"),
     T.number("transfer_amount"),
+    T.number("operational_cost"),
     T.text("cancel_reason"),
   ]);
 
   // 9. provinces: add active field if missing
   await addFields(pb, "provinces", [T.bool("active")]);
+
+  // 9b. delivery_zones: location fields for zone-by-location filtering
+  await addFields(pb, "delivery_zones", [T.text("province"), T.text("municipality")]);
 
   // 10. municipalities: add active field if missing
   await addFields(pb, "municipalities", [T.bool("active")]);
@@ -167,6 +175,8 @@ async function setup() {
     T.text("light_success_color"),
     T.text("light_warning_color"),
     T.text("font_family"),
+    T.number("price_margin"),
+    T.number("operational_cost"),
   ]);
 
   // ── Seed (solo si la colección está vacía) ──
@@ -271,6 +281,10 @@ async function setup() {
         logo: "",
         theme: "system",
         font: "poppins",
+        // PB materializa bools ausentes como `false`; el default "métodos
+        // visibles" debe sembrarse explícito (null nunca llega del wire).
+        payment_cash_enabled: true,
+        payment_transfer_enabled: true,
       });
       console.log("[seed] settings (1)");
       seeded.add("settings");

@@ -1,7 +1,7 @@
 'use server';
 
 import { decodePocketBaseToken, getRoleIds } from '@/lib/auth';
-import { getAdminPB, getTokenPB, getAllRecords, sanitize } from '@/lib/pocketbase';
+import { getAdminPB, getTokenPB, getAllRecords, sanitize, buildOrFilter } from '@/lib/pocketbase';
 import { restoreOrderStock } from '@/lib/order-stock';
 import type PocketBase from 'pocketbase';
 import { Product } from '@/lib/store';
@@ -69,6 +69,7 @@ function mapProduct(p: any) {
       .map((s: string) => s.trim())
       .filter(Boolean),
     productLocations: parseJson(p.product_locations, []),
+    priceMargin: p.price_margin ? Number(p.price_margin) : null,
   };
 }
 
@@ -131,22 +132,38 @@ export async function getAdminData(token: string) {
 
   const roleIds = await getRoleIds();
 
-  const ordersFixed = await Promise.all(
-    orders.map(async (order: any) => {
-      const items = await getAllRecords(pb, 'order_items', {
-        filter: `order_id = "${sanitize(order.id)}"`,
-      });
+  // Los ítems van en pocas consultas: OR por lotes de orden y agrupado aquí
+  // (antes: un query order_items por cada orden — N+1).
+  const ids = orders.map((order: any) => String(order.id));
+  const itemsByOrder = new Map<string, any[]>();
+  for (let i = 0; i < ids.length; i += 100) {
+    const filter = buildOrFilter(
+      'order_id',
+      ids.slice(i, i + 100)
+    );
+    const items = await getAllRecords(pb, 'order_items', { filter: filter! });
+    for (const item of items) {
+      const key = String(item.order_id);
+      const list = itemsByOrder.get(key) || [];
+      list.push(item);
+      itemsByOrder.set(key, list);
+    }
+  }
+
+  const ordersFixed = orders.map((order: any) => {
+    const items = itemsByOrder.get(String(order.id)) || [];
     return {
       ...mapOrder(order),
-      items: items.map((item: any) => ({
-        productId: item.product_id,
-        productName: item.product_name,
-        quantity: item.quantity,
-        price: Number(item.price),
-      })),
+      items: items
+        .sort((a: any, b: any) => String(a.id).localeCompare(String(b.id)))
+        .map((item: any) => ({
+          productId: item.product_id,
+          productName: item.product_name,
+          quantity: item.quantity,
+          price: Number(item.price),
+        })),
     };
-  })
-);
+  });
 
   return {
     products: products.map(mapProduct),
@@ -195,6 +212,7 @@ export async function addProductAction(product: Product, token: string) {
     is_visible: product.visible,
     available_municipalities: (product.availableMunicipalities || []).join(','),
     product_locations: JSON.stringify(product.productLocations || []),
+    price_margin: product.priceMargin ?? null,
   });
   return { ...product, id: record.id };
 }
@@ -220,6 +238,9 @@ export async function editProductAction(id: string, data: Partial<Product>, toke
   }
   if (data.productLocations !== undefined) {
     updateData.product_locations = JSON.stringify(data.productLocations || []);
+  }
+  if (data.priceMargin !== undefined) {
+    updateData.price_margin = data.priceMargin;
   }
   if (Object.keys(updateData).length === 0) return;
   await pb.collection('products').update(id, updateData);
@@ -271,6 +292,8 @@ export async function addDeliveryZoneAction(zone: DeliveryZone, token: string) {
     price: zone.price,
     estimated_time: zone.estimatedTime,
     active: zone.active,
+    province: zone.province || '',
+    municipality: zone.municipality || '',
   });
   return { ...zone, id: record.id };
 }
@@ -285,6 +308,8 @@ export async function editDeliveryZoneAction(id: string, data: Partial<DeliveryZ
   if (data.price !== undefined) updateData.price = data.price;
   if (data.estimatedTime !== undefined) updateData.estimated_time = data.estimatedTime;
   if (data.active !== undefined) updateData.active = data.active;
+  if (data.province !== undefined) updateData.province = data.province || '';
+  if (data.municipality !== undefined) updateData.municipality = data.municipality || '';
   if (Object.keys(updateData).length === 0) return;
   await pb.collection('delivery_zones').update(id, updateData);
 }

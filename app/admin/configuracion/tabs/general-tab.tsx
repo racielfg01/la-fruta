@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Field, FieldLabel } from "@/components/ui/field";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ImageUpload } from "@/components/upload-button";
+import { Switch } from "@/components/ui/switch";
 import { getSettingsAction, updateSettingsAction } from "@/app/actions/admin-extras";
 import { Save, Palette, RotateCcw, Loader2, Moon, Sun } from "lucide-react";
 import { toast } from "sonner";
@@ -31,6 +32,10 @@ const DEFAULTS: StoreSettings = {
   light_success_color: "#16a34a",
   light_warning_color: "#d97706",
   font_family: "Manrope, sans-serif",
+  priceMargin: 0,
+  operationalCost: 0,
+  showPaymentCash: true,
+  showPaymentTransfer: true,
 };
 
 export default function ConfiguracionPage() {
@@ -170,6 +175,83 @@ export default function ConfiguracionPage() {
                   </div>
                 </div>
               </Field>
+            </CardContent>
+          </Card>
+
+          {/* Precios y márgenes */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Precios y márgenes</CardTitle>
+              <CardDescription>
+                Margen de ganancia (%) sobre el precio base en CUP. Se aplica
+                solo al precio en CUP y a las órdenes pagadas en CUP; USD y
+                demás monedas muestran el precio base.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="grid gap-4 sm:grid-cols-2">
+              <Field>
+                <FieldLabel>Margen global (%)</FieldLabel>
+                <Input
+                  type="number"
+                  min={0}
+                  step="0.1"
+                  value={form.priceMargin ?? 0}
+                  onChange={(e) => update({ priceMargin: Math.max(0, Number(e.target.value) || 0) })}
+                  placeholder="0"
+                />
+              </Field>
+              <Field>
+                <FieldLabel>Costos operativos (CUP, por orden)</FieldLabel>
+                <Input
+                  type="number"
+                  min={0}
+                  step="1"
+                  value={form.operationalCost ?? 0}
+                  onChange={(e) => update({ operationalCost: Math.max(0, Math.round(Number(e.target.value) || 0)) })}
+                  placeholder="0"
+                />
+                <p className="mt-1.5 text-xs text-muted-foreground">
+                  Número entero en CUP que se suma a cada orden; en USD se
+                  muestra convertido con la tasa de cambio.
+                </p>
+              </Field>
+            </CardContent>
+          </Card>
+
+          {/* Métodos de pago del checkout */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Métodos de pago del checkout</CardTitle>
+              <CardDescription>
+                Elige qué métodos ve el cliente al pagar. Si desactivas todos,
+                se muestran ambos para no bloquear el checkout.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center justify-between gap-4">
+                <div>
+                  <p className="font-medium text-sm">Efectivo</p>
+                  <p className="text-xs text-muted-foreground">
+                    Paga al recibir el pedido
+                  </p>
+                </div>
+                <Switch
+                  checked={form.showPaymentCash !== false}
+                  onCheckedChange={(v) => update({ showPaymentCash: v })}
+                />
+              </div>
+              <div className="flex items-center justify-between gap-4">
+                <div>
+                  <p className="font-medium text-sm">Transferencia bancaria</p>
+                  <p className="text-xs text-muted-foreground">
+                    Sube comprobante de pago
+                  </p>
+                </div>
+                <Switch
+                  checked={form.showPaymentTransfer !== false}
+                  onCheckedChange={(v) => update({ showPaymentTransfer: v })}
+                />
+              </div>
             </CardContent>
           </Card>
 

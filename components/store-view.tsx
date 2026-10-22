@@ -33,6 +33,8 @@ import { useCartStore, Product, availableStock } from "@/lib/store";
 import { useCurrency } from "@/lib/currency";
 import { useCurrencyStore, useSelectedCurrency } from "@/lib/currency-store";
 import { optimizedImageUrl } from "@/lib/image";
+import { effectiveCupPrice, displayProductCupPrice } from "@/lib/price-margin";
+import { useMarginConfig } from "@/lib/use-price-margin";
 import {
   Search,
   SlidersHorizontal,
@@ -97,10 +99,17 @@ export function StoreView() {
   const setCurrency = useCurrencyStore((s) => s.setCurrency);
   const selectedCurrency = useSelectedCurrency();
   const cupCurrency = currencies.find((c) => c.code === "CUP");
-  const toUSD = (cupPrice: number) =>
-    cupCurrency && defaultCurrency
-      ? convertPrice(cupPrice, cupCurrency, defaultCurrency)
-      : cupPrice;
+  const marginCfg = useMarginConfig();
+  const toUSD = (cupPrice: number) => {
+    if (!cupCurrency || !defaultCurrency) {
+      return displayProductCupPrice(cupPrice, marginCfg, defaultCurrency?.code);
+    }
+    return convertPrice(
+      displayProductCupPrice(cupPrice, marginCfg, defaultCurrency.code),
+      cupCurrency,
+      defaultCurrency
+    );
+  };
   const [showOnlyInStock, setShowOnlyInStock] = useState(false);
   const [viewMode, setViewMode] = useState<"masonry" | "grid">("masonry");
   const [isFiltersOpen, setIsFiltersOpen] = useState(false);
@@ -702,7 +711,7 @@ export function StoreView() {
                   />
                 ) : (
                   <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 lg:gap-6">
-                    {filteredProducts.map((product) => (
+                    {filteredProducts.map((product, productIndex) => (
                       <ProductCard
                         key={product.id}
                         product={product}
@@ -711,6 +720,7 @@ export function StoreView() {
                         cartQuantity={getCartQuantity(product.id)}
                         isHovered={hoveredProduct === product.id}
                         onHover={setHoveredProduct}
+                        priority={productIndex < 3}
                       />
                     ))}
                   </div>
@@ -1007,6 +1017,7 @@ function MasonryGrid({
                 heightVariant={heightVariant}
                 isHovered={hoveredProduct === product.id}
                 onHover={setHoveredProduct}
+                priority={columnIndex === 0 && productIndex < 2}
               />
             );
           })}
@@ -1027,6 +1038,7 @@ function MasonryCard({
   heightVariant,
   isHovered,
   onHover,
+  priority = false,
 }: {
   product: Product;
   addItem: (product: Product) => void;
@@ -1035,6 +1047,7 @@ function MasonryCard({
   heightVariant: number;
   isHovered: boolean;
   onHover: (id: string | null) => void;
+  priority?: boolean;
 }) {
   const mobileHeights = ["h-52", "h-64", "h-56", "h-72"];
   const desktopHeights = ["h-56", "h-72", "h-64", "h-80"];
@@ -1042,6 +1055,7 @@ function MasonryCard({
   const { defaultCurrency, currencies, formatPrice, convertPrice } =
     useCurrency();
   const cupCurrency = currencies.find((c) => c.code === "CUP");
+  const marginCfg = useMarginConfig(product);
 
   useEffect(() => {
     const isMobile = window.innerWidth < 640;
@@ -1070,6 +1084,7 @@ function MasonryCard({
               isHovered ? "scale-105" : ""
             }`}
             sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+            priority={priority}
           />
 
           {!product.inStock && (
@@ -1124,10 +1139,19 @@ function MasonryCard({
             <span className="text-base font-bold text-foreground sm:text-lg">
               {cupCurrency && defaultCurrency
                 ? formatPrice(
-                    convertPrice(product.price, cupCurrency, defaultCurrency),
+                    defaultCurrency.code === "CUP"
+                      ? effectiveCupPrice(product.price, marginCfg)
+                      : convertPrice(product.price, cupCurrency, defaultCurrency),
                     defaultCurrency,
                   )
-                : formatPrice(product.price, defaultCurrency)}
+                : formatPrice(
+                    displayProductCupPrice(
+                      product.price,
+                      marginCfg,
+                      defaultCurrency?.code,
+                    ),
+                    defaultCurrency,
+                  )}
             </span>
             <span className="ml-1 text-xs text-muted-foreground">
               / {product.unit}
@@ -1172,6 +1196,7 @@ function ProductCard({
   cartQuantity,
   isHovered,
   onHover,
+  priority = false,
 }: {
   product: Product;
   addItem: (product: Product) => void;
@@ -1179,11 +1204,13 @@ function ProductCard({
   cartQuantity: number;
   isHovered: boolean;
   onHover: (id: string | null) => void;
+  priority?: boolean;
 }) {
   const config = categoryConfig[product.category] || categoryConfig.Fruits;
   const { defaultCurrency, currencies, formatPrice, convertPrice } =
     useCurrency();
   const cupCurrency = currencies.find((c) => c.code === "CUP");
+  const marginCfg = useMarginConfig(product);
 
   return (
     <Card
@@ -1203,6 +1230,7 @@ function ProductCard({
               isHovered ? "scale-105" : ""
             }`}
             sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+            priority={priority}
           />
 
           {!product.inStock && (
@@ -1262,10 +1290,19 @@ function ProductCard({
             <span className="text-base font-bold text-foreground sm:text-lg">
               {cupCurrency && defaultCurrency
                 ? formatPrice(
-                    convertPrice(product.price, cupCurrency, defaultCurrency),
+                    defaultCurrency.code === "CUP"
+                      ? effectiveCupPrice(product.price, marginCfg)
+                      : convertPrice(product.price, cupCurrency, defaultCurrency),
                     defaultCurrency,
                   )
-                : formatPrice(product.price, defaultCurrency)}
+                : formatPrice(
+                    displayProductCupPrice(
+                      product.price,
+                      marginCfg,
+                      defaultCurrency?.code,
+                    ),
+                    defaultCurrency,
+                  )}
             </span>
             <span className="ml-1 text-xs text-muted-foreground">
               / {product.unit}

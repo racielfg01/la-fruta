@@ -109,9 +109,11 @@ export async function getPublicSettings() {
       font_family: s.font_family || '',
       priceMargin: Number(s.price_margin) || 0,
       operationalCost: Math.round(Number(s.operational_cost) || 0),
+      showPaymentCash: s.payment_cash_enabled !== false,
+      showPaymentTransfer: s.payment_transfer_enabled !== false,
     };
   } catch (error) {
     console.error('Error fetching settings:', error);
-    return { storeName: '', storeDescription: '', logo: '', theme: 'system', font: 'poppins', background_color: '', primary_color: '', accent_color: '', success_color: '', warning_color: '', light_background_color: '', light_primary_color: '', light_accent_color: '', light_success_color: '', light_warning_color: '', font_family: '', priceMargin: 0, operationalCost: 0 };
+    return { storeName: '', storeDescription: '', logo: '', theme: 'system', font: 'poppins', background_color: '', primary_color: '', accent_color: '', success_color: '', warning_color: '', light_background_color: '', light_primary_color: '', light_accent_color: '', light_success_color: '', light_warning_color: '', font_family: '', priceMargin: 0, operationalCost: 0, showPaymentCash: true, showPaymentTransfer: true };
   }
 }

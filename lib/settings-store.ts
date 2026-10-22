@@ -23,6 +23,9 @@ export interface StoreSettings {
   priceMargin?: number;
   /** Costo operativo (CUP) agregado a cada orden. */
   operationalCost?: number;
+  /** Métodos de pago visibles en el checkout. */
+  showPaymentCash?: boolean;
+  showPaymentTransfer?: boolean;
 }
 
 const EMPTY: StoreSettings = {
@@ -32,6 +35,8 @@ const EMPTY: StoreSettings = {
   font_family: '',
   priceMargin: 0,
   operationalCost: 0,
+  showPaymentCash: true,
+  showPaymentTransfer: true,
 };
 
 interface SettingsState {
@@ -68,6 +73,8 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
       font_family: data.font_family || '',
       priceMargin: Number(data.priceMargin) || 0,
       operationalCost: Number(data.operationalCost) || 0,
+      showPaymentCash: data.showPaymentCash !== false,
+      showPaymentTransfer: data.showPaymentTransfer !== false,
     };
     set({ settings: s, loading: false, initialized: true });
     applyBrandCSS(s);

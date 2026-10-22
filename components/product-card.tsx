@@ -10,6 +10,8 @@ import { Product, useCartStore } from "@/lib/store";
 import { useState } from "react";
 import { useCurrency } from "@/lib/currency";
 import { optimizedImageUrl } from "@/lib/image";
+import { effectiveCupPrice } from "@/lib/price-margin";
+import { useMarginConfig } from "@/lib/use-price-margin";
 
 interface ProductCardProps {
   product: Product;
@@ -20,6 +22,8 @@ export function ProductCard({ product }: ProductCardProps) {
   const [added, setAdded] = useState(false);
   const { defaultCurrency, currencies, formatPrice, convertPrice } = useCurrency();
   const cupCurrency = currencies.find(c => c.code === 'CUP');
+  const marginCfg = useMarginConfig(product);
+  const marginedCup = effectiveCupPrice(product.price, marginCfg);
 
   const handleAddToCart = () => {
     addItem(product);
@@ -58,8 +62,8 @@ export function ProductCard({ product }: ProductCardProps) {
         <div className="mt-3 flex items-center justify-between">
           <div>
             <span className="text-lg font-bold text-foreground">{cupCurrency && defaultCurrency
-              ? formatPrice(convertPrice(product.price, cupCurrency, defaultCurrency), defaultCurrency)
-              : formatPrice(product.price, defaultCurrency)}</span>
+              ? formatPrice(defaultCurrency.code === "CUP" ? marginedCup : convertPrice(product.price, cupCurrency, defaultCurrency), defaultCurrency)
+              : formatPrice(marginedCup, defaultCurrency)}</span>
             <span className="ml-1 text-sm text-muted-foreground">{product.unit}</span>
           </div>
           <Button

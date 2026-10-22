@@ -17,9 +17,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useCartStore, DeliveryLocation } from "@/lib/store";
+import { useCartStore, DeliveryLocation, Product } from "@/lib/store";
+import { displayProductCupPrice } from "@/lib/price-margin";
+import { useMarginConfig } from "@/lib/use-price-margin";
+import { useSettingsStore } from "@/lib/settings-store";
+import {
+  resolveVisiblePaymentMethodIds,
+  clampSelectedPaymentMethod,
+} from "@/lib/payment-methods";
 import { useAuthStore } from "@/lib/auth-context";
-import { useAdminStore } from "@/lib/admin-store";
+import { getPublicDeliveryZones } from "@/app/actions/public";
+import type { DeliveryZone } from "@/lib/admin-store";
 import {
   ShoppingBag,
   ArrowRight,
@@ -43,7 +51,6 @@ import {
   Plus,
 } from "lucide-react";
 import { useMemo } from "react";
-import Image from "next/image";
 import Link from "next/link";
 import { getPublicCurrencies } from "@/app/actions/public-currencies";
 import { createOrderAction } from "@/app/actions/orders";
@@ -60,7 +67,7 @@ import {
 import { getPublicTransferData } from "@/app/actions/public";
 import { isValidPhone } from "@/lib/contact-validation";
 import { useCurrencyStore } from "@/lib/currency-store";
-import { optimizedImageUrl } from "@/lib/image";
+import { ProductImage } from "@/components/product-image";
 import { toast } from "sonner";
 
 // -------------------------------
@@ -154,14 +161,20 @@ function SavedChip({
   sublabel,
   onUse,
   onDelete,
+  active,
 }: {
   label: string;
   sublabel?: string;
   onUse: () => void;
   onDelete?: () => void;
+  active?: boolean;
 }) {
   return (
-    <div className="group inline-flex max-w-full items-center gap-1.5 rounded-full border bg-background pl-3 pr-1 py-1 text-xs transition-colors hover:border-primary/40 hover:bg-primary/5">
+    <div
+      className={`group inline-flex max-w-full items-center gap-1.5 rounded-full border py-1 pl-3 pr-1 text-xs transition-colors hover:border-primary/40 hover:bg-primary/5 ${
+        active ? "border-primary bg-primary/5" : "bg-background"
+      }`}
+    >
       <button
         type="button"
         onClick={onUse}
@@ -189,7 +202,7 @@ function SavedChip({
 
 export default function CheckoutPage() {
   const router = useRouter();
-  const { items, getTotalPrice, clearCart, setDeliveryLocation, userLocation } =
+  const { items, clearCart, setDeliveryLocation, userLocation } =
     useCartStore();
   const {
     user,
@@ -197,12 +210,8 @@ export default function CheckoutPage() {
     isLoading: authLoading,
     token,
   } = useAuthStore();
-  const {
-    deliveryZones,
-    loaded: zonesLoaded,
-    loading: zonesLoading,
-    initialize: loadAdminData,
-  } = useAdminStore();
+  const [deliveryZones, setDeliveryZones] = useState<DeliveryZone[]>([]);
+  const [zonesLoading, setZonesLoading] = useState(false);
 
   const [isProcessing, setIsProcessing] = useState(false);
   const processingRef = useRef(false);
@@ -216,9 +225,38 @@ export default function CheckoutPage() {
     () => currencies.find((c) => c.code === "CUP") || null,
     [currencies],
   );
+  const marginState = useMarginConfig();
+  const operationalCostCup = useSettingsStore((s) => s.settings.operationalCost) || 0;
+  const showPaymentCash = useSettingsStore((s) => s.settings.showPaymentCash !== false);
+  const showPaymentTransfer = useSettingsStore((s) => s.settings.showPaymentTransfer !== false);
+  // Métodos de pago visibles según configuración admin (el fallback fuerza
+  // a mostrar todos si el admin oculta todos).
+  const visibleMethodIds = useMemo(
+    () =>
+      resolveVisiblePaymentMethodIds({
+        showCash: showPaymentCash,
+        showTransfer: showPaymentTransfer,
+      }),
+    [showPaymentCash, showPaymentTransfer]
+  );
+  const visiblePaymentMethods = useMemo(
+    () => paymentMethodsConfig.filter((m) => visibleMethodIds.includes(m.id)),
+    [visibleMethodIds]
+  );
+  const itemDisplayCup = (p: Product) =>
+    displayProductCupPrice(
+      p.price,
+      { globalMargin: marginState.globalMargin, productMargin: p.priceMargin ?? null },
+      selectedCurrency?.code,
+    );
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string>(
     paymentMethodsConfig[0].id,
   );
+
+  // Si el admin oculta el método ya seleccionado, pasa al primero visible.
+  useEffect(() => {
+    setSelectedPaymentMethod((prev) => clampSelectedPaymentMethod(prev, visibleMethodIds));
+  }, [visibleMethodIds]);
 
   // Transferencia
   const [transferData, setTransferData] = useState<{
@@ -367,6 +405,7 @@ export default function CheckoutPage() {
   const [savingBeneficiary, setSavingBeneficiary] = useState(false);
   const [addresses, setAddresses] = useState<UserAddress[]>([]);
   const [savingAddress, setSavingAddress] = useState(false);
+  const [selectedAddressId, setSelectedAddressId] = useState<string>("");
 
   useEffect(() => {
     if (!isAuthenticated || !token) return;
@@ -394,7 +433,11 @@ export default function CheckoutPage() {
     setSavingBeneficiary(true);
     try {
       await createBeneficiaryAction(
-        { fullName: formData.name, phone: formData.phone },
+        {
+          fullName: formData.name,
+          phone: formData.phone,
+          carnet: formData.carnet,
+        },
         token,
       );
       setBeneficiarios(await getBeneficiariesAction(token));
@@ -444,6 +487,7 @@ export default function CheckoutPage() {
           alias: alias.trim() || "Mi dirección",
           address: address.trim(),
           zone: finalZone,
+          notes: deliveryNotes.trim(),
         },
         token,
       );
@@ -463,6 +507,7 @@ export default function CheckoutPage() {
     try {
       await deleteUserAddressAction(id, token);
       setAddresses(await getUserAddressesAction(token));
+      if (selectedAddressId === id) setSelectedAddressId("");
       toast.success("Dirección eliminada");
     } catch (error: any) {
       toast.error(error?.message || "No se pudo eliminar la dirección");
@@ -472,6 +517,9 @@ export default function CheckoutPage() {
   const handleUseAddress = (d: UserAddress) => {
     setAddress(d.address);
     setZone(d.zone || "");
+    setAlias(d.alias);
+    setDeliveryNotes(d.notes || "");
+    setSelectedAddressId(d.id);
     // Si la zona guardada coincide con una zona activa, seleccionarla para no
     // forzar al usuario a elegirla de nuevo (y calcular el envío).
     const match = activeZones.find((z) => z.name === d.zone);
@@ -500,12 +548,15 @@ export default function CheckoutPage() {
     loadCurrencies();
   }, []);
 
-  // Inicializar zonas
+  // Inicializar zonas (colección pública; el checkout no carga datos admin)
   useEffect(() => {
-    if (token && !zonesLoaded && !zonesLoading) {
-      loadAdminData().catch(console.error);
-    }
-  }, [token, zonesLoaded, zonesLoading, loadAdminData]);
+    if (!token || zonesLoading || deliveryZones.length > 0) return;
+    setZonesLoading(true);
+    getPublicDeliveryZones()
+      .then(setDeliveryZones)
+      .catch(console.error)
+      .finally(() => setZonesLoading(false));
+  }, [token, zonesLoading, deliveryZones.length]);
 
   // Auth
   useEffect(() => {
@@ -531,13 +582,30 @@ export default function CheckoutPage() {
     }
   }, [isAuthenticated, user]);
 
-  const activeZones = deliveryZones.filter((z) => z.active);
+  // Zonas activas filtradas por la ubicación del cliente. Las zonas sin
+  // provincia/municipio asignados (legacy) valen en cualquier ubicación; si
+  // ninguna coincide (p. ej. ninguna zona ubicada), se muestran todas.
+  const activeZones = useMemo(() => {
+    const actives = deliveryZones.filter((z) => z.active);
+    if (!userLocation?.province) return actives;
+    const matches = actives.filter(
+      (z) =>
+        (!z.province || z.province === userLocation.province) &&
+        (!z.municipality || z.municipality === userLocation.municipality)
+    );
+    return matches.length > 0 ? matches : actives;
+  }, [deliveryZones, userLocation]);
   const selectedZone = activeZones.find((z) => z.id === selectedZoneId);
 
-  // Totales
-  const subtotalBase = getTotalPrice();
+  // Totales — en CUP se muestra/cobra el precio con margen; resto base.
+  // El costo operativo (CUP) se suma a TODAS las órdenes.
+  const operationalCostBase = operationalCostCup;
+  const subtotalBase = items.reduce(
+    (sum, it) => sum + itemDisplayCup(it.product) * it.quantity,
+    0,
+  );
   const deliveryFeeBase = selectedZone ? selectedZone.price : 0;
-  const totalBase = subtotalBase + deliveryFeeBase;
+  const totalBase = subtotalBase + deliveryFeeBase + operationalCostBase;
 
   const convertAmount = (amountInCUP: number): number => {
     if (!selectedCurrency || !cupCurrency) return amountInCUP;
@@ -552,6 +620,7 @@ export default function CheckoutPage() {
 
   const subtotalConverted = convertAmount(subtotalBase);
   const deliveryFeeConverted = convertAmount(deliveryFeeBase);
+  const operationalCostConverted = convertAmount(operationalCostBase);
   const totalConverted = convertAmount(totalBase);
 
   // Ubicación global
@@ -754,7 +823,7 @@ export default function CheckoutPage() {
     );
   }
 
-  const selectedMethod = paymentMethodsConfig.find(
+  const selectedMethod = visiblePaymentMethods.find(
     (m) => m.id === selectedPaymentMethod,
   );
 
@@ -845,6 +914,7 @@ export default function CheckoutPage() {
                           key={d.id}
                           label={d.alias}
                           sublabel={d.zone || undefined}
+                          active={d.id === selectedAddressId}
                           onUse={() => handleUseAddress(d)}
                           onDelete={() => handleDeleteAddress(d.id)}
                         />
@@ -968,6 +1038,22 @@ export default function CheckoutPage() {
                         </div>
                       </div>
 
+                      <div className="space-y-1.5">
+                        <Label
+                          htmlFor="saveAddressNotes"
+                          className="text-xs font-normal text-muted-foreground"
+                        >
+                          Notas para la entrega
+                        </Label>
+                        <Textarea
+                          id="saveAddressNotes"
+                          placeholder="Instrucciones, referencias, horario preferido…"
+                          className="min-h-[60px]"
+                          value={deliveryNotes}
+                          onChange={(e) => setDeliveryNotes(e.target.value)}
+                        />
+                      </div>
+
                       <Button
                         type="button"
                         variant="secondary"
@@ -1006,15 +1092,19 @@ export default function CheckoutPage() {
                         <SavedChip
                           key={b.id}
                           label={b.fullName}
-                          sublabel={b.phone}
+                          sublabel={
+                            b.carnet ? `${b.phone} · ${b.carnet}` : b.phone
+                          }
                           onUse={() => {
                             setFormData({
                               ...formData,
                               name: b.fullName,
                               phone: b.phone,
+                              carnet: b.carnet || "",
                             });
                             clearFieldError("name");
                             clearFieldError("phone");
+                            clearFieldError("carnet");
                           }}
                           onDelete={() => handleDeleteBeneficiary(b.id)}
                         />
@@ -1196,7 +1286,7 @@ export default function CheckoutPage() {
                     onValueChange={setSelectedPaymentMethod}
                     className="grid gap-3 sm:grid-cols-2"
                   >
-                    {paymentMethodsConfig.map((method) => {
+                    {visiblePaymentMethods.map((method) => {
                       const Icon = method.icon;
                       const isSelected = selectedPaymentMethod === method.id;
                       const isDisabled = method.disabled === true;
@@ -1531,16 +1621,15 @@ export default function CheckoutPage() {
 
               <div className="max-h-64 space-y-3 overflow-y-auto px-4 py-4 sm:px-5">
                 {items.map((item) => {
-                  const priceConv = convertAmount(item.product.price);
+                  const priceConv = convertAmount(itemDisplayCup(item.product));
                   const totalConv = priceConv * item.quantity;
                   return (
                     <div key={item.product.id} className="flex gap-3">
                       <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-md bg-muted">
-                        <Image
-                          src={optimizedImageUrl(item.product.image, 128)}
+                        <ProductImage
+                          image={item.product.image}
                           alt={item.product.name}
-                          fill
-                          className="object-cover"
+                          width={128}
                           sizes="56px"
                         />
                       </div>
@@ -1579,6 +1668,16 @@ export default function CheckoutPage() {
                       : "—"}
                   </span>
                 </div>
+
+                {operationalCostBase > 0 && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Gestión del pedido</span>
+                    <span>
+                      {selectedCurrency?.symbol}
+                      {operationalCostConverted.toFixed(2)}
+                    </span>
+                  </div>
+                )}
 
                 <div className="flex items-baseline justify-between border-t pt-3">
                   <span className="text-sm font-semibold">Total</span>

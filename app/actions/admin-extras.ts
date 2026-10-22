@@ -315,6 +315,10 @@ const EMPTY_SETTINGS = {
   light_success_color: '#16a34a',
   light_warning_color: '#d97706',
   font_family: 'Manrope, sans-serif',
+  priceMargin: 0,
+  operationalCost: 0,
+  showPaymentCash: true,
+  showPaymentTransfer: true,
 };
 
 export async function getSettingsAction(token: string) {
@@ -339,6 +343,10 @@ export async function getSettingsAction(token: string) {
     light_success_color: s.light_success_color || EMPTY_SETTINGS.light_success_color,
     light_warning_color: s.light_warning_color || EMPTY_SETTINGS.light_warning_color,
     font_family: s.font_family || EMPTY_SETTINGS.font_family,
+    priceMargin: Number(s.price_margin) || 0,
+    operationalCost: Math.round(Number(s.operational_cost) || 0),
+    showPaymentCash: s.payment_cash_enabled !== false,
+    showPaymentTransfer: s.payment_transfer_enabled !== false,
   };
 }
 
@@ -364,6 +372,21 @@ export async function updateSettingsAction(data: Partial<typeof EMPTY_SETTINGS>,
     light_warning_color: data.light_warning_color,
     font_family: data.font_family,
   };
+  // El margen solo se toca si el llamador lo envía (evita borrarlo al
+  // guardar desde otra pestaña que no lo incluye).
+  if (data.priceMargin !== undefined) {
+    body.price_margin = Number(data.priceMargin) || 0;
+  }
+  if (data.operationalCost !== undefined) {
+    body.operational_cost = Math.max(0, Math.round(Number(data.operationalCost) || 0));
+  }
+  // Métodos de pago: solo si el llamador los envía.
+  if (data.showPaymentCash !== undefined) {
+    body.payment_cash_enabled = data.showPaymentCash === true;
+  }
+  if (data.showPaymentTransfer !== undefined) {
+    body.payment_transfer_enabled = data.showPaymentTransfer === true;
+  }
   if (recs[0]) {
     return pb.collection('settings').update(recs[0].id, body);
   }

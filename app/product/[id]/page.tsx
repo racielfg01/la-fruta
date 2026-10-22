@@ -1,7 +1,6 @@
 "use client";
 
 import { use, useState, useEffect } from "react";
-import Image from "next/image";
 import Link from "next/link";
 import { Header } from "@/components/header";
 import { Button } from "@/components/ui/button";
@@ -12,7 +11,9 @@ import { useCartStore, availableStock } from "@/lib/store";
 import { ProductCard } from "@/components/product-card";
 import { Product } from "@/lib/store";
 import { useCurrency } from "@/lib/currency";
-import { optimizedImageUrl } from "@/lib/image";
+import { displayProductCupPrice } from "@/lib/price-margin";
+import { useMarginConfig } from "@/lib/use-price-margin";
+import { ProductImage } from "@/components/product-image";
 import {
   ArrowLeft,
   Minus,
@@ -35,6 +36,8 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
   const [added, setAdded] = useState(false);
   const { defaultCurrency, currencies, formatPrice, convertPrice } = useCurrency();
   const cupCurrency = currencies.find(c => c.code === 'CUP');
+  const marginCfg = useMarginConfig(product);
+  const shownCup = product ? displayProductCupPrice(product.price, marginCfg, defaultCurrency?.code) : 0;
   const userLocation = useCartStore((state) => state.userLocation);
 
   useEffect(() => {
@@ -125,11 +128,10 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
 
         <div className="grid gap-8 lg:grid-cols-2">
           <div className="relative aspect-square overflow-hidden rounded-2xl">
-            <Image
-              src={optimizedImageUrl(product.image, 1000)}
+            <ProductImage
+              image={product.image}
               alt={product.name}
-              fill
-              className="object-cover"
+              width={1000}
               sizes="(max-width: 1024px) 100vw, 50vw"
               priority
             />
@@ -153,8 +155,8 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
             <div className="mt-4 flex items-baseline gap-2">
               <span className="text-3xl font-bold text-foreground">
                 {cupCurrency && defaultCurrency
-                  ? formatPrice(convertPrice(product.price, cupCurrency, defaultCurrency), defaultCurrency)
-                  : formatPrice(product.price, defaultCurrency)}
+                  ? formatPrice(convertPrice(shownCup, cupCurrency, defaultCurrency), defaultCurrency)
+                  : formatPrice(shownCup, defaultCurrency)}
               </span>
               <span className="text-muted-foreground"> / {product.unit}</span>
             </div>
@@ -251,8 +253,8 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
                   <>
                     <ShoppingCart className="mr-2 h-5 w-5" />
                     Añadir al carrito - {cupCurrency && defaultCurrency
-                      ? formatPrice(convertPrice(product.price * quantity, cupCurrency, defaultCurrency), defaultCurrency)
-                      : formatPrice(product.price * quantity, defaultCurrency)}
+                      ? formatPrice(convertPrice(shownCup * quantity, cupCurrency, defaultCurrency), defaultCurrency)
+                      : formatPrice(shownCup * quantity, defaultCurrency)}
                   </>
                 )}
               </Button>

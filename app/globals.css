@@ -1,3 +1,8 @@
+/* El CSS de @uploadthing/react viene compilado con Tailwind SIN @layer. Un
+   estilo sin capa gana a cualquier capa, así que sus utilidades (.flex-col,
+   .hidden…) pisaban las de la app y anulaban los sm:/md:/lg:. Importarlo en
+   una capa propia, declarada antes que las de Tailwind, lo deja por debajo. */
+@import '@uploadthing/react/styles.css' layer(vendor);
 @import 'tailwindcss';
 @import 'tw-animate-css';
 
@@ -191,19 +196,6 @@
   font-weight: 700;
   font-style: normal;
   font-display: swap;
-}
-
-@media (min-width: 48rem) {
-  .hidden.md\:block { display: block }
-  .block.md\:hidden { display: none }
-  .hidden.md\:flex { display: flex }
-}
-@media (min-width: 64rem) {
-  .hidden.lg\:block { display: block }
-  .hidden.lg\:flex { display: flex }
-}
-@media (min-width: 40rem) {
-  .hidden.sm\:flex { display: flex }
 }
 
 .settings-loading { opacity: 0; }

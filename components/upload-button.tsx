@@ -1,6 +1,8 @@
 "use client";
 
-import "@uploadthing/react/styles.css";
+// El CSS de UploadThing se importa en app/globals.css dentro de una capa:
+// su build trae utilidades de Tailwind sin @layer y, sin capa, ganaban a
+// las utilidades de la app (rompía los sm:/md:/lg: en las páginas con subida).
 import { UploadButton } from "@uploadthing/react";
 import type { OurFileRouter } from "@/app/api/uploadthing/core";
 import { useAuthStore } from "@/lib/auth-context";

@@ -16,7 +16,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -55,7 +55,6 @@ import {
   Pencil,
   Trash2,
   Search,
-  Package,
   Check,
   MapPin,
   AlertTriangle,
@@ -557,15 +556,16 @@ function ProductsAdmin() {
     </SelectContent>
   </Select>
 
-  {/* Limpiar: siempre presente (evita layout shift), oculto si no hay resultados */}
-  {filteredProducts.length > 0 && (
+  {/* Limpiar: solo con filtros aplicados. Sin resultados, el estado vacío
+      ya ofrece su propio botón. En móvil se alinea a la derecha. */}
+  {hasActiveFilters && filteredProducts.length > 0 && (
     <Button
       variant="ghost"
       size="sm"
       onClick={clearFilters}
-      disabled={!hasActiveFilters}
-      className="h-10 shrink-0 text-muted-foreground hover:text-foreground disabled:opacity-40"
+      className="h-10 shrink-0 self-end gap-1.5 text-muted-foreground hover:text-foreground sm:self-auto"
     >
+      <X className="h-3.5 w-3.5" />
       Limpiar
     </Button>
   )}
@@ -660,19 +660,7 @@ function ProductsAdmin() {
         </div>
 
         {/* Desktop: tabla */}
-        <Card className="hidden md:block">
-          <CardHeader className="border-b">
-            <CardTitle className="flex items-center gap-2 text-base">
-              <Package className="h-4 w-4" />
-              {filteredProducts.length} producto
-              {filteredProducts.length !== 1 ? "s" : ""}
-              {hasActiveFilters && products.length !== filteredProducts.length && (
-                <span className="text-sm font-normal text-muted-foreground">
-                  · de {products.length}
-                </span>
-              )}
-            </CardTitle>
-          </CardHeader>
+        <Card className="hidden overflow-hidden md:block">
           <CardContent className="p-0">
             {paginatedProducts.length > 0 ? (
               <>

@@ -90,6 +90,9 @@ export default function DeliveryAdmin() {
 
   const provinceName = (id?: string) => provinces.find((p) => p.id === id)?.name ?? "";
   const municipalityName = (id?: string) => municipalities.find((m) => m.id === id)?.name ?? "";
+  // Las zonas sin ubicación asignada muestran "Sin asignar" en vez de texto vacío.
+  const provinceLabel = (id?: string) => provinceName(id) || "Sin provincia asignada";
+  const municipalityLabel = (id?: string) => municipalityName(id) || "Sin municipio asignado";
 
   const activeZones = deliveryZones.filter((z) => z.active);
 
@@ -420,7 +423,7 @@ export default function DeliveryAdmin() {
                   >
                     <div className="flex items-center gap-2">
                       {provIsOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-                      <span className="font-medium text-sm">{provinceName(provId)}</span>
+                      <span className="font-medium text-sm">{provinceLabel(provId)}</span>
                       <span className="text-xs text-muted-foreground">
                         {activeCount}/{totalZones} zonas activas
                       </span>
@@ -446,7 +449,7 @@ export default function DeliveryAdmin() {
                               >
                                 <div className="flex items-center gap-2">
                                   {munIsOpen ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
-                                  <span className="text-xs font-medium">{municipalityName(munId)}</span>
+                                  <span className="text-xs font-medium">{municipalityLabel(munId)}</span>
                                   <span className="text-xs text-muted-foreground">({zones.length})</span>
                                 </div>
                               </button>
@@ -484,7 +487,7 @@ export default function DeliveryAdmin() {
                     <div className="flex items-center gap-3">
                       {provIsOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
                       <MapPin className="h-4 w-4 text-primary" />
-                      <span className="font-medium">{provinceName(provId)}</span>
+                      <span className="font-medium">{provinceLabel(provId)}</span>
                       <span className="text-sm text-muted-foreground">
                         {activeCount}/{totalZones} zonas activas
                       </span>
@@ -510,7 +513,7 @@ export default function DeliveryAdmin() {
                               >
                                 <div className="flex items-center gap-2">
                                   {munIsOpen ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
-                                  <span className="text-sm font-medium">{municipalityName(munId)}</span>
+                                  <span className="text-sm font-medium">{municipalityLabel(munId)}</span>
                                   <span className="text-xs text-muted-foreground">({zones.length} zonas)</span>
                                 </div>
                               </button>
@@ -564,7 +567,7 @@ export default function DeliveryAdmin() {
                   <div className="min-w-0">
                     <p className="text-sm font-medium truncate">{zone.name}</p>
                     <p className="text-xs text-muted-foreground">
-                      {provinceName(zone.province)} · {municipalityName(zone.municipality)} · {zone.minDistance}-{zone.maxDistance}km
+                      {provinceLabel(zone.province)} · {municipalityLabel(zone.municipality)} · {zone.minDistance}-{zone.maxDistance}km
                     </p>
                   </div>
                 </div>

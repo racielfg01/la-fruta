@@ -84,7 +84,7 @@ function describeAuthError(error: any, kind: 'login' | 'signup'): string {
       const detail = first ? data[first]?.message : undefined;
       return `Datos de registro inválidos${first ? ` (${first})` : ''}${detail ? `: ${detail}` : ''}`;
     }
-    return 'Correo/Teléfono o contraseña incorrectos';
+    return 'Correo o contraseña incorrectos';
   }
   if (status === 401 || status === 403) return 'No tienes permiso para iniciar sesión.';
   if (status === 404) return 'No se encontró el recurso. ¿Falta aplicar el esquema?';
@@ -176,11 +176,12 @@ export async function signupAction(data: SignupData): Promise<AuthResponse> {
   }
 }
 
-export async function loginAction(credentials: { identifier: string; password: string }): Promise<AuthResponse> {
+export async function loginAction(credentials: { email: string; password: string }): Promise<AuthResponse> {
   try {
-    const { identifier, password } = credentials;
-    if (!identifier) {
-      return { success: false, message: '', error: 'Ingresa tu correo o teléfono' };
+    const { email, password } = credentials;
+    const emailValidation = validateEmail(email?.trim() || '');
+    if (!emailValidation.valid) {
+      return { success: false, message: '', error: emailValidation.error };
     }
     if (!password) {
       return { success: false, message: '', error: 'La contraseña es requerida' };
@@ -188,24 +189,9 @@ export async function loginAction(credentials: { identifier: string; password: s
 
     const pb = getEphemeralPB();
 
-    let authData;
-    if (identifier.includes('@')) {
-      authData = await pb.collection('users').authWithPassword(identifier, password);
-    } else {
-      let email = identifier;
-      try {
-        const adminPb = await getAdminPB();
-        const users = await adminPb.collection('users').getList(1, 1, {
-          filter: `phone = "${sanitize(identifier)}"`,
-        });
-        if (users.items.length > 0) {
-          email = users.items[0].email;
-        }
-      } catch {
-        console.warn('Admin lookup failed for phone login, trying identifier as email');
-      }
-      authData = await pb.collection('users').authWithPassword(email, password);
-    }
+    // El acceso es solo por correo electrónico: el teléfono es un dato de
+    // contacto del usuario, no una credencial de entrada.
+    const authData = await pb.collection('users').authWithPassword(email.trim(), password);
 
     const userWithRole = await pb.collection('users').getOne(authData.record.id, {
       expand: 'role_id',

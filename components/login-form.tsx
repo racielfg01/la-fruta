@@ -15,8 +15,8 @@ export default function LoginForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
-  const [formData, setFormData] = useState({ identifier: '', password: '' });
-  const [touched, setTouched] = useState({ identifier: false, password: false });
+  const [formData, setFormData] = useState({ email: '', password: '' });
+  const [touched, setTouched] = useState({ email: false, password: false });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
@@ -26,9 +26,9 @@ export default function LoginForm() {
     setTouched(prev => ({ ...prev, [e.target.name]: true }));
   };
 
-  const isIdentifierValid = formData.identifier.trim().length > 0;
+  const isEmailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email.trim());
   const isPasswordValid = formData.password.length >= 8;
-  const isFormValid = isIdentifierValid && isPasswordValid;
+  const isFormValid = isEmailValid && isPasswordValid;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -58,7 +58,7 @@ export default function LoginForm() {
     <div className="w-full max-w-md mx-auto p-6 space-y-6">
       <div className="text-center">
         <h1 className="text-3xl font-bold text-foreground">Iniciar Sesión</h1>
-        <p className="text-muted-foreground">Ingresa con tu correo o teléfono</p>
+        <p className="text-muted-foreground">Ingresa con tu correo electrónico</p>
       </div>
 
       {error && (
@@ -70,18 +70,19 @@ export default function LoginForm() {
 
       <form onSubmit={handleSubmit} className="space-y-5">
         <div className="space-y-2">
-          <label className="block text-sm font-medium text-foreground">Correo o Teléfono</label>
+          <label className="block text-sm font-medium text-foreground">Correo electrónico</label>
           <Input
-            type="text"
-            name="identifier"
-            value={formData.identifier}
+            type="email"
+            name="email"
+            value={formData.email}
             onChange={handleChange}
             onBlur={handleBlur}
-            placeholder="ejemplo@correo.com o 3001234567"
-            className={touched.identifier && !isIdentifierValid ? 'border-destructive' : ''}
+            placeholder="ejemplo@correo.com"
+            autoComplete="email"
+            className={touched.email && !isEmailValid ? 'border-destructive' : ''}
           />
-          {touched.identifier && !isIdentifierValid && (
-            <div className="text-xs text-destructive">Ingresa tu correo o número de teléfono</div>
+          {touched.email && !isEmailValid && (
+            <div className="text-xs text-destructive">Ingresa un correo electrónico válido</div>
           )}
         </div>
 

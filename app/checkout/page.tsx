@@ -962,8 +962,7 @@ export default function CheckoutPage() {
                     <SelectContent>
                       {activeZones.map((z) => (
                         <SelectItem key={z.id} value={z.id}>
-                          {z.name} · {z.minDistance}-{z.maxDistance} km · $
-                          {z.price.toFixed(2)} {cupCurrency?.code || "CUP"}
+                          {z.name} 
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -1416,19 +1415,8 @@ export default function CheckoutPage() {
                       );
                     })}
                   </RadioGroup>
-                  {selectedCurrency?.code === "CUP" &&
-                    saving.savingCup > 0 &&
-                    usdCurrency && (
-                      <SavingHint
-                        className="mt-3"
-                        currencyCode="USD"
-                        currencySymbol={usdCurrency.symbol}
-                        amount={usdTotal}
-                        savingCup={saving.savingCup}
-                        savingPct={saving.savingPct}
-                        showAmount={false}
-                      />
-                    )}
+
+              
                 </div>
 
                 {selectedMethod && !selectedMethod.disabled && (

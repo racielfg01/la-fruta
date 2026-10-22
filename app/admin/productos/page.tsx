@@ -1,9 +1,10 @@
 "use client";
 
-import { Suspense, useState, useEffect, useCallback, useRef } from "react";
+import { Suspense, useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import { useAdminStore } from "@/lib/admin-store";
-import { Product, Unit, ProductLocation } from "@/lib/store";
+import { useAuthStore } from "@/lib/auth-context";
+import { Product, ProductLocation, DEFAULT_UNITS } from "@/lib/store";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -73,6 +74,7 @@ import { usePagination } from "@/lib/use-pagination";
 import { PaginationBar } from "@/components/pagination-bar";
 import { useCurrency } from "@/lib/currency";
 import { getPublicLocations } from "@/app/actions/public";
+import { getUnitsAction } from "@/app/actions/admin-extras";
 import { toast } from "sonner";
 
 const emptyProduct: Omit<Product, "id"> = {
@@ -123,6 +125,26 @@ function ProductsAdmin() {
   const [productLocations, setProductLocations] = useState<ProductLocation[]>(
     [],
   );
+  // Unidades configurables (Configuración → Unidades). null = aún cargando.
+  const [units, setUnits] = useState<string[] | null>(null);
+  const token = useAuthStore((s) => s.token);
+
+  useEffect(() => {
+    if (!token) return;
+    getUnitsAction(token)
+      .then((rows) => setUnits(rows.filter((u) => u.active).map((u) => u.name)))
+      .catch(() => setUnits([]));
+  }, [token]);
+
+  // La lista configurada; si el producto usa una unidad que ya no está
+  // (desactivada o borrada), se ofrece igual para no cambiarla sin querer.
+  const unitOptions = useMemo(() => {
+    const base = units ?? DEFAULT_UNITS;
+    if (formData.unit && !base.includes(formData.unit)) {
+      return [formData.unit, ...base];
+    }
+    return base;
+  }, [units, formData.unit]);
 
   useEffect(() => {
     getPublicLocations().then((d) => {
@@ -140,12 +162,20 @@ function ProductsAdmin() {
 
   const resetDialog = useCallback(() => {
     setEditingProduct(null);
-    setFormData(emptyProduct);
+    // Unidad por defecto: la de siempre si sigue configurada; si no, la
+    // primera de la lista configurada.
+    const configured = units && units.length > 0 ? units : null;
+    const defaultUnit = configured
+      ? configured.includes(emptyProduct.unit)
+        ? emptyProduct.unit
+        : configured[0]
+      : emptyProduct.unit;
+    setFormData({ ...emptyProduct, unit: defaultUnit });
     setFormErrors({});
     setImageUploaded(false);
     setProductLocations([]);
     setStep(1);
-  }, []);
+  }, [units]);
 
   const handleNewProduct = useCallback(() => {
     resetDialog();
@@ -1005,20 +1035,26 @@ function ProductsAdmin() {
                         <Select
                           value={formData.unit}
                           onValueChange={(value) =>
-                            setFormData({ ...formData, unit: value as Unit })
+                            setFormData({ ...formData, unit: value })
                           }
                         >
                           <SelectTrigger>
-                            <SelectValue />
+                            <SelectValue placeholder="Unidad" />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="por lb">por lb</SelectItem>
-                            <SelectItem value="por kg">por kg</SelectItem>
-                            <SelectItem value="c/u">c/u</SelectItem>
-                            <SelectItem value="por pinta">por pinta</SelectItem>
-                            <SelectItem value="por docena">por docena</SelectItem>
+                            {unitOptions.map((u) => (
+                              <SelectItem key={u} value={u}>
+                                {u}
+                              </SelectItem>
+                            ))}
                           </SelectContent>
                         </Select>
+                        {units && units.length === 0 && (
+                          <p className="text-xs text-muted-foreground">
+                            No hay unidades configuradas. Agrégalas en
+                            Configuración → Unidades.
+                          </p>
+                        )}
                       </Field>
                       <Field>
                         <FieldLabel htmlFor="origin">Origen</FieldLabel>

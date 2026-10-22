@@ -148,6 +148,85 @@ export async function deleteCountryAction(id: string, token: string) {
   return pb.collection('countries').delete(id);
 }
 
+// ── Units (unidades de venta de los productos) ──
+
+export interface UnitRow {
+  id: string;
+  name: string;
+  active: boolean;
+  productsCount: number;
+}
+
+export async function getUnitsAction(token: string): Promise<UnitRow[]> {
+  await verifyAdminAndGetUserId(token);
+  const pb = await getDataPB(token);
+  const rows = await getAllRecords(pb, 'units', { sort: 'name' });
+  const products = await pb.collection('products').getFullList<{ unit?: string }>({ fields: 'unit' });
+  const counts = new Map<string, number>();
+  for (const p of products) {
+    const unit = (p.unit || '').trim();
+    if (!unit) continue;
+    counts.set(unit, (counts.get(unit) || 0) + 1);
+  }
+  return rows.map((u: any) => ({
+    id: u.id,
+    name: u.name,
+    active: u.active !== false,
+    productsCount: counts.get(u.name) || 0,
+  }));
+}
+
+export async function createUnitAction(data: { name: string; active?: boolean }, token: string) {
+  await verifyAdminAndGetUserId(token);
+  const pb = await getDataPB(token);
+  const name = (data.name || '').trim();
+  if (!name) throw new Error('El nombre de la unidad es obligatorio');
+  const dup = await getAllRecords(pb, 'units', { filter: `name = "${sanitize(name)}"` });
+  if (dup.length > 0) throw new Error('Ya existe una unidad con ese nombre');
+  const rec = await pb.collection('units').create({ name, active: data.active !== false });
+  return { id: rec.id, name: rec.name, active: rec.active !== false, productsCount: 0 };
+}
+
+export async function updateUnitAction(
+  id: string,
+  data: { name?: string; active?: boolean },
+  token: string
+) {
+  await verifyAdminAndGetUserId(token);
+  const pb = await getDataPB(token);
+  const before = await getAllRecords(pb, 'units', { filter: `id = "${sanitize(id)}"` });
+  if (before.length === 0) throw new Error('Unidad no encontrada');
+  const previous = before[0];
+  const payload: Record<string, unknown> = {};
+  const name = data.name?.trim();
+  if (name) {
+    if (name !== previous.name) {
+      const dup = await getAllRecords(pb, 'units', { filter: `name = "${sanitize(name)}"` });
+      if (dup.length > 0) throw new Error('Ya existe una unidad con ese nombre');
+      payload.name = name;
+    }
+  }
+  if (data.active !== undefined) payload.active = data.active;
+  const rec = await pb.collection('units').update(id, payload);
+  // Si se renombró, los productos que usaban el nombre anterior pasan al nuevo:
+  // si no, quedarían con una unidad que ya no existe en la lista.
+  if (payload.name) {
+    const products = await pb.collection('products').getFullList({
+      filter: `unit = "${sanitize(previous.name)}"`,
+    });
+    for (const product of products) {
+      await pb.collection('products').update(product.id, { unit: payload.name });
+    }
+  }
+  return { id: rec.id, name: rec.name, active: rec.active !== false };
+}
+
+export async function deleteUnitAction(id: string, token: string) {
+  await verifyAdminAndGetUserId(token);
+  const pb = await getDataPB(token);
+  return pb.collection('units').delete(id);
+}
+
 // ── Roles ──
 
 export async function getRolesAction(token: string) {

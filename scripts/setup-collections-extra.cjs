@@ -94,6 +94,12 @@ async function setup() {
     T.bool("active"),
   ]);
 
+  // 4b. units (unidades de venta de los productos: "por kg", "c/u"…)
+  await createCollection(pb, "units", [
+    T.text("name", true),
+    T.bool("active"),
+  ]);
+
   // 5. bank_accounts (relacion a banks)
   let banksCollId = "";
   try {
@@ -192,6 +198,7 @@ async function setup() {
     "Diez de Octubre", "Cerro", "Marianao", "La Lisa", "Boyeros",
     "Arroyo Naranjo", "Cotorro",
   ];
+  const UNITS = ["por lb", "por kg", "c/u", "por pinta", "por docena"];
 
   const seeds = [];
   const seeded = new Set();
@@ -260,6 +267,16 @@ async function setup() {
       console.log("[seed] countries has data, skipping");
     }
   } catch (e) { console.log("[seed] countries error:", e.message); }
+
+  try {
+    if ((await pb.collection("units").getFullList({ batch: 1 })).length === 0) {
+      for (const name of UNITS) await pb.collection("units").create({ name, active: true });
+      console.log("[seed] units (" + UNITS.length + ")");
+      seeded.add("units");
+    } else {
+      console.log("[seed] units has data, skipping");
+    }
+  } catch (e) { console.log("[seed] units error:", e.message); }
 
   try {
     if ((await pb.collection("banks").getFullList({ batch: 1 })).length === 0) {

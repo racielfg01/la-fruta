@@ -1,9 +1,14 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
-export type Unit = "por lb" | "por kg" | "c/u" | "por pinta" | "por docena";
+/**
+ * Unidad de venta del producto. Es texto libre porque la lista se administra
+ * en Configuración → Unidades (colección `units`); estas son las unidades
+ * que se siembran por defecto y el respaldo si la lista está vacía.
+ */
+export type Unit = string;
 
-export const UNITS: Unit[] = ["por lb", "por kg", "c/u", "por pinta", "por docena"];
+export const DEFAULT_UNITS: Unit[] = ["por lb", "por kg", "c/u", "por pinta", "por docena"];
 
 export interface ProductLocation {
   id: string;

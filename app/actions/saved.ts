@@ -110,6 +110,28 @@ export async function createUserAddressAction(
   return { success: true, id: created.id };
 }
 
+/**
+ * Actualiza una dirección guardada (alias, zona, instrucciones). Necesaria
+ * para poder guardar las instrucciones de una dirección que ya existe: si se
+ * rechazara como duplicada, sus notas nunca se podrían guardar.
+ */
+export async function updateUserAddressAction(
+  id: string,
+  data: { alias?: string; address?: string; zone?: string; notes?: string },
+  token: string
+) {
+  const userId = await requireUserId(token);
+  const pb = await getAdminPB();
+  await getOwned(pb, "user_addresses", id, userId);
+  const payload: Record<string, unknown> = {};
+  if (data.alias !== undefined) payload.alias = data.alias;
+  if (data.address !== undefined) payload.address = data.address;
+  if (data.zone !== undefined) payload.zone = data.zone;
+  if (data.notes !== undefined) payload.notes = data.notes;
+  await pb.collection("user_addresses").update(id, payload);
+  return { success: true, id };
+}
+
 export async function deleteUserAddressAction(id: string, token: string) {
   const userId = await requireUserId(token);
   const pb = await getAdminPB();

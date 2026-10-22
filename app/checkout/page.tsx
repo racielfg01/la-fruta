@@ -60,6 +60,7 @@ import {
   deleteBeneficiaryAction,
   getUserAddressesAction,
   createUserAddressAction,
+  updateUserAddressAction,
   deleteUserAddressAction,
   type Beneficiary,
   type UserAddress,
@@ -69,6 +70,7 @@ import { isValidPhone } from "@/lib/contact-validation";
 import { useCurrencyStore } from "@/lib/currency-store";
 import { effectiveMargin } from "@/lib/price-margin";
 import { cupSavingForItems } from "@/lib/usd-saving";
+import { planSaveAddress } from "@/lib/saved-addresses";
 import { ProductImage } from "@/components/product-image";
 import SavingHint from "@/components/saving-hint";
 import { toast } from "sonner";
@@ -473,14 +475,30 @@ export default function CheckoutPage() {
       return;
     }
     const finalZone = zone.trim() || selectedZone?.name || "";
-    const dup = addresses.some(
-      (a) =>
-        a.address.trim().toLowerCase() === address.trim().toLowerCase() &&
-        (a.zone?.trim().toLowerCase() || "") === finalZone.toLowerCase(),
-    );
-    if (dup) {
-      setSaveAddress(false);
-      toast.info("Ya tienes guardada esta dirección");
+    const plan = planSaveAddress(addresses, {
+      address,
+      zone: finalZone,
+      alias,
+      notes: deliveryNotes,
+    });
+    if (plan.kind === "update") {
+      // La dirección ya existe: en vez de rechazarla y perder las
+      // instrucciones, actualizamos alias y notas de esa misma dirección.
+      setSavingAddress(true);
+      try {
+        await updateUserAddressAction(
+          plan.id,
+          { alias: plan.alias, notes: plan.notes },
+          token,
+        );
+        setAddresses(await getUserAddressesAction(token));
+        setSaveAddress(false);
+        toast.success("Dirección actualizada");
+      } catch (error: any) {
+        toast.error(error?.message || "No se pudo actualizar la dirección");
+      } finally {
+        setSavingAddress(false);
+      }
       return;
     }
     setSavingAddress(true);
@@ -1327,14 +1345,15 @@ export default function CheckoutPage() {
                     <SelectContent>
                       {currencies.map((c) => (
                         <SelectItem key={c.id} value={c.id}>
-                          {c.symbol} {c.code} — {c.name}
+                          {c.symbol} {c.code}
+                           {/* — {c.name} */}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
-                  {rateLine && (
+                  {/* {rateLine && (
                     <p className="text-xs text-muted-foreground">{rateLine}</p>
-                  )}
+                  )} */}
                   {selectedCurrency?.code === "CUP" &&
                     saving.savingCup > 0 &&
                     usdCurrency && (

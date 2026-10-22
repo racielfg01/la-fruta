@@ -59,6 +59,7 @@ async function setup() {
     T.relation("user", usersCollId),
     T.text("full_name", true),
     T.text("phone"),
+    T.text("carnet"),
     T.bool("is_default"),
   ]);
 
@@ -67,6 +68,7 @@ async function setup() {
     T.text("alias"),
     T.text("address", true),
     T.text("zone"),
+    T.text("notes"),
     T.bool("is_default"),
   ]);
 

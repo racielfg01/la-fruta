@@ -8,6 +8,21 @@ export function sanitize(value: string): string {
   return value.replace(/"/g, '\\"')
 }
 
+/**
+ * Construye un filtro OR de igualdades con sintaxis válida de PocketBase:
+ * el campo se repite en CADA operando (`campo = "a" || campo = "b"`).
+ * Con cero ids devuelve null (sin filtro).
+ */
+export function buildOrFilter(
+  fieldName: string,
+  ids: string[]
+): string | null {
+  const clauses = ids.map(
+    (id) => `${fieldName} = "${sanitize(String(id))}"`
+  );
+  return clauses.length > 0 ? clauses.join(" || ") : null;
+}
+
 export async function getAllRecords<T = Record<string, any>>(
   pb: PocketBase,
   collectionName: string,

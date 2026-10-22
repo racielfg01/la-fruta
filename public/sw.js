@@ -1,4 +1,4 @@
-const CACHE = "la-fruta-v3";
+const CACHE = "la-fruta-v4";
 const STATIC_ASSETS = [
   "/",
   "/offline",

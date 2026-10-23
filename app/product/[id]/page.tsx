@@ -65,7 +65,7 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
       setRelatedProducts(
         all
           .filter((p) => p.category === product.category && p.id !== product.id)
-          .slice(0, 4)
+          .slice(0, 8)
       );
     });
     return () => {
@@ -120,7 +120,7 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
   return (
     <div className="min-h-screen bg-background">
       <Header />
-      <main className="container mx-auto px-4 py-8">
+      <main className="container mx-auto px-4 pb-28 pt-8 sm:pb-8">
         <Link
           href="/#products"
           className="mb-6 inline-flex items-center text-sm text-muted-foreground hover:text-foreground"
@@ -231,23 +231,27 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
             </Card>
 
             <div className="mt-8 flex flex-col gap-4 sm:flex-row sm:items-center">
-              <div className="flex items-center gap-3">
+              <div className="flex items-center justify-between gap-3 sm:justify-start">
                 <span className="text-sm font-medium text-foreground">Cantidad:</span>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5">
                   <Button
                     variant="outline"
                     size="icon"
+                    className="h-9 w-9"
                     onClick={() => setQuantity(Math.max(1, quantity - 1))}
                     disabled={quantity <= 1}
+                    aria-label="Disminuir cantidad"
                   >
                     <Minus className="h-4 w-4" />
                   </Button>
-                  <span className="w-12 text-center text-lg font-medium">{quantity}</span>
+                  <span className="w-10 text-center text-base font-medium">{quantity}</span>
                   <Button
                     variant="outline"
                     size="icon"
+                    className="h-9 w-9"
                     onClick={() => setQuantity(Math.min(stock, quantity + 1))}
                     disabled={quantity >= stock}
+                    aria-label="Aumentar cantidad"
                   >
                     <Plus className="h-4 w-4" />
                   </Button>
@@ -256,19 +260,19 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
 
               <Button
                 size="lg"
-                className="flex-1 sm:flex-none"
+                className="hidden h-11 w-full gap-2 sm:flex sm:w-auto sm:flex-none"
                 onClick={handleAddToCart}
                 disabled={!inStock || quantity > stock || added}
               >
                 {added ? (
                   <>
-                    <Check className="mr-2 h-5 w-5" />
+                    <Check className="h-5 w-5" />
                     Añadido al carrito
                   </>
                 ) : (
                   <>
-                    <ShoppingCart className="mr-2 h-5 w-5" />
-                    Añadir al carrito - {cupCurrency && defaultCurrency
+                    <ShoppingCart className="h-5 w-5" />
+                    Añadir al carrito · {cupCurrency && defaultCurrency
                       ? formatPrice(convertPrice(shownCup * quantity, cupCurrency, defaultCurrency), defaultCurrency)
                       : formatPrice(shownCup * quantity, defaultCurrency)}
                   </>
@@ -280,17 +284,55 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
 
         {relatedProducts.length > 0 && (
           <section className="mt-16">
-            <h2 className="mb-6 font-[family-name:var(--font-playfair)] text-2xl font-bold text-foreground">
+            <h2 className="mb-4 font-[family-name:var(--font-playfair)] text-2xl font-bold text-foreground">
               También te puede interesar
             </h2>
-            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+            <div
+              className="-mx-4 flex snap-x snap-mandatory scroll-px-4 gap-3 overflow-x-auto overscroll-x-contain px-4 pb-2 [scrollbar-width:none] sm:gap-4 [&::-webkit-scrollbar]:hidden"
+              role="region"
+              aria-label="Productos relacionados"
+              tabIndex={0}
+            >
               {relatedProducts.map((p) => (
-                <ProductCard key={p.id} product={p} />
+                <ProductCard key={p.id} product={p} compact />
               ))}
             </div>
           </section>
         )}
       </main>
+
+      {inStock && (
+        <div className="fixed inset-x-0 bottom-0 z-40 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 sm:hidden">
+          <div className="mx-auto flex max-w-lg items-center gap-3 px-4 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] pt-3">
+            <div className="min-w-0 flex-1">
+              <p className="text-xs text-muted-foreground">Total</p>
+              <p className="truncate text-base font-bold text-foreground">
+                {cupCurrency && defaultCurrency
+                  ? formatPrice(convertPrice(shownCup * quantity, cupCurrency, defaultCurrency), defaultCurrency)
+                  : formatPrice(shownCup * quantity, defaultCurrency)}
+              </p>
+            </div>
+            <Button
+              size="lg"
+              className="h-11 shrink-0 gap-2"
+              onClick={handleAddToCart}
+              disabled={quantity > stock || added}
+            >
+              {added ? (
+                <>
+                  <Check className="h-5 w-5" />
+                  Añadido
+                </>
+              ) : (
+                <>
+                  <ShoppingCart className="h-5 w-5" />
+                  Añadir al carrito
+                </>
+              )}
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

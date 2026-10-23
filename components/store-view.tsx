@@ -1051,8 +1051,8 @@ function MasonryCard({
   onHover: (id: string | null) => void;
   priority?: boolean;
 }) {
-  const mobileHeights = ["h-52", "h-64", "h-56", "h-72"];
-  const desktopHeights = ["h-56", "h-72", "h-64", "h-80"];
+  const mobileHeights = ["h-44", "h-52", "h-48", "h-60"];
+  const desktopHeights = ["h-48", "h-60", "h-52", "h-64"];
   const [imageHeight, setImageHeight] = useState(desktopHeights[heightVariant]);
   const { defaultCurrency, currencies, formatPrice, convertPrice } =
     useCurrency();
@@ -1223,7 +1223,7 @@ function ProductCard({
       onMouseLeave={() => onHover(null)}
     >
       <Link href={`/product/${product.id}`}>
-        <div className="relative aspect-square overflow-hidden bg-muted">
+        <div className="relative aspect-[4/3] overflow-hidden bg-muted">
           <Image
             src={optimizedImageUrl(product.image || '/placeholder.svg', 640)}
             alt={product.name}

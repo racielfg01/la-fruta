@@ -139,6 +139,7 @@ async function setup() {
     T.number("operational_cost"),
     T.bool("payment_cash_enabled"),
     T.bool("payment_transfer_enabled"),
+    T.text("whatsapp_phone"),
   ]);
 
   // 7. products: zonas disponibles (CSV de ids de municipio)

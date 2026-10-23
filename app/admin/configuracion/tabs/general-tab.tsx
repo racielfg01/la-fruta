@@ -11,7 +11,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ImageUpload } from "@/components/upload-button";
 import { Switch } from "@/components/ui/switch";
 import { getSettingsAction, updateSettingsAction } from "@/app/actions/admin-extras";
-import { Save, Palette, RotateCcw, Loader2, Moon, Sun } from "lucide-react";
+import { Save, Palette, RotateCcw, Loader2, Moon, Sun, MessageCircle } from "lucide-react";
+import { normalizeWhatsAppPhone } from "@/lib/whatsapp";
 import { toast } from "sonner";
 import type { StoreSettings } from "@/lib/settings-store";
 
@@ -36,6 +37,7 @@ const DEFAULTS: StoreSettings = {
   operationalCost: 0,
   showPaymentCash: true,
   showPaymentTransfer: true,
+  whatsappPhone: "",
 };
 
 export default function ConfiguracionPage() {
@@ -175,6 +177,43 @@ export default function ConfiguracionPage() {
                   </div>
                 </div>
               </Field>
+            </CardContent>
+          </Card>
+
+          {/* Contacto y soporte */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <MessageCircle className="h-5 w-5" />
+                Contacto y soporte
+              </CardTitle>
+              <CardDescription>
+                Botón de WhatsApp en la tienda para que los clientes te
+                escriban directamente.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <Field>
+                <FieldLabel>Número de WhatsApp</FieldLabel>
+                <Input
+                  value={form.whatsappPhone ?? ""}
+                  onChange={(e) => update({ whatsappPhone: e.target.value })}
+                  placeholder="Ej: +53 5555 1234"
+                  inputMode="tel"
+                />
+                <p className="mt-1.5 text-xs text-muted-foreground">
+                  Incluye el código de país. El enlace usa solo los dígitos. Si
+                  lo dejas vacío, el botón no aparece en la tienda.
+                </p>
+              </Field>
+              {normalizeWhatsAppPhone(form.whatsappPhone).length >= 8 && (
+                <p className="text-xs text-muted-foreground">
+                  Se abrirá{" "}
+                  <span className="font-mono text-foreground">
+                    wa.me/{normalizeWhatsAppPhone(form.whatsappPhone)}
+                  </span>
+                </p>
+              )}
             </CardContent>
           </Card>
 

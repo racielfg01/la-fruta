@@ -398,6 +398,7 @@ const EMPTY_SETTINGS = {
   operationalCost: 0,
   showPaymentCash: true,
   showPaymentTransfer: true,
+  whatsappPhone: '',
 };
 
 export async function getSettingsAction(token: string) {
@@ -426,6 +427,7 @@ export async function getSettingsAction(token: string) {
     operationalCost: Math.round(Number(s.operational_cost) || 0),
     showPaymentCash: s.payment_cash_enabled !== false,
     showPaymentTransfer: s.payment_transfer_enabled !== false,
+    whatsappPhone: s.whatsapp_phone || '',
   };
 }
 
@@ -450,6 +452,7 @@ export async function updateSettingsAction(data: Partial<typeof EMPTY_SETTINGS>,
     light_success_color: data.light_success_color,
     light_warning_color: data.light_warning_color,
     font_family: data.font_family,
+    whatsapp_phone: data.whatsappPhone ?? '',
   };
   // El margen solo se toca si el llamador lo envía (evita borrarlo al
   // guardar desde otra pestaña que no lo incluye).

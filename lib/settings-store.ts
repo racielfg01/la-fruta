@@ -26,6 +26,8 @@ export interface StoreSettings {
   /** Métodos de pago visibles en el checkout. */
   showPaymentCash?: boolean;
   showPaymentTransfer?: boolean;
+  /** Número de WhatsApp para soporte (formato internacional, solo dígitos). */
+  whatsappPhone?: string;
 }
 
 const EMPTY: StoreSettings = {
@@ -37,6 +39,7 @@ const EMPTY: StoreSettings = {
   operationalCost: 0,
   showPaymentCash: true,
   showPaymentTransfer: true,
+  whatsappPhone: '',
 };
 
 interface SettingsState {
@@ -75,6 +78,7 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
       operationalCost: Number(data.operationalCost) || 0,
       showPaymentCash: data.showPaymentCash !== false,
       showPaymentTransfer: data.showPaymentTransfer !== false,
+      whatsappPhone: data.whatsappPhone || '',
     };
     set({ settings: s, loading: false, initialized: true });
     applyBrandCSS(s);

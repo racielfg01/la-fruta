@@ -58,6 +58,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { getPublicProducts } from "@/app/actions/public-products";
 import { LocationSelector } from "@/components/location-selector";
+import { SupportWhatsAppButton } from "@/components/support-whatsapp-button";
 import {
   Dialog,
   DialogContent,
@@ -289,6 +290,7 @@ export function StoreView() {
     <TooltipProvider delayDuration={300}>
       <div className="min-h-screen bg-background">
         <Header />
+        <SupportWhatsAppButton />
 
         {/* Hero compacto */}
         <section className="border-b bg-gradient-to-b from-primary/5 via-primary/[0.02] to-background">

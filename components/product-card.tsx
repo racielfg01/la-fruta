@@ -41,7 +41,7 @@ export function ProductCard({ product, compact = false }: ProductCardProps) {
   return (
     <Card
       className={cn(
-        "group overflow-hidden transition-all hover:shadow-lg",
+        "group overflow-hidden pt-0 transition-all hover:shadow-lg",
         compact
           ? "w-36 shrink-0 snap-start gap-0 py-0 hover:shadow-md sm:w-40 lg:w-44"
           : undefined,

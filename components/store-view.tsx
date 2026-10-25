@@ -1029,7 +1029,7 @@ function MasonryCard({
 
   return (
     <Card
-      className={`group overflow-hidden border bg-card shadow-none transition-all duration-300 ${
+      className={`group overflow-hidden border bg-card pt-0 shadow-none transition-all duration-300 ${
         isHovered ? "shadow-md ring-1 ring-primary/20" : ""
       }`}
       onMouseEnter={() => onHover(product.id)}
@@ -1175,7 +1175,7 @@ function ProductCard({
 
   return (
     <Card
-      className={`group overflow-hidden border bg-card shadow-none transition-all duration-300 ${
+      className={`group overflow-hidden border bg-card pt-0 shadow-none transition-all duration-300 ${
         isHovered ? "shadow-md ring-1 ring-primary/20" : ""
       }`}
       onMouseEnter={() => onHover(product.id)}

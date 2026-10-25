@@ -33,6 +33,13 @@ export function Header() {
   const settings = useSettingsStore((s) => s.settings);
   const initSettings = useSettingsStore((s) => s.init);
 
+  // Mismo tratamiento de marca que el footer: "Merca" en primary y "Toma" en
+  // destructive. Si el nombre se personaliza desde Configuración, se usa el
+  // nombre completo en primary para no romper la marca.
+  const brandName = settings.storeName?.trim();
+  const isDefaultBrand =
+    !brandName || brandName.toLowerCase().replace(/\s+/g, "") === "mercatoma";
+
   useEffect(() => {
     initSettings();
   }, [initSettings]);
@@ -51,8 +58,15 @@ export function Header() {
           <div className="flex h-10 w-10 items-center justify-center rounded-full overflow-hidden">
             <Image className="object-cover" src={settings.logo || "/icon-512x512.png"} alt={settings.storeName || "logo"} width={40} height={40} priority/>
           </div>
-          <span className="font-[family-name:var(--font-playfair)] text-2xl font-semibold text-foreground">
-            {settings.storeName || <><span className="text-primary">Merca</span><span className="text-destructive">Toma</span></>}
+          <span className="font-[family-name:var(--font-playfair)] text-2xl font-bold">
+            {isDefaultBrand ? (
+              <>
+                <span className="text-primary">Merca</span>
+                <span className="text-destructive">Toma</span>
+              </>
+            ) : (
+              <span className="text-primary">{brandName}</span>
+            )}
           </span>
         </Link>
 

@@ -97,13 +97,14 @@ export function Header() {
         </nav>
 
         <div className="flex items-center gap-2">
-          {/* Alternar tema claro/oscuro */}
+          {/* Alternar tema claro/oscuro (solo escritorio: en móvil el menú
+              tiene prioridad y el botón estorba en la barra). */}
           <Button
             variant="ghost"
             size="icon"
             onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
             aria-label="Cambiar tema"
-            className="min-h-[44px] min-w-[44px]"
+            className="hidden min-h-[44px] min-w-[44px] md:inline-flex"
           >
             {resolvedTheme === "dark" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
           </Button>

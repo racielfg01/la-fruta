@@ -52,7 +52,6 @@ import {
   ArrowUpDown,
   Sparkles,
   Loader2,
-  Globe,
 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
@@ -554,14 +553,14 @@ export function StoreView() {
                     value={selectedCurrency?.id}
                     onValueChange={setCurrency}
                   >
-                    <SelectTrigger className="h-8 gap-1.5 rounded-full text-xs">
-                      <Globe className="h-3.5 w-3.5 text-muted-foreground" />
+                    <SelectTrigger size="sm" className="h-8 gap-1.5 rounded-full border-primary bg-primary text-xs font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90 focus-visible:ring-primary/40 dark:bg-primary dark:hover:bg-primary/90 [&_svg:not([class*='text-'])]:text-primary-foreground">
                       <SelectValue placeholder="Moneda" />
                     </SelectTrigger>
                     <SelectContent align="end">
                       {currencies.map((c) => (
                         <SelectItem key={c.id} value={c.id}>
-                          {c.symbol} {c.code}
+                          {/* {c.symbol}  */}
+                          {c.code}
                         </SelectItem>
                       ))}
                     </SelectContent>

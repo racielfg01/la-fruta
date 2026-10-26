@@ -4,6 +4,7 @@ import { Suspense } from "react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import GeneralTab from "./tabs/general-tab";
+import BannersTab from "./tabs/banners-tab";
 import UbicacionesTab from "./tabs/ubicaciones-tab";
 import MonedasTab from "./tabs/monedas-tab";
 import PaisesTab from "./tabs/paises-tab";
@@ -13,6 +14,7 @@ import RolesTab from "./tabs/roles-tab";
 
 const TABS = [
   { value: "general", label: "General" },
+  { value: "banners", label: "Banners" },
   { value: "ubicaciones", label: "Ubicaciones" },
   { value: "monedas", label: "Monedas" },
   { value: "paises", label: "Países" },
@@ -41,6 +43,9 @@ function ConfiguracionTabs() {
       </TabsList>
       <TabsContent value="general">
         <GeneralTab />
+      </TabsContent>
+      <TabsContent value="banners">
+        <BannersTab />
       </TabsContent>
       <TabsContent value="ubicaciones">
         <UbicacionesTab />

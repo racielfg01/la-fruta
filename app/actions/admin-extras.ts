@@ -474,3 +474,118 @@ export async function updateSettingsAction(data: Partial<typeof EMPTY_SETTINGS>,
   }
   return pb.collection('settings').create(body);
 }
+// ── Banners (franjas de la portada) ──
+
+export type BannerLinkType = 'none' | 'product' | 'url';
+
+export interface BannerRow {
+  id: string;
+  title: string;
+  subtitle: string;
+  image: string;
+  linkType: BannerLinkType;
+  productId: string;
+  url: string;
+  active: boolean;
+  sort: number;
+}
+
+export interface BannerInput {
+  title?: string;
+  subtitle?: string;
+  image?: string;
+  linkType?: BannerLinkType;
+  productId?: string;
+  url?: string;
+  active?: boolean;
+  sort?: number;
+}
+
+/** Solo rutas internas o http(s): evita `javascript:` y similares en el href. */
+function safeBannerUrl(raw: string): string {
+  const url = raw.trim();
+  if (!url) return '';
+  if (url.startsWith('/')) return url;
+  try {
+    const parsed = new URL(url);
+    return parsed.protocol === 'http:' || parsed.protocol === 'https:' ? url : '';
+  } catch {
+    return '';
+  }
+}
+
+function mapBanner(b: any): BannerRow {
+  const linkType: BannerLinkType =
+    b.link_type === 'product' || b.link_type === 'url' ? b.link_type : 'none';
+  return {
+    id: b.id,
+    title: b.title || '',
+    subtitle: b.subtitle || '',
+    image: b.image || '',
+    linkType,
+    productId: b.product_id || '',
+    url: b.url || '',
+    active: b.active !== false,
+    sort: Number(b.sort) || 0,
+  };
+}
+
+/** Valida el destino según el tipo y devuelve solo los campos de enlace. */
+function bannerLinkFields(data: BannerInput) {
+  const linkType: BannerLinkType = data.linkType || 'none';
+  if (linkType === 'product') {
+    const productId = (data.productId || '').trim();
+    if (!productId) throw new Error('Elige el producto al que lleva el banner');
+    return { link_type: linkType, product_id: productId, url: '' };
+  }
+  if (linkType === 'url') {
+    const url = safeBannerUrl(data.url || '');
+    if (!url) throw new Error('La URL debe empezar por http(s):// o por /');
+    return { link_type: linkType, product_id: '', url };
+  }
+  return { link_type: 'none', product_id: '', url: '' };
+}
+
+export async function getBannersAction(token: string): Promise<BannerRow[]> {
+  await verifyAdminAndGetUserId(token);
+  const pb = await getDataPB(token);
+  const rows = await getAllRecords(pb, 'banners', { sort: 'sort,created' });
+  return rows.map(mapBanner);
+}
+
+export async function createBannerAction(data: BannerInput, token: string) {
+  await verifyAdminAndGetUserId(token);
+  const pb = await getDataPB(token);
+  const rec = await pb.collection('banners').create({
+    title: (data.title || '').trim(),
+    subtitle: (data.subtitle || '').trim(),
+    image: (data.image || '').trim(),
+    active: data.active !== false,
+    sort: Number(data.sort) || 0,
+    ...bannerLinkFields(data),
+  });
+  return mapBanner(rec);
+}
+
+export async function updateBannerAction(id: string, data: BannerInput, token: string) {
+  if (!id) throw new Error('ID de banner requerido');
+  await verifyAdminAndGetUserId(token);
+  const pb = await getDataPB(token);
+  const body: Record<string, unknown> = {};
+  if (data.title !== undefined) body.title = data.title.trim();
+  if (data.subtitle !== undefined) body.subtitle = data.subtitle.trim();
+  if (data.image !== undefined) body.image = data.image.trim();
+  if (data.active !== undefined) body.active = data.active === true;
+  if (data.sort !== undefined) body.sort = Number(data.sort) || 0;
+  if (data.linkType !== undefined) Object.assign(body, bannerLinkFields(data));
+  const rec = await pb.collection('banners').update(id, body);
+  return mapBanner(rec);
+}
+
+export async function deleteBannerAction(id: string, token: string) {
+  if (!id) throw new Error('ID de banner requerido');
+  await verifyAdminAndGetUserId(token);
+  const pb = await getDataPB(token);
+  await pb.collection('banners').delete(id);
+  return true;
+}

@@ -118,3 +118,39 @@ export async function getPublicSettings() {
     return { storeName: '', storeDescription: '', logo: '', theme: 'system', font: 'poppins', background_color: '', primary_color: '', accent_color: '', success_color: '', warning_color: '', light_background_color: '', light_primary_color: '', light_accent_color: '', light_success_color: '', light_warning_color: '', font_family: '', priceMargin: 0, operationalCost: 0, showPaymentCash: true, showPaymentTransfer: true, whatsappPhone: '' };
   }
 }
+// ── Banners (portada) ──
+
+export interface PublicBanner {
+  id: string;
+  title: string;
+  subtitle: string;
+  image: string;
+  linkType: 'none' | 'product' | 'url';
+  productId: string;
+  url: string;
+}
+
+/** Banners activos, en el orden que fijó el administrador. */
+export async function getPublicBanners(): Promise<PublicBanner[]> {
+  try {
+    const pb = getPB();
+    const rows = await getAllRecords(pb, 'banners', {
+      filter: 'active = true',
+      sort: 'sort,created',
+    });
+    return rows.map((b: any) => ({
+      id: b.id,
+      title: b.title || '',
+      subtitle: b.subtitle || '',
+      image: b.image || '',
+      linkType:
+        b.link_type === 'product' || b.link_type === 'url' ? b.link_type : 'none',
+      productId: b.product_id || '',
+      url: b.url || '',
+    }));
+  } catch (error) {
+    // Colección ausente o sin permisos: la portada se queda como está.
+    console.error('Error fetching banners:', error);
+    return [];
+  }
+}

@@ -56,6 +56,8 @@ import {
 import Link from "next/link";
 import Image from "next/image";
 import { getPublicProducts } from "@/app/actions/public-products";
+import { getPublicBanners } from "@/app/actions/public";
+import { BannerCarousel, type Banner } from "@/components/banner-carousel";
 import { LocationSelector } from "@/components/location-selector";
 import { SiteFooter } from "@/components/site-footer";
 import { SupportWhatsAppButton } from "@/components/support-whatsapp-button";
@@ -89,6 +91,7 @@ const SORT_LABELS: Record<SortOption, string> = {
 
 export function StoreView() {
   const [products, setProducts] = useState<Product[]>([]);
+  const [banners, setBanners] = useState<Banner[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -132,12 +135,14 @@ export function StoreView() {
       setLoading(true);
       setLoadError(null);
       try {
-        const { products: prods, categories: cats } = await getPublicProducts();
+        const [{ products: prods, categories: cats }, bannersData] =
+          await Promise.all([getPublicProducts(), getPublicBanners()]);
         const prodsWithNumberPrice = prods.map((p) => ({
           ...p,
           price: Number(p.price),
         })) as Product[];
         setProducts(prodsWithNumberPrice);
+        setBanners(bannersData);
         setCategories(cats);
         if (prods.length === 0) setLoadError("No hay productos disponibles");
       } catch (e) {
@@ -292,36 +297,46 @@ export function StoreView() {
         <Header />
         <SupportWhatsAppButton />
 
-        {/* Hero compacto */}
-        <section className="border-b bg-gradient-to-b from-primary/5 via-primary/[0.02] to-background">
-          <div className="container mx-auto px-4 py-8 sm:px-6 sm:py-10 lg:px-8 lg:py-12">
-            <div className="flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
-              <div className="max-w-2xl">
-                <h1 className="font-[family-name:var(--font-playfair)] text-3xl font-bold tracking-tight text-foreground sm:text-4xl lg:text-5xl">
-                  Nuestra Tienda
-                </h1>
-                <p className="mt-2 text-sm text-muted-foreground sm:text-base lg:text-lg">
-                  Frutas frescas y productos agrícolas seleccionados del día.
-                </p>
-              </div>
+        {/* El hero solo aparece sin banners: con banners, el carrusel ocupa su lugar. */}
+        {banners.length === 0 && (
+          <section className="border-b bg-gradient-to-b from-primary/5 via-primary/[0.02] to-background">
+            <div className="container mx-auto px-4 py-8 sm:px-6 sm:py-10 lg:px-8 lg:py-12">
+              <div className="flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
+                <div className="max-w-2xl">
+                  <h1 className="font-[family-name:var(--font-playfair)] text-3xl font-bold tracking-tight text-foreground sm:text-4xl lg:text-5xl">
+                    Nuestra Tienda
+                  </h1>
+                  <p className="mt-2 text-sm text-muted-foreground sm:text-base lg:text-lg">
+                    Frutas frescas y productos agrícolas seleccionados del día.
+                  </p>
+                </div>
 
-              <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-muted-foreground">
-                <span className="flex items-center gap-1.5">
-                  <Leaf className="h-4 w-4 text-emerald-600" />
-                  {products.length} productos
-                </span>
-                <span className="flex items-center gap-1.5">
-                  <Truck className="h-4 w-4 text-blue-600" />
-                  Envío por zona
-                </span>
-                <span className="flex items-center gap-1.5">
-                  <Shield className="h-4 w-4 text-amber-600" />
-                  Garantía de frescura
-                </span>
+                <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-muted-foreground">
+                  <span className="flex items-center gap-1.5">
+                    <Leaf className="h-4 w-4 text-emerald-600" />
+                    {products.length} productos
+                  </span>
+                  <span className="flex items-center gap-1.5">
+                    <Truck className="h-4 w-4 text-blue-600" />
+                    Envío por zona
+                  </span>
+                  <span className="flex items-center gap-1.5">
+                    <Shield className="h-4 w-4 text-amber-600" />
+                    Garantía de frescura
+                  </span>
+                </div>
               </div>
             </div>
-          </div>
-        </section>
+          </section>
+        )}
+
+        {/* Sin hero visible, la página conserva su encabezado para lectores de pantalla y buscadores. */}
+        {banners.length > 0 && <h1 className="sr-only">Nuestra Tienda</h1>}
+
+        <BannerCarousel
+          banners={banners}
+          validProductIds={products.map((p) => p.id)}
+        />
 
         {/* Toolbar sticky: 2 filas limpias */}
         <div className="sticky top-16 z-40 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">

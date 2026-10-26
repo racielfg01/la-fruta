@@ -29,13 +29,13 @@ const ADMIN_PASS = process.env.POCKETBASE_ADMIN_PASSWORD;
 
 const PocketBase = require("pocketbase").default || require("pocketbase");
 
-async function createCollection(pb, name, fields) {
+async function createCollection(pb, name, fields, rules = {}) {
   const existing = await pb.collections.getOne(name).catch(() => null);
   if (existing) {
     console.log(`[collection] "${name}" already exists, skipping`);
     return;
   }
-  await pb.collections.create({ name, type: "base", fields });
+  await pb.collections.create({ name, type: "base", fields, ...rules });
   console.log(`[collection] created "${name}"`);
 }
 
@@ -56,6 +56,9 @@ const T = {
   number: (name, required = false) => ({ name, type: "number", required }),
   bool: (name) => ({ name, type: "bool", required: false }),
   json: (name) => ({ name, type: "json", required: false, maxSelect: 1, maxSize: 200000 }),
+  autodate: (name, onUpdate = false) => ({
+    name, type: "autodate", onCreate: true, onUpdate,
+  }),
   relation: (name, collectionId) => ({
     name, type: "relation", required: false, collectionId,
     cascadeDelete: false, minSelect: 0, maxSelect: 1,
@@ -99,6 +102,33 @@ async function setup() {
     T.text("name", true),
     T.bool("active"),
   ]);
+
+  // 4c. banners (franjas de la portada). Lectura pública; escritura solo admin.
+  await createCollection(
+    pb,
+    "banners",
+    [
+      T.text("title"),
+      T.text("subtitle"),
+      T.text("image"),
+      {
+        name: "link_type",
+        type: "select",
+        required: false,
+        maxSelect: 1,
+        values: ["none", "product", "url"],
+      },
+      T.text("product_id"),
+      T.text("url"),
+      T.bool("active"),
+      T.number("sort"),
+      // PocketBase no añade los timestamps solo: sin ellos, ordenar por
+      // `created` devuelve 400 y el carrusel no tiene desempate.
+      T.autodate("created"),
+      T.autodate("updated", true),
+    ],
+    { listRule: "", viewRule: "" }
+  );
 
   // 5. bank_accounts (relacion a banks)
   let banksCollId = "";

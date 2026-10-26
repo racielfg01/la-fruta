@@ -24,7 +24,6 @@ import {
   Edit2,
   Save,
   X,
-  Check,
   ChevronDown,
   ChevronUp,
   Search,
@@ -523,77 +522,6 @@ export default function ProfilePage() {
               </Card>
             </div>
           </div>
-
-          {/* Seguimiento de órdenes activas */}
-          {filteredOrders.some(o => o.status !== "delivered" && o.status !== "cancelled") && (
-            <Card className="mt-8">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Package className="h-5 w-5 text-primary" />
-                  Seguimiento de órdenes activas
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {filteredOrders
-                  .filter(o => o.status !== "delivered" && o.status !== "cancelled")
-                  .slice(0, 3)
-                  .map((order) => {
-                    const statusSteps = [
-                      { key: "pending", label: "Pendiente" },
-                      { key: "confirmed", label: "Confirmado" },
-                      { key: "preparing", label: "Preparando" },
-                      { key: "shipped", label: "Enviado" },
-                      { key: "delivered", label: "Entregado" },
-                    ];
-                    const currentIdx = statusSteps.findIndex(s => s.key === order.status);
-
-                    return (
-                      <div key={order.id} className="rounded-lg border p-4">
-                        <div className="flex items-center justify-between mb-3">
-                          <span className="text-sm font-mono font-semibold">
-                            #{order.id.slice(0, 8)}
-                          </span>
-                          {getStatusBadge(order.status)}
-                        </div>
-                        <div className="relative">
-                          <div className="absolute left-[11px] top-2 bottom-2 w-0.5 bg-border" />
-                          <div className="space-y-3">
-                            {statusSteps.map((step, idx) => {
-                              const isCompleted = idx <= currentIdx;
-                              const isCurrent = idx === currentIdx;
-                              return (
-                                <div key={step.key} className="flex items-center gap-3">
-                                  <div
-                                    className={`relative z-10 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 ${
-                                      isCompleted
-                                        ? "border-primary bg-primary text-primary-foreground"
-                                        : "border-border bg-background text-muted-foreground"
-                                    } ${isCurrent ? "ring-2 ring-primary/30" : ""}`}
-                                  >
-                                    {isCompleted ? (
-                                      <Check className="h-3 w-3" />
-                                    ) : (
-                                      <div className="h-2 w-2 rounded-full bg-border" />
-                                    )}
-                                  </div>
-                                  <span
-                                    className={`text-sm ${
-                                      isCompleted ? "font-medium text-foreground" : "text-muted-foreground"
-                                    }`}
-                                  >
-                                    {step.label}
-                                  </span>
-                                </div>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-              </CardContent>
-            </Card>
-          )}
 
           {/* Soporte */}
           <Card className="mt-8">

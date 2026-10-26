@@ -4,6 +4,10 @@ import { useState, useEffect } from "react";
 import { useAuthStore, AuthUser } from "@/lib/auth-context";
 import { useRouter } from "next/navigation";
 import { getUserOrders, updateUserProfile } from "@/app/actions/orders";
+import {
+  BeneficiariesSection,
+  SavedAddressesSection,
+} from "@/components/profile-saved";
 import { Header } from "@/components/header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -212,7 +216,7 @@ export default function ProfilePage() {
 
           <div className="grid gap-8 md:grid-cols-3">
             {/* Sidebar - Datos del usuario */}
-            <div className="md:col-span-1">
+            <div className="space-y-6 md:col-span-1">
               <Card>
                 <CardContent className="p-6">
                   <div className="flex flex-col items-center text-center">
@@ -293,6 +297,9 @@ export default function ProfilePage() {
                   </div>
                 </CardContent>
               </Card>
+
+              <SavedAddressesSection token={token} />
+              <BeneficiariesSection token={token} />
             </div>
 
             {/* Historial de órdenes */}

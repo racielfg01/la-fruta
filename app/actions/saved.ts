@@ -68,6 +68,24 @@ export async function createBeneficiaryAction(
   return { success: true, id: created.id };
 }
 
+/** Edita un beneficiario guardado (nombre, teléfono o carnet). */
+export async function updateBeneficiaryAction(
+  id: string,
+  data: { fullName?: string; phone?: string; carnet?: string; isDefault?: boolean },
+  token: string
+) {
+  const userId = await requireUserId(token);
+  const pb = await getAdminPB();
+  await getOwned(pb, "beneficiaries", id, userId);
+  const payload: Record<string, unknown> = {};
+  if (data.fullName !== undefined) payload.full_name = data.fullName;
+  if (data.phone !== undefined) payload.phone = data.phone;
+  if (data.carnet !== undefined) payload.carnet = data.carnet;
+  if (data.isDefault !== undefined) payload.is_default = !!data.isDefault;
+  await pb.collection("beneficiaries").update(id, payload);
+  return { success: true, id };
+}
+
 export async function deleteBeneficiaryAction(id: string, token: string) {
   const userId = await requireUserId(token);
   const pb = await getAdminPB();

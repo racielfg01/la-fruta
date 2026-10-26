@@ -108,7 +108,7 @@ export function BannerCarousel({
             const href = resolveHref(banner, validProductIds);
             const external = href ? /^https?:\/\//i.test(href) : false;
             const frame = cn(
-              "group relative block aspect-[16/10] w-full overflow-hidden rounded-2xl border bg-muted sm:aspect-[21/8]",
+              "group relative block aspect-[16/10] w-full overflow-hidden rounded-2xl border bg-muted sm:aspect-[3/1]",
               href && "cursor-pointer"
             );
             const content = <SlideContent banner={banner} />;

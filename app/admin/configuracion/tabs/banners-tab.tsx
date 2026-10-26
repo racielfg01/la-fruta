@@ -354,8 +354,9 @@ export default function BannersTab() {
                   />
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  Horizontal, 21:9 (por ejemplo 1400 × 600). En móvil se recorta
-                  por el centro.
+                  Horizontal y ancha (por ejemplo 1400 × 600). En escritorio se
+                  ve más aplanada y en móvil se recorta por el centro: deja los
+                  detalles importantes en el centro de la imagen.
                 </p>
               </div>
             </Field>

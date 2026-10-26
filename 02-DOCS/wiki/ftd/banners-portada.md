@@ -85,7 +85,7 @@ con datos reales de PocketBase.
   «La URL debe empezar por http(s):// o por /».
 
 **Portada con banners** (2 activos: informativo + producto)
-- Escritorio 1280: 2 franjas, 1233×411 (3:1), flechas dentro del marco, puntos.
+- Escritorio 1280: 2 franjas, 1233×352 (7:2), flechas dentro del marco, puntos.
 - La franja informativa es un `div` (no clickeable); la de producto es un `<a>`
   a `/product/1780349898731`; una de prueba con URL `/` fue un `<a href="/">`.
 - Móvil 390: franja 343×215 (16:10), flechas ocultas, puntos de 8 px, sin

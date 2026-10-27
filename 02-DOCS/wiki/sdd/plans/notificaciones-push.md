@@ -311,5 +311,11 @@ claves, y pedido/usuario/producto verificados según la spec.
   activos y el marcador en `2026-10-27 15:40:29.956Z`; `products.created_at` es
   autodate; `push_subscriptions` existe con reglas cerradas, índice único de
   endpoint y 0 filas. Productos nuevos tras el marcador: 0.
+- **Verificación con sesión admin real:** la pantalla carga con los 3 interruptores
+  activos, sin alertas de base ni de claves; muestra 0 productos nuevos y 0 clientes.
+  La sesión se obtuvo por impersonación temporal de PocketBase (sin cambios de datos)
+  y se limpió al terminar.
+- **VAPID validado:** `web-push.generateRequestDetails` genera una petición cifrada
+  correcta con las claves de `.env.local`.
 - **Detenido antes de Vercel/despliegue.** Falta pegar las claves VAPID en Vercel,
   desplegar y probar un aviso real.

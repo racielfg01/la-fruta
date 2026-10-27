@@ -5,6 +5,8 @@ import { getAdminPB, getAllRecords, sanitize } from "@/lib/pocketbase";
 import { parseLocations, matchLocationIndex, StoredLocation } from "@/lib/order-stock";
 import { orderItemPrice } from "@/lib/price-margin";
 import { orderTotalCup } from "@/lib/order-total";
+import { notifyNewOrder } from "@/lib/push/notify";
+import { after } from "next/server";
 import { randomUUID } from "crypto";
 
 export interface OrderActionResult {
@@ -271,6 +273,16 @@ export async function createOrderAction(
           console.warn(`No se pudo actualizar la cuenta bancaria ${orderData.bankAccountId}`);
         }
       }
+
+      // El aviso va después de responder: un fallo de push nunca tumba el pedido.
+      after(() =>
+        notifyNewOrder({
+          orderId,
+          customerName: orderData.userName,
+          total,
+          zone: (zone as any).name || "",
+        })
+      );
 
       return { success: true, orderId };
     });

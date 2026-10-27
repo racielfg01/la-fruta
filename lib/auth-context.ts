@@ -1,6 +1,10 @@
 // lib/auth-context.ts
+"use client";
+
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { getPushSubscription, unsubscribeFromPush } from './push/client';
+import { unsubscribePushAction } from '@/app/actions/notifications';
 import type { RolePermissions } from './permissions';
 
 export interface AuthUser {
@@ -28,7 +32,7 @@ interface AuthStore {
 
 export const useAuthStore = create<AuthStore>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       user: null,
       token: null,
       isAuthenticated: false,
@@ -36,7 +40,25 @@ export const useAuthStore = create<AuthStore>()(
       setUser: (user) => set({ user, isAuthenticated: !!user }),
       setToken: (token) => set({ token }),
       setLoading: (loading) => set({ isLoading: loading }),
-      logout: () => set({ user: null, token: null, isAuthenticated: false }),
+      logout: () => {
+        const token = get().token;
+        if (token) {
+          // Baja best-effort: la sesión se cierra aunque el servidor no responda.
+          void (async () => {
+            try {
+              const subscription = await getPushSubscription();
+              if (subscription) {
+                await unsubscribePushAction(token, subscription.endpoint);
+              }
+            } catch {
+              // sin conexión: se limpia igualmente el dispositivo
+            } finally {
+              await unsubscribeFromPush().catch(() => undefined);
+            }
+          })();
+        }
+        set({ user: null, token: null, isAuthenticated: false });
+      },
     }),
     {
       name: 'auth-storage',

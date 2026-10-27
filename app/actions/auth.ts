@@ -2,6 +2,8 @@
 
 import { createUser, SignupData, getRoleIds, decodePocketBaseToken } from '@/lib/auth';
 import { getAdminPB, getEphemeralPB, getTokenPB, sanitize } from '@/lib/pocketbase';
+import { notifyNewUser } from '@/lib/push/notify';
+import { after } from 'next/server';
 import type { RolePermissions } from '@/lib/permissions';
 
 export interface AuthResponse {
@@ -155,6 +157,8 @@ export async function signupAction(data: SignupData): Promise<AuthResponse> {
 
     const pb = getEphemeralPB();
     const authData = await pb.collection('users').authWithPassword(data.email, data.password);
+
+    after(() => notifyNewUser({ userId: newUser.id, name: newUser.name }));
 
     return {
       success: true,

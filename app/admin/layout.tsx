@@ -15,6 +15,7 @@ import {
   Users,
   ShoppingBag,
   LogOut,
+  Bell,
   Settings as SettingsIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -37,6 +38,7 @@ const navigation: { name: string; href: string; icon: any; permission: keyof Rol
   { name: "Categorías", href: "/admin/categorias", icon: Tags, permission: "products" },
   { name: "Envíos", href: "/admin/envios", icon: Truck, permission: "shipping" },
   { name: "Usuarios", href: "/admin/usuarios", icon: Users, permission: "users" },
+  { name: "Notificaciones", href: "/admin/notificaciones", icon: Bell, permission: "settings" },
   { name: "Configuración", href: "/admin/configuracion", icon: SettingsIcon, permission: "settings" },
 ];
 

@@ -11,6 +11,7 @@ import { useState, useEffect } from "react";
 import Image from "next/image";
 import { useTheme } from "next-themes";
 import { useSettingsStore } from "@/lib/settings-store";
+import { NotificationBell } from "@/components/push/notification-bell";
 
 export function Header() {
   const totalItems = useCartStore((state) => state.getTotalItems());
@@ -108,6 +109,8 @@ export function Header() {
           >
             {resolvedTheme === "dark" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
           </Button>
+
+          <NotificationBell />
 
           <Link href="/cart">
             <Button variant="ghost" size="icon" className="relative">

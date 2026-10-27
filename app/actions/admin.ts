@@ -3,6 +3,8 @@
 import { decodePocketBaseToken, getRoleIds } from '@/lib/auth';
 import { getAdminPB, getTokenPB, getAllRecords, sanitize, buildOrFilter } from '@/lib/pocketbase';
 import { restoreOrderStock } from '@/lib/order-stock';
+import { notifyNewUser } from '@/lib/push/notify';
+import { after } from 'next/server';
 import type PocketBase from 'pocketbase';
 import { Product } from '@/lib/store';
 import { Category, DeliveryZone, User, Order, Currency } from '@/lib/admin-store';
@@ -351,6 +353,9 @@ export async function addUserAction(user: Omit<User, 'id'>, token: string) {
     total_orders: 0,
     total_spent: 0,
   });
+  if (user.role_id !== 2) {
+    after(() => notifyNewUser({ userId: record.id, name: record.name }));
+  }
   return { id: record.id, ...user, password };
 }
 

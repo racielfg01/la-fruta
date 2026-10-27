@@ -307,6 +307,9 @@ claves, y pedido/usuario/producto verificados según la spec.
   verde, `npm run build` correcto.
 - `node scripts/setup-push.mjs --dry-run` revisado: añade 4 campos a `settings`,
   `created_at` a `products` y crea `push_subscriptions`.
-- **Detenido antes de escribir en PocketBase y antes de Vercel/despliegue.** La
-  ejecución real del script y la configuración de las claves en Vercel quedan
-  pendientes de autorización.
+- **Esquema aplicado en PocketBase el 2026-10-27:** `settings` tiene los 3 avisos
+  activos y el marcador en `2026-10-27 15:40:29.956Z`; `products.created_at` es
+  autodate; `push_subscriptions` existe con reglas cerradas, índice único de
+  endpoint y 0 filas. Productos nuevos tras el marcador: 0.
+- **Detenido antes de Vercel/despliegue.** Falta pegar las claves VAPID en Vercel,
+  desplegar y probar un aviso real.

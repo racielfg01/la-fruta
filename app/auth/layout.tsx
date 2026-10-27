@@ -4,8 +4,9 @@ import Link from 'next/link';
 import Image from 'next/image';
 
 export const metadata = {
-  title: 'Autenticación | MercaToma',
+  title: 'Acceso',
   description: 'Inicia sesión o crea una cuenta en MercaToma',
+  robots: { index: false, follow: false },
 };
 
 export default function AuthLayout({

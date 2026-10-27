@@ -3,9 +3,16 @@ import Link from "next/link";
 import { PageShell } from "@/components/page-shell";
 
 export const metadata: Metadata = {
-  title: "Términos y condiciones | MercaToma",
+  title: "Términos y condiciones",
   description:
     "Condiciones de uso de la tienda MercaToma: pedidos, precios, entregas por zona, pagos y cancelaciones.",
+  alternates: { canonical: "/terminos" },
+  openGraph: {
+    url: "/terminos",
+    title: "Términos y condiciones",
+    description:
+      "Pedidos, precios, entregas por zona, pagos y cancelaciones en MercaToma.",
+  },
 };
 
 export default function TerminosPage() {

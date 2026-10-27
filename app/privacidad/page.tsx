@@ -3,9 +3,16 @@ import Link from "next/link";
 import { PageShell } from "@/components/page-shell";
 
 export const metadata: Metadata = {
-  title: "Política de privacidad | MercaToma",
+  title: "Política de privacidad",
   description:
     "Qué datos usa MercaToma, para qué los usa, qué se guarda en tu navegador y cómo ejercer tus derechos.",
+  alternates: { canonical: "/privacidad" },
+  openGraph: {
+    url: "/privacidad",
+    title: "Política de privacidad",
+    description:
+      "Qué datos usa MercaToma, para qué los usa y cómo ejercer tus derechos.",
+  },
 };
 
 export default function PrivacidadPage() {

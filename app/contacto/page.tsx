@@ -5,9 +5,16 @@ import { PageShell } from "@/components/page-shell";
 import { ContactForm } from "@/components/contact-form";
 
 export const metadata: Metadata = {
-  title: "Contacto | MercaToma",
+  title: "Contacto",
   description:
     "Escríbenos por WhatsApp para dudas sobre pedidos, entregas o cambios. También encontrarás accesos rápidos a tu cuenta y al carrito.",
+  alternates: { canonical: "/contacto" },
+  openGraph: {
+    url: "/contacto",
+    title: "Contacto",
+    description:
+      "Dudas sobre pedidos, entregas o cambios: escríbenos por WhatsApp y te respondemos.",
+  },
 };
 
 const shortcuts = [

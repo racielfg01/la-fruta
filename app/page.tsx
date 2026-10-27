@@ -1,45 +1,91 @@
-"use client";
+import type { Metadata } from 'next'
+import { getPublicBanners, getPublicSettings } from '@/app/actions/public'
+import { getPublicProducts } from '@/app/actions/public-products'
+import { HomeExperience } from '@/components/home-experience'
+import type { Product } from '@/lib/store'
+import {
+  HOME_TITLE,
+  SITE_DESCRIPTION,
+  SITE_NAME,
+  SITE_URL,
+  WHATSAPP_PHONE,
+  absoluteUrl,
+  jsonLd,
+} from '@/lib/seo'
 
-import { useEffect, useState } from "react";
-import { useCartStore } from "@/lib/store";
-import { Onboarding } from "@/components/onboarding";
-import { StoreView } from "@/components/store-view";
+/** El catálogo se refresca solo: una portada cacheada un minuto sigue siendo barata. */
+export const revalidate = 60
 
-export default function HomePage() {
-  const [isLoading, setIsLoading] = useState(true);
-  const onboardingComplete = useCartStore((state) => state.onboardingComplete);
-  const setOnboardingComplete = useCartStore((state) => state.setOnboardingComplete);
+export const metadata: Metadata = {
+  alternates: { canonical: `${SITE_URL}/` },
+  openGraph: {
+    type: 'website',
+    locale: 'es_CU',
+    siteName: SITE_NAME,
+    url: '/',
+    title: HOME_TITLE,
+    description: SITE_DESCRIPTION,
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: HOME_TITLE,
+    description: SITE_DESCRIPTION,
+  },
+}
 
-  useEffect(() => {
-    // Small delay to ensure hydration is complete
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 100);
-    return () => clearTimeout(timer);
-  }, []);
+export default async function HomePage() {
+  const [{ products, categories }, banners, settings] = await Promise.all([
+    getPublicProducts(),
+    getPublicBanners(),
+    getPublicSettings(),
+  ])
 
-  const handleOnboardingComplete = () => {
-    setOnboardingComplete(true);
-  };
+  const storeName = settings.storeName || SITE_NAME
+  const phone = settings.whatsappPhone || WHATSAPP_PHONE
 
-  // Show loading state to prevent hydration mismatch
-  if (isLoading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-background">
-        <div className="flex flex-col items-center gap-4">
-          <div className="h-12 w-12 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-          <p className="text-muted-foreground">Cargando...</p>
-        </div>
-      </div>
-    );
+  const organization = {
+    '@context': 'https://schema.org',
+    '@type': 'Organization',
+    name: storeName,
+    url: SITE_URL,
+    logo: absoluteUrl('/icon-512x512.png'),
+    description: SITE_DESCRIPTION,
+    areaServed: {
+      '@type': 'AdministrativeArea',
+      name: 'Santiago de Cuba',
+    },
+    contactPoint: {
+      '@type': 'ContactPoint',
+      telephone: `+${phone}`,
+      contactType: 'customer service',
+      areaServed: 'CU',
+      availableLanguage: ['es'],
+    },
   }
 
-  // Show onboarding if not completed
-  if (!onboardingComplete) {
-    return <Onboarding onComplete={handleOnboardingComplete} />;
+  const website = {
+    '@context': 'https://schema.org',
+    '@type': 'WebSite',
+    name: storeName,
+    url: SITE_URL,
+    inLanguage: 'es',
+    publisher: {
+      '@type': 'Organization',
+      name: storeName,
+    },
   }
 
-  // Location obligatoria al primer acceso (filtra productos por zona).
-  // No bloquea la página: StoreView pide la zona en un diálogo descartable.
-  return <StoreView />;
+  return (
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: jsonLd([organization, website]) }}
+      />
+      <HomeExperience
+        products={products as unknown as Product[]}
+        categories={categories}
+        banners={banners}
+      />
+    </>
+  )
 }

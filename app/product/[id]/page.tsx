@@ -1,338 +1,169 @@
-"use client";
-
-import { use, useState, useEffect } from "react";
-import Link from "next/link";
-import { Header } from "@/components/header";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
-import { getPublicProductById, getPublicProducts } from "@/app/actions/public-products";
-import { useCartStore, availableStock } from "@/lib/store";
-import { ProductCard } from "@/components/product-card";
-import { Product } from "@/lib/store";
-import { useCurrency } from "@/lib/currency";
-import { displayProductCupPrice, effectiveMargin } from "@/lib/price-margin";
-import { productSavingCup } from "@/lib/usd-saving";
-import { useMarginConfig } from "@/lib/use-price-margin";
-import SavingHint from "@/components/saving-hint";
-import { ProductImage } from "@/components/product-image";
+import { cache } from 'react'
+import type { Metadata } from 'next'
+import { notFound } from 'next/navigation'
+import { getPublicCurrencies } from '@/app/actions/public-currencies'
+import { getPublicProductById, getPublicProducts } from '@/app/actions/public-products'
+import { getPublicSettings } from '@/app/actions/public'
+import { ProductDetail } from '@/components/product-detail'
+import { displayProductCupPrice } from '@/lib/price-margin'
+import type { Product } from '@/lib/store'
 import {
-  ArrowLeft,
-  Minus,
-  Plus,
-  ShoppingCart,
-  Check,
-  MapPin,
-  Truck,
-  Leaf,
-  Loader2,
-} from "lucide-react";
+  SITE_NAME,
+  SITE_URL,
+  absoluteUrl,
+  jsonLd,
+  productSeoDescription,
+} from '@/lib/seo'
 
-export default function ProductPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = use(params);
-  const [product, setProduct] = useState<Product | undefined>(undefined);
-  const [loading, setLoading] = useState(true);
-  const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
-  const addItem = useCartStore((state) => state.addItem);
-  const [quantity, setQuantity] = useState(1);
-  const [added, setAdded] = useState(false);
-  const { defaultCurrency, currencies, formatPrice, convertPrice } = useCurrency();
-  const cupCurrency = currencies.find(c => c.code === 'CUP');
-  const usdCurrency = currencies.find(c => c.code === 'USD');
-  const marginCfg = useMarginConfig(product);
-  const shownCup = product ? displayProductCupPrice(product.price, marginCfg, defaultCurrency?.code) : 0;
-  const userLocation = useCartStore((state) => state.userLocation);
+interface ProductPageProps {
+  params: Promise<{ id: string }>
+}
 
-  useEffect(() => {
-    let cancelled = false;
-    setLoading(true);
-    getPublicProductById(id).then((p) => {
-      if (cancelled) return;
-      setProduct(p || undefined);
-      setLoading(false);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [id]);
+/** La ficha se regenera cada minuto: el stock cambia y no conviene servirlo viejo. */
+export const revalidate = 60
 
-  // Relacionados: productos reales de la misma categoría (no la semilla estática).
-  useEffect(() => {
-    if (!product) return;
-    let cancelled = false;
-    getPublicProducts().then(({ products: all }) => {
-      if (cancelled) return;
-      setRelatedProducts(
-        all
-          .filter((p) => p.category === product.category && p.id !== product.id)
-          .slice(0, 8)
-      );
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [product]);
+/** Evita pedir el producto dos veces: metadatos y cuerpo comparten resultado. */
+const getProduct = cache(getPublicProductById)
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-background">
-        <Header />
-        <main className="container mx-auto px-4 py-16 text-center">
-          <Loader2 className="mx-auto h-8 w-8 animate-spin text-primary" />
-        </main>
-      </div>
-    );
+function imageUrl(path: string | undefined | null): string | undefined {
+  if (!path) return undefined
+  if (/^https?:\/\//i.test(path)) return path
+  return absoluteUrl(path)
+}
+
+function offerFor(
+  product: Product,
+  currencies: Awaited<ReturnType<typeof getPublicCurrencies>>,
+  globalMargin: number
+) {
+  const cup = currencies.find((currency) => currency.code === 'CUP')
+  const display = currencies.find((currency) => currency.isDefault) || currencies[0]
+  const baseCup = displayProductCupPrice(
+    product.price,
+    { globalMargin, productMargin: product.priceMargin },
+    display?.code
+  )
+  const price =
+    cup && display && display.code !== 'CUP'
+      ? Math.round((baseCup / cup.exchangeRate) * display.exchangeRate * 100) / 100
+      : baseCup
+
+  return {
+    price: price.toFixed(2),
+    currencyCode: display?.code || 'CUP',
   }
+}
+
+export async function generateMetadata({
+  params,
+}: ProductPageProps): Promise<Metadata> {
+  const { id } = await params
+  const product = await getProduct(id)
 
   if (!product) {
-    return (
-      <div className="min-h-screen bg-background">
-        <Header />
-        <main className="container mx-auto px-4 py-16 text-center">
-          <h1 className="mb-4 text-2xl font-bold text-foreground">Producto no encontrado</h1>
-          <p className="mb-6 text-muted-foreground">
-            El producto que buscas no existe.
-          </p>
-          <Link href="/">
-            <Button>
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Volver al inicio
-            </Button>
-          </Link>
-        </main>
-      </div>
-    );
+    return {
+      title: 'Producto no encontrado',
+      robots: { index: false, follow: true },
+    }
   }
 
-  // Stock efectivo en la ubicación del cliente (coherente con el filtrado de /).
-  const stock = availableStock(userLocation, product);
-  const inStock = product.inStock && stock > 0;
+  const title = `${product.name} a domicilio en Santiago de Cuba`
+  const description = productSeoDescription(product)
+  const image = imageUrl(product.image)
 
-  const handleAddToCart = () => {
-    if (!inStock || stock <= 0) return;
-    for (let i = 0; i < Math.min(quantity, stock); i++) {
-      addItem(product);
-    }
-    setAdded(true);
-    setTimeout(() => setAdded(false), 2000);
-  };
+  return {
+    title: { absolute: title },
+    description,
+    alternates: { canonical: `/product/${id}` },
+    openGraph: {
+      type: 'website',
+      locale: 'es_CU',
+      siteName: SITE_NAME,
+      url: `/product/${id}`,
+      title,
+      description,
+      images: image ? [{ url: image, alt: product.name }] : undefined,
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title,
+      description,
+      images: image ? [image] : undefined,
+    },
+  }
+}
+
+export default async function ProductPage({ params }: ProductPageProps) {
+  const { id } = await params
+  const [rawProduct, catalog, currencies, settings] = await Promise.all([
+    getProduct(id),
+    getPublicProducts(),
+    getPublicCurrencies(),
+    getPublicSettings(),
+  ])
+
+  if (!rawProduct) notFound()
+
+  const product = rawProduct as unknown as Product
+  const related = (catalog.products as unknown as Product[])
+    .filter((item) => item.category === product.category && item.id !== product.id)
+    .slice(0, 8)
+
+  const inStock = product.inStock && product.stock > 0
+  const offer = offerFor(product, currencies, settings.priceMargin)
+  const canonical = absoluteUrl(`/product/${product.id}`)
+  const image = imageUrl(product.image) || absoluteUrl('/icon-512x512.png')
+
+  const productSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'Product',
+    name: product.name,
+    description: product.description || productSeoDescription(product),
+    image: [image],
+    sku: product.id,
+    category: product.category || undefined,
+    brand: { '@type': 'Brand', name: SITE_NAME },
+    offers: {
+      '@type': 'Offer',
+      url: canonical,
+      priceCurrency: offer.currencyCode,
+      price: offer.price,
+      availability: inStock
+        ? 'https://schema.org/InStock'
+        : 'https://schema.org/OutOfStock',
+      itemCondition: 'https://schema.org/NewCondition',
+      seller: { '@type': 'Organization', name: SITE_NAME },
+    },
+  }
+
+  const breadcrumbSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      {
+        '@type': 'ListItem',
+        position: 1,
+        name: 'Inicio',
+        item: SITE_URL,
+      },
+      {
+        '@type': 'ListItem',
+        position: 2,
+        name: product.name,
+        item: canonical,
+      },
+    ],
+  }
 
   return (
-    <div className="min-h-screen bg-background">
-      <Header />
-      <main className="container mx-auto px-4 pb-28 pt-8 sm:pb-8">
-        <Link
-          href="/#products"
-          className="mb-6 inline-flex items-center text-sm text-muted-foreground hover:text-foreground"
-        >
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Volver a productos
-        </Link>
-
-        <div className="grid gap-8 lg:grid-cols-2">
-          <div className="relative aspect-square overflow-hidden rounded-2xl">
-            <ProductImage
-              image={product.image}
-              alt={product.name}
-              width={1000}
-              sizes="(max-width: 1024px) 100vw, 50vw"
-              priority
-            />
-            {!inStock && (
-              <div className="absolute inset-0 flex items-center justify-center bg-background/80">
-                <Badge variant="secondary" className="text-lg">
-                  Agotado
-                </Badge>
-              </div>
-            )}
-            <Badge className="absolute left-4 top-4 bg-primary/90 text-sm">
-              {product.category}
-            </Badge>
-          </div>
-
-          <div className="flex flex-col">
-            <h1 className="font-[family-name:var(--font-playfair)] text-3xl font-bold text-foreground md:text-4xl">
-              {product.name}
-            </h1>
-
-            <div className="mt-4 flex items-baseline gap-2">
-              <span className="text-3xl font-bold text-foreground">
-                {cupCurrency && defaultCurrency
-                  ? formatPrice(convertPrice(shownCup, cupCurrency, defaultCurrency), defaultCurrency)
-                  : formatPrice(shownCup, defaultCurrency)}
-              </span>
-              <span className="text-muted-foreground"> / {product.unit}</span>
-            </div>
-
-            {defaultCurrency?.code === "CUP" &&
-              productSavingCup(product.price, effectiveMargin(marginCfg)) > 0 &&
-              cupCurrency &&
-              usdCurrency && (
-                <SavingHint
-                  className="mt-2"
-                  currencyCode="USD"
-                  currencySymbol={usdCurrency.symbol}
-                  amount={convertPrice(product.price, cupCurrency, usdCurrency)}
-                  savingCup={productSavingCup(product.price, effectiveMargin(marginCfg))}
-                />
-              )}
-
-            <p className="mt-6 text-muted-foreground leading-relaxed">{product.description}</p>
-
-            <div className="mt-6 flex items-center gap-2 text-sm text-muted-foreground">
-              <MapPin className="h-4 w-4 text-primary" />
-              <span>Origen: {product.origin}</span>
-            </div>
-
-            {inStock && (
-              <div className="mt-4 flex items-center gap-2 text-sm">
-                {stock <= 20 ? (
-                  <span className="rounded-full bg-amber-100 px-3 py-1 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400">
-                    Solo quedan {stock}
-                  </span>
-                ) : (
-                  <span className="rounded-full bg-muted px-3 py-1 text-muted-foreground">
-                    Disponible · {stock} en stock
-                  </span>
-                )}
-              </div>
-            )}
-
-            <Card className="mt-6">
-              <CardContent className="grid gap-4 p-4 sm:grid-cols-3">
-                <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
-                    <Truck className="h-5 w-5 text-primary" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-foreground">Entrega rápida</p>
-                    <p className="text-xs text-muted-foreground">Disponible el mismo día</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
-                    <Leaf className="h-5 w-5 text-primary" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-foreground">Fresco de la granja</p>
-                    <p className="text-xs text-muted-foreground">Calidad garantizada</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
-                    <Check className="h-5 w-5 text-primary" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-foreground">Satisfacción</p>
-                    <p className="text-xs text-muted-foreground">100% garantizado</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <div className="mt-8 flex flex-col gap-4 sm:flex-row sm:items-center">
-              <div className="flex items-center justify-between gap-3 sm:justify-start">
-                <span className="text-sm font-medium text-foreground">Cantidad:</span>
-                <div className="flex items-center gap-1.5">
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    className="h-9 w-9"
-                    onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                    disabled={quantity <= 1}
-                    aria-label="Disminuir cantidad"
-                  >
-                    <Minus className="h-4 w-4" />
-                  </Button>
-                  <span className="w-10 text-center text-base font-medium">{quantity}</span>
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    className="h-9 w-9"
-                    onClick={() => setQuantity(Math.min(stock, quantity + 1))}
-                    disabled={quantity >= stock}
-                    aria-label="Aumentar cantidad"
-                  >
-                    <Plus className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-
-              <Button
-                size="lg"
-                className="hidden h-11 w-full gap-2 sm:flex sm:w-auto sm:flex-none"
-                onClick={handleAddToCart}
-                disabled={!inStock || quantity > stock || added}
-              >
-                {added ? (
-                  <>
-                    <Check className="h-5 w-5" />
-                    Añadido al carrito
-                  </>
-                ) : (
-                  <>
-                    <ShoppingCart className="h-5 w-5" />
-                    Añadir al carrito · {cupCurrency && defaultCurrency
-                      ? formatPrice(convertPrice(shownCup * quantity, cupCurrency, defaultCurrency), defaultCurrency)
-                      : formatPrice(shownCup * quantity, defaultCurrency)}
-                  </>
-                )}
-              </Button>
-            </div>
-          </div>
-        </div>
-
-        {relatedProducts.length > 0 && (
-          <section className="mt-16">
-            <h2 className="mb-4 font-[family-name:var(--font-playfair)] text-2xl font-bold text-foreground">
-              También te puede interesar
-            </h2>
-            <div
-              className="-mx-4 flex snap-x snap-mandatory scroll-px-4 gap-3 overflow-x-auto overscroll-x-contain px-4 pb-2 [scrollbar-width:none] sm:gap-4 [&::-webkit-scrollbar]:hidden"
-              role="region"
-              aria-label="Productos relacionados"
-              tabIndex={0}
-            >
-              {relatedProducts.map((p) => (
-                <ProductCard key={p.id} product={p} compact />
-              ))}
-            </div>
-          </section>
-        )}
-      </main>
-
-      {inStock && (
-        <div className="fixed inset-x-0 bottom-0 z-40 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 sm:hidden">
-          <div className="mx-auto flex max-w-lg items-center gap-3 px-4 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] pt-3">
-            <div className="min-w-0 flex-1">
-              <p className="text-xs text-muted-foreground">Total</p>
-              <p className="truncate text-base font-bold text-foreground">
-                {cupCurrency && defaultCurrency
-                  ? formatPrice(convertPrice(shownCup * quantity, cupCurrency, defaultCurrency), defaultCurrency)
-                  : formatPrice(shownCup * quantity, defaultCurrency)}
-              </p>
-            </div>
-            <Button
-              size="lg"
-              className="h-11 shrink-0 gap-2"
-              onClick={handleAddToCart}
-              disabled={quantity > stock || added}
-            >
-              {added ? (
-                <>
-                  <Check className="h-5 w-5" />
-                  Añadido
-                </>
-              ) : (
-                <>
-                  <ShoppingCart className="h-5 w-5" />
-                  Añadir al carrito
-                </>
-              )}
-            </Button>
-          </div>
-        </div>
-      )}
-    </div>
-  );
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: jsonLd([productSchema, breadcrumbSchema]),
+        }}
+      />
+      <ProductDetail product={product} related={related} />
+    </>
+  )
 }

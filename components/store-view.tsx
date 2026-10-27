@@ -35,6 +35,7 @@ import { useCurrencyStore, useSelectedCurrency } from "@/lib/currency-store";
 import { optimizedImageUrl } from "@/lib/image";
 import { effectiveCupPrice, displayProductCupPrice } from "@/lib/price-margin";
 import { useMarginConfig } from "@/lib/use-price-margin";
+import { WHATSAPP_DISPLAY } from "@/lib/seo";
 import {
   Search,
   SlidersHorizontal,
@@ -89,15 +90,35 @@ const SORT_LABELS: Record<SortOption, string> = {
   name: "Nombre A-Z",
 };
 
-export function StoreView() {
-  const [products, setProducts] = useState<Product[]>([]);
-  const [banners, setBanners] = useState<Banner[]>([]);
-  const [categories, setCategories] = useState<string[]>([]);
-  const [loading, setLoading] = useState(true);
+interface StoreViewProps {
+  /** Catálogo ya resuelto en el servidor: llega en el HTML de la portada. */
+  initialProducts?: Product[];
+  initialCategories?: string[];
+  initialBanners?: Banner[];
+  /** En la primera visita manda la bienvenida: no abrir el diálogo de zona debajo. */
+  locationPromptEnabled?: boolean;
+}
+
+export function StoreView({
+  initialProducts,
+  initialCategories,
+  initialBanners,
+  locationPromptEnabled = true,
+}: StoreViewProps = {}) {
+  const hasServerProducts = (initialProducts?.length ?? 0) > 0;
+  const [products, setProducts] = useState<Product[]>(initialProducts ?? []);
+  const [banners, setBanners] = useState<Banner[]>(initialBanners ?? []);
+  const [categories, setCategories] = useState<string[]>(
+    initialCategories ?? []
+  );
+  const [loading, setLoading] = useState(!hasServerProducts);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
-  const [priceRange, setPriceRange] = useState<[number, number]>([0, 100]);
+  const [priceRange, setPriceRange] = useState<[number, number]>([
+    0,
+    1_000_000,
+  ]);
   const [sortBy, setSortBy] = useState<SortOption>("default");
   const { currencies, defaultCurrency, convertPrice } = useCurrency();
   const setCurrency = useCurrencyStore((s) => s.setCurrency);
@@ -127,10 +148,14 @@ export function StoreView() {
   const [locationDialogOpen, setLocationDialogOpen] = useState(false);
 
   useEffect(() => {
+    if (!locationPromptEnabled) return;
     if (!userLocation) setLocationDialogOpen(true);
-  }, [userLocation]);
+  }, [userLocation, locationPromptEnabled]);
 
   useEffect(() => {
+    // La portada llega con el catálogo resuelto en el servidor; solo se pide
+    // al cliente cuando no vino nada (o falló en el servidor).
+    if (hasServerProducts) return;
     const loadData = async () => {
       setLoading(true);
       setLoadError(null);
@@ -153,7 +178,7 @@ export function StoreView() {
       }
     };
     loadData();
-  }, []);
+  }, [hasServerProducts]);
 
   const maxPrice = useMemo(() => {
     if (products.length === 0) return 10;
@@ -304,10 +329,11 @@ export function StoreView() {
               <div className="flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
                 <div className="max-w-2xl">
                   <h1 className="font-[family-name:var(--font-playfair)] text-3xl font-bold tracking-tight text-foreground sm:text-4xl lg:text-5xl">
-                    Nuestra Tienda
+                    Verduras y viandas a domicilio en Santiago de Cuba
                   </h1>
                   <p className="mt-2 text-sm text-muted-foreground sm:text-base lg:text-lg">
-                    Frutas frescas y productos agrícolas seleccionados del día.
+                    Frutas, verduras y viandas frescas del campo, con entrega por
+                    zona y pago en efectivo.
                   </p>
                 </div>
 
@@ -331,7 +357,11 @@ export function StoreView() {
         )}
 
         {/* Sin hero visible, la página conserva su encabezado para lectores de pantalla y buscadores. */}
-        {banners.length > 0 && <h1 className="sr-only">Nuestra Tienda</h1>}
+        {banners.length > 0 && (
+          <h1 className="sr-only">
+            Verduras y viandas a domicilio en Santiago de Cuba
+          </h1>
+        )}
 
         <BannerCarousel
           banners={banners}
@@ -663,7 +693,7 @@ export function StoreView() {
             </aside>
 
             {/* Productos */}
-            <div className="min-w-0 flex-1">
+            <div id="products" className="min-w-0 flex-1">
               {/* Header de resultados */}
               <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
                 <p className="text-sm text-muted-foreground">
@@ -748,6 +778,41 @@ export function StoreView() {
             </div>
           </div>
         </div>
+
+        {/* Contenido local: responde a la búsqueda y enlaza las páginas de confianza. */}
+        <section
+          aria-labelledby="entrega-local"
+          className="border-t bg-muted/30 py-10"
+        >
+          <div className="container mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
+            <h2
+              id="entrega-local"
+              className="font-[family-name:var(--font-playfair)] text-2xl font-bold text-foreground"
+            >
+              Entrega de verduras y viandas a domicilio en Santiago de Cuba
+            </h2>
+            <p className="mt-3 text-sm leading-relaxed text-muted-foreground sm:text-base">
+              MercaToma lleva productos frescos del campo a tu casa en Santiago de
+              Cuba: verduras, viandas, frutas, tubérculos, legumbres y condimentos.
+              Cada ficha indica la unidad de venta, el origen y la disponibilidad
+              del momento.
+            </p>
+            <p className="mt-3 text-sm leading-relaxed text-muted-foreground sm:text-base">
+              Para pedir, elige tus productos y añádelos al carrito. El costo del
+              envío se calcula en el checkout según tu zona, y el pago es en
+              efectivo al recibir. Si tienes dudas sobre una entrega, escríbenos por
+              WhatsApp al {WHATSAPP_DISPLAY} o desde la{" "}
+              <Link href="/contacto" className="font-medium text-primary hover:underline">
+                página de contacto
+              </Link>
+              . Consulta también las{" "}
+              <Link href="/terminos" className="font-medium text-primary hover:underline">
+                condiciones de entrega y pago
+              </Link>
+              .
+            </p>
+          </div>
+        </section>
 
         {/* Footer */}
         <SiteFooter />

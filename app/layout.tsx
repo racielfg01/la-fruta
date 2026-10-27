@@ -6,6 +6,7 @@ import { ServiceWorkerRegister } from '@/components/service-worker-register'
 import { ThemeProvider } from '@/components/theme-provider'
 import { SettingsApplicator } from '@/components/settings-applicator'
 import { Toaster } from '@/components/ui/sonner'
+import { HOME_TITLE, SITE_DESCRIPTION, SITE_NAME, SITE_URL } from '@/lib/seo'
 import './globals.css'
 
 // const poppins = Poppins({
@@ -21,14 +22,16 @@ import './globals.css'
 // });
 
 export const metadata: Metadata = {
-  title: 'MercaToma - Fresh Farm Products Delivered',
-  description: 'Discover the freshest fruits and agricultural products delivered straight to your doorstep. Farm-to-table quality with convenient home delivery.',
-  keywords: ['fruits', 'farm products', 'organic', 'delivery', 'fresh produce'],
-  // generator: 'v0.app',
-  applicationName: 'MercaToma',
+  metadataBase: new URL(SITE_URL),
+  title: {
+    default: HOME_TITLE,
+    template: `%s | ${SITE_NAME}`,
+  },
+  description: SITE_DESCRIPTION,
+  applicationName: SITE_NAME,
   appleWebApp: {
     capable: true,
-    title: 'MercaToma',
+    title: SITE_NAME,
     statusBarStyle: 'default',
   },
   manifest: '/manifest.json',
@@ -40,6 +43,25 @@ export const metadata: Metadata = {
     ],
     apple: '/apple-icon.png',
     shortcut: '/favicon.ico',
+  },
+  openGraph: {
+    type: 'website',
+    locale: 'es_CU',
+    siteName: SITE_NAME,
+  },
+  twitter: {
+    card: 'summary_large_image',
+  },
+  // Sin reglas genéricas: el index/follow es el comportamiento por defecto.
+  // Solo se pide a Googlebot que muestre miniaturas grandes en los resultados.
+  robots: {
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+      'max-video-preview': -1,
+    },
   },
 }
 

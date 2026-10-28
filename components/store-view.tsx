@@ -1167,14 +1167,14 @@ function MasonryCard({
         </div>
       </Link>
 
-      <CardContent className="p-3">
+      <CardContent className="px-2.5 pb-2 pt-1">
         <Link href={`/product/${product.id}`}>
           <h3 className="line-clamp-1 text-sm font-semibold text-foreground transition-colors hover:text-primary sm:text-base">
             {product.name}
           </h3>
         </Link>
 
-        <div className="mt-3 flex items-center justify-between gap-2">
+        <div className="mt-2 flex items-center justify-between gap-2">
           <div className="min-w-0">
             <span className="text-base font-bold text-foreground sm:text-lg">
               {cupCurrency && defaultCurrency
@@ -1313,19 +1313,19 @@ function ProductCard({
         </div>
       </Link>
 
-      <CardContent className="p-3">
+      <CardContent className="px-2.5 pb-2 pt-1">
         <Link href={`/product/${product.id}`}>
           <h3 className="line-clamp-1 text-sm font-semibold text-foreground transition-colors hover:text-primary sm:text-base">
             {product.name}
           </h3>
         </Link>
 
-        <div className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
+        <div className="mt-0.5 flex items-center gap-1 text-xs text-muted-foreground">
           <MapPin className="h-3 w-3 shrink-0" />
           <span className="truncate">{product.origin}</span>
         </div>
 
-        <div className="mt-3 flex items-center justify-between gap-2">
+        <div className="mt-2 flex items-center justify-between gap-2">
           <div className="min-w-0">
             <span className="text-base font-bold text-foreground sm:text-lg">
               {cupCurrency && defaultCurrency

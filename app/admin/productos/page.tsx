@@ -648,7 +648,7 @@ function ProductsAdmin() {
                               <Input
                                 type="number"
                                 min={0}
-                                className="h-6 w-16 px-1.5 py-0 text-xs"
+                                className="h-6 w-14 px-1.5 py-0 text-xs"
                                 value={editingStockValue}
                                 onChange={(e) => setEditingStockValue(e.target.value)}
                                 onKeyDown={(e) => {
@@ -663,11 +663,35 @@ function ProductsAdmin() {
                                     cancelEditStock();
                                   }
                                 }}
-                                onBlur={() => saveStock(product)}
                                 onClick={(e) => e.stopPropagation()}
                                 autoFocus
                                 disabled={savingStockId === product.id}
                               />
+                              <Button
+                                size="sm"
+                                className="h-6 px-1.5 text-[10px]"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  saveStock(product);
+                                }}
+                                disabled={savingStockId === product.id}
+                              >
+                                <Check className="h-3 w-3" />
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-6 px-1.5 text-[10px]"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  cancelEditStock();
+                                }}
+                                disabled={savingStockId === product.id}
+                              >
+                                <X className="h-3 w-3" />
+                              </Button>
                             </div>
                           ) : (
                             <button
@@ -804,7 +828,7 @@ function ProductsAdmin() {
                                 <Input
                                   type="number"
                                   min={0}
-                                  className="h-6 w-16 px-1.5 py-0 text-xs"
+                                  className="h-6 w-14 px-1.5 py-0 text-xs"
                                   value={editingStockValue}
                                   onChange={(e) => setEditingStockValue(e.target.value)}
                                   onKeyDown={(e) => {
@@ -819,11 +843,35 @@ function ProductsAdmin() {
                                       cancelEditStock();
                                     }
                                   }}
-                                  onBlur={() => saveStock(product)}
                                   onClick={(e) => e.stopPropagation()}
                                   autoFocus
                                   disabled={savingStockId === product.id}
                                 />
+                                <Button
+                                  size="sm"
+                                  className="h-6 px-1.5 text-[10px]"
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    saveStock(product);
+                                  }}
+                                  disabled={savingStockId === product.id}
+                                >
+                                  <Check className="h-3 w-3" />
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  className="h-6 px-1.5 text-[10px]"
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    cancelEditStock();
+                                  }}
+                                  disabled={savingStockId === product.id}
+                                >
+                                  <X className="h-3 w-3" />
+                                </Button>
                               </div>
                             ) : (
                               <button

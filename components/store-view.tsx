@@ -344,7 +344,7 @@ export function StoreView({
                   </span>
                   <span className="flex items-center gap-1.5">
                     <Truck className="h-4 w-4 text-blue-600" />
-                    Envío por zona
+                    Entregas máx. en 48h
                   </span>
                   <span className="flex items-center gap-1.5">
                     <Shield className="h-4 w-4 text-amber-600" />

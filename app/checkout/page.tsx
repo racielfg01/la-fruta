@@ -1842,7 +1842,7 @@ export default function CheckoutPage() {
                     <Shield className="h-3 w-3" /> Pago seguro
                   </span>
                   <span className="flex items-center gap-1">
-                    <Truck className="h-3 w-3" /> Envío garantizado
+                    <Truck className="h-3 w-3" /> Entregas máx. en 48h
                   </span>
                 </div>
               </div>

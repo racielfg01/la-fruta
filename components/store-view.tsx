@@ -1355,10 +1355,12 @@ function ProductCard({
             size="sm"
             onClick={(e) => {
               e.preventDefault();
+              if (!product.inStock) return;
               addItem(product);
             }}
             disabled={!product.inStock}
-            className={`h-7 shrink-0 gap-1 px-1.5 text-xs transition-colors ${
+            aria-disabled={!product.inStock}
+            className={`h-7 shrink-0 gap-1 px-1.5 text-xs transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
               isInCart ? "bg-emerald-600 text-white hover:bg-emerald-700" : ""
             }`}
           >
@@ -1367,11 +1369,13 @@ function ProductCard({
                 <Check className="h-3 w-3" />
                 <span className="hidden sm:inline">Agregado</span>
               </>
-            ) : (
+            ) : product.inStock ? (
               <>
                 <Plus className="h-3 w-3" />
                 <span className="hidden sm:inline">Agregar</span>
               </>
+            ) : (
+              <span className="text-[10px] sm:text-xs">Agotado</span>
             )}
           </Button>
         </div>

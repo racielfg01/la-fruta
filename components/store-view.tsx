@@ -369,7 +369,8 @@ export function StoreView({
         />
 
         {/* Toolbar sticky: 2 filas limpias */}
-        <div className="sticky top-16 z-40 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
+        {/* <div className="sticky top-16 z-40 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80"> */}
+        <div className="sticky top-16 z-40 border-b  bg-gradient-to-br from-primary/10 to-accent/10  backdrop-blur">
           <div className="container mx-auto px-4 sm:px-6 lg:px-8">
             {/* Fila 1: búsqueda + orden + vista + filtros */}
             <div className="flex items-center gap-2 py-3">
@@ -1167,16 +1168,16 @@ function MasonryCard({
         </div>
       </Link>
 
-      <CardContent className="px-2.5 pb-2 pt-1">
+      <CardContent className="px-2 pb-1.5 pt-0.5">
         <Link href={`/product/${product.id}`}>
-          <h3 className="line-clamp-1 text-sm font-semibold text-foreground transition-colors hover:text-primary sm:text-base">
+          <h3 className="line-clamp-1 text-sm font-semibold leading-tight text-foreground transition-colors hover:text-primary">
             {product.name}
           </h3>
         </Link>
 
-        <div className="mt-2 flex items-center justify-between gap-2">
+        <div className="mt-1.5 flex items-center justify-between gap-1.5">
           <div className="min-w-0">
-            <span className="text-base font-bold text-foreground sm:text-lg">
+            <span className="text-sm font-semibold text-foreground sm:text-base">
               {cupCurrency && defaultCurrency
                 ? formatPrice(
                     defaultCurrency.code === "CUP"
@@ -1193,7 +1194,7 @@ function MasonryCard({
                     defaultCurrency,
                   )}
             </span>
-            <span className="ml-1 text-xs text-muted-foreground">
+            <span className="ml-1 text-[11px] text-muted-foreground">
               / {product.unit}
             </span>
           </div>
@@ -1204,18 +1205,18 @@ function MasonryCard({
               addItem(product);
             }}
             disabled={!product.inStock}
-            className={`h-8 shrink-0 gap-1 px-2.5 text-xs transition-colors sm:h-9 sm:text-sm ${
+            className={`h-7 shrink-0 gap-1 px-1.5 text-xs transition-colors ${
               isInCart ? "bg-emerald-600 text-white hover:bg-emerald-700" : ""
             }`}
           >
             {isInCart ? (
               <>
-                <Check className="h-3.5 w-3.5" />
+                <Check className="h-3 w-3" />
                 <span className="hidden sm:inline">Agregado</span>
               </>
             ) : (
               <>
-                <Plus className="h-3.5 w-3.5" />
+                <Plus className="h-3 w-3" />
                 <span className="hidden sm:inline">Agregar</span>
               </>
             )}
@@ -1313,21 +1314,21 @@ function ProductCard({
         </div>
       </Link>
 
-      <CardContent className="px-2.5 pb-2 pt-1">
+      <CardContent className="px-2 pb-1.5 pt-0.5">
         <Link href={`/product/${product.id}`}>
-          <h3 className="line-clamp-1 text-sm font-semibold text-foreground transition-colors hover:text-primary sm:text-base">
+          <h3 className="line-clamp-1 text-sm font-semibold leading-tight text-foreground transition-colors hover:text-primary">
             {product.name}
           </h3>
         </Link>
 
-        <div className="mt-0.5 flex items-center gap-1 text-xs text-muted-foreground">
-          <MapPin className="h-3 w-3 shrink-0" />
+        <div className="mt-0.5 flex items-center gap-1 text-[11px] text-muted-foreground">
+          <MapPin className="h-2.5 w-2.5 shrink-0" />
           <span className="truncate">{product.origin}</span>
         </div>
 
-        <div className="mt-2 flex items-center justify-between gap-2">
+        <div className="mt-1.5 flex items-center justify-between gap-1.5">
           <div className="min-w-0">
-            <span className="text-base font-bold text-foreground sm:text-lg">
+            <span className="text-sm font-semibold text-foreground sm:text-base">
               {cupCurrency && defaultCurrency
                 ? formatPrice(
                     defaultCurrency.code === "CUP"
@@ -1344,7 +1345,7 @@ function ProductCard({
                     defaultCurrency,
                   )}
             </span>
-            <span className="ml-1 text-xs text-muted-foreground">
+            <span className="ml-1 text-[11px] text-muted-foreground">
               / {product.unit}
             </span>
           </div>
@@ -1355,18 +1356,18 @@ function ProductCard({
               addItem(product);
             }}
             disabled={!product.inStock}
-            className={`h-8 shrink-0 gap-1 px-2.5 text-xs transition-colors sm:h-9 sm:text-sm ${
+            className={`h-7 shrink-0 gap-1 px-1.5 text-xs transition-colors ${
               isInCart ? "bg-emerald-600 text-white hover:bg-emerald-700" : ""
             }`}
           >
             {isInCart ? (
               <>
-                <Check className="h-3.5 w-3.5" />
+                <Check className="h-3 w-3" />
                 <span className="hidden sm:inline">Agregado</span>
               </>
             ) : (
               <>
-                <Plus className="h-3.5 w-3.5" />
+                <Plus className="h-3 w-3" />
                 <span className="hidden sm:inline">Agregar</span>
               </>
             )}

@@ -375,14 +375,14 @@ export function StoreView({
             {/* Fila 1: búsqueda + orden + vista + filtros */}
             <div className="flex items-center gap-2 py-3">
               <div className="relative min-w-0 flex-1">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-primary" />
                 <Input
                   ref={searchInputRef}
                   type="text"
-                  placeholder="Buscar productos, origen…"
+                  placeholder="Buscar productos..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="h-11 w-full pl-10 pr-10 text-base"
+                  className="h-11 w-full rounded-lg border-2 border-primary/60 pl-10 pr-10 text-base shadow-sm transition-colors focus-visible:border-primary focus-visible:ring-primary/20"
                 />
                 {searchQuery && (
                   <button
@@ -1171,7 +1171,10 @@ function MasonryCard({
       <CardContent className="px-2 pb-1.5 pt-0.5">
         <Link href={`/product/${product.id}`}>
           <h3 className="line-clamp-1 text-sm font-semibold leading-tight text-foreground transition-colors hover:text-primary">
-            {product.name}
+            {product.name}  
+             <span className="ml-1 text-[11px] text-muted-foreground">
+              / {product.unit}
+            </span>
           </h3>
         </Link>
 
@@ -1194,9 +1197,7 @@ function MasonryCard({
                     defaultCurrency,
                   )}
             </span>
-            <span className="ml-1 text-[11px] text-muted-foreground">
-              / {product.unit}
-            </span>
+         
           </div>
           <Button
             size="sm"

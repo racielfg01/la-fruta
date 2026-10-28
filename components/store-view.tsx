@@ -1171,10 +1171,7 @@ function MasonryCard({
       <CardContent className="px-2 pb-1.5 pt-0.5">
         <Link href={`/product/${product.id}`}>
           <h3 className="line-clamp-1 text-sm font-semibold leading-tight text-foreground transition-colors hover:text-primary">
-            {product.name}  
-             <span className="ml-1 text-[11px] text-muted-foreground">
-              / {product.unit}
-            </span>
+            {product.name}
           </h3>
         </Link>
 
@@ -1196,6 +1193,9 @@ function MasonryCard({
                     ),
                     defaultCurrency,
                   )}
+            </span>
+            <span className="ml-1 text-[11px] text-muted-foreground">
+              / {product.unit}
             </span>
          
           </div>

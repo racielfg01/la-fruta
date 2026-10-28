@@ -800,10 +800,9 @@ export function StoreView({
             <p className="mt-3 text-sm leading-relaxed text-muted-foreground sm:text-base">
               Para pedir, elige tus productos y añádelos al carrito. El costo del
               envío se calcula en el checkout según tu zona, y el pago es en
-              efectivo al recibir. Si tienes dudas sobre una entrega, escríbenos por
-              WhatsApp
+              efectivo al recibir. Si tienes dudas sobre una entrega, escríbenos por{" "}
               <Link href="/contacto" className="font-medium text-primary hover:underline">
-                página de contacto
+                WhatsApp
               </Link>
               . Consulta también las{" "}
               <Link href="/terminos" className="font-medium text-primary hover:underline">

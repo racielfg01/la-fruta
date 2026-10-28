@@ -801,7 +801,7 @@ export function StoreView({
               Para pedir, elige tus productos y añádelos al carrito. El costo del
               envío se calcula en el checkout según tu zona, y el pago es en
               efectivo al recibir. Si tienes dudas sobre una entrega, escríbenos por
-              WhatsApp al {WHATSAPP_DISPLAY} o desde la{" "}
+              WhatsApp
               <Link href="/contacto" className="font-medium text-primary hover:underline">
                 página de contacto
               </Link>

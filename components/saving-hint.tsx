@@ -42,30 +42,30 @@ export default function SavingHint({
 
   return (
     <div
-      className={`flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground ${className || ''}`}
+      className={`flex flex-wrap items-center gap-x-2 gap-y-1 text-sm ${className || ''}`}
     >
       <span className="inline-flex items-center gap-1.5">
-        <TrendingDown className="h-3.5 w-3.5 shrink-0 text-green-600" />
+        <TrendingDown className="h-4 w-4 shrink-0 text-red-600" />
         {showAmount ? (
-          <span>
+          <span className="text-muted-foreground">
             En {currencyCode}:{' '}
-            <span className="font-medium text-foreground">
+            <span className="font-semibold text-foreground">
               {currencySymbol}
               {amount.toFixed(2)}
             </span>
           </span>
         ) : (
-          <span>
+          <span className="text-muted-foreground">
             Pagando en {currencyCode} ahorras{' '}
-            <span className="font-medium text-green-600">{formatCupAmount(savingCup)}</span>
+            <span className="text-base font-bold text-red-600">{formatCupAmount(savingCup)}</span>
             {savingPct ? ` (${savingPct}%)` : ''}
           </span>
         )}
       </span>
       {showAmount && (
-        <span>
+        <span className="text-muted-foreground">
           ahorras{' '}
-          <span className="font-medium text-green-600">{formatCupAmount(savingCup)}</span>
+          <span className="text-base font-bold text-red-600">{formatCupAmount(savingCup)}</span>
           {savingPct ? ` (${savingPct}%)` : ''}
         </span>
       )}
@@ -73,7 +73,7 @@ export default function SavingHint({
         <button
           type="button"
           onClick={onAction}
-          className="font-medium text-primary underline-offset-2 hover:underline"
+          className="font-semibold text-primary underline-offset-2 hover:underline"
         >
           {actionLabel}
         </button>

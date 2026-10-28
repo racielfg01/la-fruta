@@ -379,10 +379,10 @@ export function StoreView({
                 <Input
                   ref={searchInputRef}
                   type="text"
-                  placeholder="Buscar productos..."
+                  placeholder="Buscar productos, origen..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="h-11 w-full rounded-lg border-2 border-primary/60 pl-10 pr-10 text-base shadow-sm transition-colors focus-visible:border-primary focus-visible:ring-primary/20"
+                  className="h-12 w-full rounded-xl border-2 border-primary bg-background pl-10 pr-10 text-base shadow-[0_0_0_4px_hsl(var(--primary)/0.08)] ring-0 transition-all focus-visible:border-primary focus-visible:shadow-[0_0_0_4px_hsl(var(--primary)/0.12)] focus-visible:ring-0"
                 />
                 {searchQuery && (
                   <button

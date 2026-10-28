@@ -208,7 +208,7 @@ export function StoreView({
 
       const hasLocStock = !!(product.productLocations?.length && userLocation);
       const locStock = availableStock(userLocation, product);
-      const matchesStock = !showOnlyInStock || (locStock ?? product.inStock);
+      const matchesStock = true; // Mostrar productos agotados, pero no permitir agregarlos al carrito
 
       const matchesZone =
         !userLocation?.municipality ||

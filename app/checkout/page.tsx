@@ -1783,6 +1783,19 @@ export default function CheckoutPage() {
                     </span>
                   )}
                 </div>
+                {freeShippingMin > 0 && !isFreeShipping && (
+                  <p className="text-xs text-muted-foreground">
+                    Envío gratis a partir de{" "}
+                    <span className="font-medium">
+                      {selectedCurrency?.symbol}
+                      {convertAmount(freeShippingMin).toFixed(2)}
+                    </span>{" "}
+                    {selectedCurrency?.code}
+                  </p>
+                )}
+                {freeShippingMin > 0 && isFreeShipping && (
+                  <p className="text-xs text-emerald-600">¡Tienes envío gratis!</p>
+                )}
 
                 {operationalCostBase > 0 && (
                   <div className="flex justify-between text-sm">

@@ -247,6 +247,19 @@ export default function CartPage() {
                     </span>
                   )}
                 </div>
+                {freeShippingMin > 0 && !isFreeShipping && (
+                  <p className="text-xs text-muted-foreground">
+                    Envío gratis a partir de{" "}
+                    <span className="font-medium">
+                      {formatCup(freeShippingMin)}
+                    </span>
+                  </p>
+                )}
+                {freeShippingMin > 0 && isFreeShipping && (
+                  <p className="text-xs text-emerald-600">
+                    ¡Tienes envío gratis!
+                  </p>
+                )}
               </div>
 
               <div className="border-t px-5 py-4">

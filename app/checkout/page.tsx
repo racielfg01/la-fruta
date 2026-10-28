@@ -1773,11 +1773,15 @@ export default function CheckoutPage() {
                   <span className="flex items-center gap-1.5 text-muted-foreground">
                     <Truck className="h-3.5 w-3.5" /> Envío
                   </span>
-                  <span>
-                    {selectedZone
-                      ? `${selectedCurrency?.symbol}${deliveryFeeConverted.toFixed(2)}`
-                      : "—"}
-                  </span>
+                  {isFreeShipping ? (
+                    <span className="font-semibold text-emerald-600">Gratis</span>
+                  ) : (
+                    <span>
+                      {selectedZone
+                        ? `${selectedCurrency?.symbol}${deliveryFeeConverted.toFixed(2)}`
+                        : "—"}
+                    </span>
+                  )}
                 </div>
 
                 {operationalCostBase > 0 && (

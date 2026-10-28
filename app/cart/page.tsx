@@ -8,6 +8,7 @@ import { useCurrency } from "@/lib/currency";
 import { displayProductCupPrice, effectiveMargin } from "@/lib/price-margin";
 import { cupSavingForItems } from "@/lib/usd-saving";
 import { useMarginConfig } from "@/lib/use-price-margin";
+import { useSettingsStore } from "@/lib/settings-store";
 import type { Product } from "@/lib/store";
 import { ProductImage } from "@/components/product-image";
 import SavingHint from "@/components/saving-hint";
@@ -28,6 +29,7 @@ export default function CartPage() {
   const { currencies, defaultCurrency, formatPrice, convertPrice } = useCurrency();
   const cupCurrency = currencies.find((c) => c.code === "CUP");
   const marginCfg = useMarginConfig();
+  const freeShippingMin = useSettingsStore((s) => s.settings.freeShippingMin) || 0;
 
   // Precio CUP a mostrar por producto: márgened solo si el display es CUP.
   const itemCup = (p: Product) =>
@@ -50,6 +52,7 @@ export default function CartPage() {
     (sum, it) => sum + itemCup(it.product) * it.quantity,
     0
   );
+  const isFreeShipping = freeShippingMin > 0 && subtotal >= freeShippingMin;
   const isCupDisplay = defaultCurrency?.code === "CUP";
 
   // Ahorro por pagar en USD: el margen solo se aplica a las órdenes en CUP.
@@ -234,9 +237,15 @@ export default function CartPage() {
                   <span className="flex items-center gap-1.5 text-muted-foreground">
                     <Truck className="h-3.5 w-3.5" /> Envío
                   </span>
-                  <span className="text-right text-xs text-muted-foreground">
-                    Según zona, en el checkout
-                  </span>
+                  {isFreeShipping ? (
+                    <span className="text-right text-sm font-semibold text-emerald-600">
+                      Gratis
+                    </span>
+                  ) : (
+                    <span className="text-right text-xs text-muted-foreground">
+                      Según zona, en el checkout
+                    </span>
+                  )}
                 </div>
               </div>
 

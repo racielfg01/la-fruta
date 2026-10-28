@@ -1784,9 +1784,9 @@ export default function CheckoutPage() {
                   )}
                 </div>
                 {freeShippingMin > 0 && !isFreeShipping && (
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-sm text-muted-foreground">
                     Envío gratis a partir de{" "}
-                    <span className="font-medium">
+                    <span className="font-semibold">
                       {selectedCurrency?.symbol}
                       {convertAmount(freeShippingMin).toFixed(2)}
                     </span>{" "}
@@ -1794,7 +1794,7 @@ export default function CheckoutPage() {
                   </p>
                 )}
                 {freeShippingMin > 0 && isFreeShipping && (
-                  <p className="text-xs text-emerald-600">¡Tienes envío gratis!</p>
+                  <p className="text-sm font-semibold text-emerald-600">¡Tienes envío gratis!</p>
                 )}
 
                 {operationalCostBase > 0 && (

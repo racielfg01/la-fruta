@@ -126,6 +126,9 @@ function ProductsAdmin() {
   );
   // Unidades configurables (Configuración → Unidades). null = aún cargando.
   const [units, setUnits] = useState<string[] | null>(null);
+  const [editingStockId, setEditingStockId] = useState<string | null>(null);
+  const [editingStockValue, setEditingStockValue] = useState<string>("");
+  const [savingStockId, setSavingStockId] = useState<string | null>(null);
   const token = useAuthStore((s) => s.token);
 
   useEffect(() => {
@@ -320,6 +323,38 @@ function ProductsAdmin() {
   const goBack = () => {
     setFormErrors({});
     setStep((s) => Math.max(1, s - 1));
+  };
+
+  const startEditStock = (product: Product) => {
+    setEditingStockId(product.id);
+    setEditingStockValue(String(product.stock ?? 0));
+  };
+
+  const cancelEditStock = () => {
+    setEditingStockId(null);
+    setEditingStockValue("");
+  };
+
+  const saveStock = async (product: Product) => {
+    const newStock = Math.max(0, parseInt(editingStockValue) || 0);
+    if (newStock === (product.stock ?? 0)) {
+      cancelEditStock();
+      return;
+    }
+    setSavingStockId(product.id);
+    try {
+      await updateProduct(product.id, {
+        ...product,
+        stock: newStock,
+        inStock: newStock > 0,
+      } as any);
+      toast.success("Stock actualizado");
+    } catch {
+      toast.error("Error al actualizar el stock");
+    } finally {
+      setSavingStockId(null);
+      cancelEditStock();
+    }
   };
 
   // -------------------------------
@@ -608,7 +643,46 @@ function ProductsAdmin() {
                               : "bg-destructive/10 text-destructive"
                           }`}
                         >
-                          {formatStock(product)}
+                          {editingStockId === product.id ? (
+                            <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                              <Input
+                                type="number"
+                                min={0}
+                                className="h-6 w-16 px-1.5 py-0 text-xs"
+                                value={editingStockValue}
+                                onChange={(e) => setEditingStockValue(e.target.value)}
+                                onKeyDown={(e) => {
+                                  if (e.key === "Enter") {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    saveStock(product);
+                                  }
+                                  if (e.key === "Escape") {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    cancelEditStock();
+                                  }
+                                }}
+                                onBlur={() => saveStock(product)}
+                                onClick={(e) => e.stopPropagation()}
+                                autoFocus
+                                disabled={savingStockId === product.id}
+                              />
+                            </div>
+                          ) : (
+                            <button
+                              type="button"
+                              className="rounded px-1 py-0.5 hover:bg-background/70"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                startEditStock(product);
+                              }}
+                              title="Editar stock"
+                            >
+                              {formatStock(product)}
+                            </button>
+                          )}
                         </span>
                       </div>
                     </div>
@@ -725,7 +799,46 @@ function ProductsAdmin() {
                                 : "bg-destructive/10 text-destructive"
                             }`}
                           >
-                            {formatStock(product)}
+                            {editingStockId === product.id ? (
+                              <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                                <Input
+                                  type="number"
+                                  min={0}
+                                  className="h-6 w-16 px-1.5 py-0 text-xs"
+                                  value={editingStockValue}
+                                  onChange={(e) => setEditingStockValue(e.target.value)}
+                                  onKeyDown={(e) => {
+                                    if (e.key === "Enter") {
+                                      e.preventDefault();
+                                      e.stopPropagation();
+                                      saveStock(product);
+                                    }
+                                    if (e.key === "Escape") {
+                                      e.preventDefault();
+                                      e.stopPropagation();
+                                      cancelEditStock();
+                                    }
+                                  }}
+                                  onBlur={() => saveStock(product)}
+                                  onClick={(e) => e.stopPropagation()}
+                                  autoFocus
+                                  disabled={savingStockId === product.id}
+                                />
+                              </div>
+                            ) : (
+                              <button
+                                type="button"
+                                className="rounded px-1 py-0.5 hover:bg-background/70"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  startEditStock(product);
+                                }}
+                                title="Editar stock"
+                              >
+                                {formatStock(product)}
+                              </button>
+                            )}
                           </span>
                         </TableCell>
                         <TableCell className="pr-6 text-right">

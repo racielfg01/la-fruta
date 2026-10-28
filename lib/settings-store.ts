@@ -28,6 +28,8 @@ export interface StoreSettings {
   showPaymentTransfer?: boolean;
   /** Número de WhatsApp para soporte (formato internacional, solo dígitos). */
   whatsappPhone?: string;
+  /** Envío gratis a partir de este monto en CUP. 0 o vacío = desactivado. */
+  freeShippingMin?: number;
 }
 
 const EMPTY: StoreSettings = {
@@ -40,6 +42,7 @@ const EMPTY: StoreSettings = {
   showPaymentCash: true,
   showPaymentTransfer: true,
   whatsappPhone: '',
+  freeShippingMin: 0,
 };
 
 interface SettingsState {
@@ -79,6 +82,7 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
       showPaymentCash: data.showPaymentCash !== false,
       showPaymentTransfer: data.showPaymentTransfer !== false,
       whatsappPhone: data.whatsappPhone || '',
+      freeShippingMin: Number(data.freeShippingMin) || 0,
     };
     set({ settings: s, loading: false, initialized: true });
     applyBrandCSS(s);

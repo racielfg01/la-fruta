@@ -38,6 +38,7 @@ const DEFAULTS: StoreSettings = {
   showPaymentCash: true,
   showPaymentTransfer: true,
   whatsappPhone: "",
+  freeShippingMin: 0,
 };
 
 export default function ConfiguracionPage() {
@@ -252,6 +253,20 @@ export default function ConfiguracionPage() {
                 <p className="mt-1.5 text-xs text-muted-foreground">
                   Número entero en CUP que se suma a cada orden; en USD se
                   muestra convertido con la tasa de cambio.
+                </p>
+              </Field>
+              <Field className="sm:col-span-2">
+                <FieldLabel>Envío gratis a partir de (CUP)</FieldLabel>
+                <Input
+                  type="number"
+                  min={0}
+                  step="1"
+                  value={form.freeShippingMin ?? 0}
+                  onChange={(e) => update({ freeShippingMin: Math.max(0, Math.round(Number(e.target.value) || 0)) })}
+                  placeholder="0"
+                />
+                <p className="mt-1.5 text-xs text-muted-foreground">
+                  Si el subtotal en CUP supera o iguala este monto, el envío es gratis. Deja en 0 para desactivarlo.
                 </p>
               </Field>
             </CardContent>

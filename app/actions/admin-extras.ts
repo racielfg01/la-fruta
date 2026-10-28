@@ -399,6 +399,7 @@ const EMPTY_SETTINGS = {
   showPaymentCash: true,
   showPaymentTransfer: true,
   whatsappPhone: '',
+  freeShippingMin: 0,
 };
 
 export async function getSettingsAction(token: string) {
@@ -428,6 +429,7 @@ export async function getSettingsAction(token: string) {
     showPaymentCash: s.payment_cash_enabled !== false,
     showPaymentTransfer: s.payment_transfer_enabled !== false,
     whatsappPhone: s.whatsapp_phone || '',
+    freeShippingMin: Number(s.free_shipping_min) || 0,
   };
 }
 
@@ -461,6 +463,9 @@ export async function updateSettingsAction(data: Partial<typeof EMPTY_SETTINGS>,
   }
   if (data.operationalCost !== undefined) {
     body.operational_cost = Math.max(0, Math.round(Number(data.operationalCost) || 0));
+  }
+  if ((data as any).freeShippingMin !== undefined) {
+    body.free_shipping_min = Math.max(0, Number((data as any).freeShippingMin) || 0);
   }
   // Métodos de pago: solo si el llamador los envía.
   if (data.showPaymentCash !== undefined) {

@@ -234,6 +234,7 @@ export default function CheckoutPage() {
   const operationalCostCup = useSettingsStore((s) => s.settings.operationalCost) || 0;
   const showPaymentCash = useSettingsStore((s) => s.settings.showPaymentCash !== false);
   const showPaymentTransfer = useSettingsStore((s) => s.settings.showPaymentTransfer !== false);
+  const freeShippingMin = useSettingsStore((s) => s.settings.freeShippingMin) || 0;
   // Métodos de pago visibles según configuración admin (el fallback fuerza
   // a mostrar todos si el admin oculta todos).
   const visibleMethodIds = useMemo(
@@ -625,7 +626,8 @@ export default function CheckoutPage() {
     (sum, it) => sum + itemDisplayCup(it.product) * it.quantity,
     0,
   );
-  const deliveryFeeBase = selectedZone ? selectedZone.price : 0;
+  const isFreeShipping = freeShippingMin > 0 && subtotalBase >= freeShippingMin;
+  const deliveryFeeBase = selectedZone ? (isFreeShipping ? 0 : selectedZone.price) : 0;
   const totalBase = subtotalBase + deliveryFeeBase + operationalCostBase;
 
   // Ahorro por pagar en USD: el margen solo se aplica a las órdenes en CUP

@@ -374,7 +374,7 @@ export function StoreView({
           <div className="container mx-auto px-4 sm:px-6 lg:px-8">
             {/* Fila 1: búsqueda + orden + vista + filtros */}
             <div className="flex items-center gap-2 py-3">
-              <div className="relative min-w-0 flex-1">
+              <div className="relative min-w-0 flex-1" suppressHydrationWarning>
                 <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-primary" />
                 <Input
                   ref={searchInputRef}
@@ -383,6 +383,7 @@ export function StoreView({
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="h-12 w-full rounded-xl border-2 border-primary bg-background pl-10 pr-10 text-base shadow-[0_0_0_4px_hsl(var(--primary)/0.08)] ring-0 transition-all focus-visible:border-primary focus-visible:shadow-[0_0_0_4px_hsl(var(--primary)/0.12)] focus-visible:ring-0"
+                  suppressHydrationWarning
                 />
                 {searchQuery && (
                   <button

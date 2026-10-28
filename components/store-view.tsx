@@ -217,7 +217,7 @@ export function StoreView({
           userLocation.municipality,
         );
 
-      const matchesLocationStock = !hasLocStock || locStock > 0;
+      const matchesLocationStock = true; // Mostrar productos agotados
 
       return (
         matchesSearch &&

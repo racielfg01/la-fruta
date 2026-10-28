@@ -89,7 +89,7 @@ export default function LoginForm() {
         <div className="space-y-2">
           <div className="flex justify-between">
             <label className="text-sm font-medium text-foreground">Contraseña</label>
-            <Link href="/auth/forgot-password" className="text-xs text-primary hover:underline">
+            <Link href="/contacto" className="text-xs text-primary hover:underline">
               ¿Olvidaste tu contraseña?
             </Link>
           </div>

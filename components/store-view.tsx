@@ -549,28 +549,7 @@ export function StoreView({
               </Sheet>
             </div>
 
-            <div className="mb-3 flex flex-wrap items-center justify-center gap-4 rounded-lg border bg-muted/30 px-3 py-2 text-xs text-muted-foreground sm:justify-start sm:gap-6">
-              <div className="flex items-center gap-1.5">
-                <svg className="h-4 w-4 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-                </svg>
-                <span>Entrega máx. en 48h</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <svg className="h-4 w-4 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M9 11l3 3L22 4" />
-                  <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" />
-                </svg>
-                <span>Productos bien pesados</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <svg className="h-4 w-4 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <circle cx="12" cy="12" r="10" />
-                  <path d="M9 12l2 2 4-4" />
-                </svg>
-                <span>Garantizados</span>
-              </div>
-            </div>
+          
 
             {/* Fila 2: categorías + zona */}
             <div className="flex items-center gap-2 pb-3">
@@ -851,55 +830,130 @@ export function StoreView({
                 Confianza y frescura en cada pedido
               </p>
             </div>
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {[
-                {
-                  name: "María L.",
-                  location: "Santiago de Cuba",
-                  text: "Los productos llegan frescos y bien pesados. La entrega es puntual y siempre encuentro lo que necesito.",
-                  rating: 5,
-                },
-                {
-                  name: "Carlos M.",
-                  location: "Santiago de Cuba",
-                  text: "Excelente servicio. El envío gratuito a partir del monto ayuda mucho y el proceso de compra es muy fácil.",
-                  rating: 5,
-                },
-                {
-                  name: "Yanet R.",
-                  location: "Santiago de Cuba",
-                  text: "Me encanta poder ver disponibilidad por mi zona. Los productos agotados no aparecen confundiendo y todo llega en buen estado.",
-                  rating: 5,
-                },
-              ].map((testimonial, index) => (
-                <Card
-                  key={index}
-                  className="relative overflow-hidden border bg-card shadow-sm transition-shadow hover:shadow-md"
-                >
-                  <CardContent className="p-6">
-                    <Quote className="absolute right-4 top-4 h-8 w-8 text-primary/10" />
-                    <div className="mb-3 flex gap-0.5">
-                      {Array.from({ length: testimonial.rating }).map((_, i) => (
-                        <Star key={i} className="h-4 w-4 fill-amber-400 text-amber-400" />
-                      ))}
-                    </div>
-                    <p className="mb-4 text-sm leading-relaxed text-foreground">
-                      &ldquo;{testimonial.text}&rdquo;
-                    </p>
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold text-primary">
-                        {testimonial.name.charAt(0)}
-                      </div>
-                      <div>
-                        <p className="text-sm font-semibold text-foreground">{testimonial.name}</p>
-                        <p className="text-xs text-muted-foreground">{testimonial.location}</p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+            <div className="relative overflow-hidden">
+              <div className="flex gap-4 animate-testimonial-scroll">
+                {[
+                  {
+                    name: "María L.",
+                    location: "Santiago de Cuba",
+                    text: "Los productos llegan frescos y bien pesados. La entrega es puntual y siempre encuentro lo que necesito.",
+                    rating: 5,
+                  },
+                  {
+                    name: "Carlos M.",
+                    location: "Santiago de Cuba",
+                    text: "Excelente servicio. El envío gratuito a partir del monto ayuda mucho y el proceso de compra es muy fácil.",
+                    rating: 5,
+                  },
+                  {
+                    name: "Yanet R.",
+                    location: "Santiago de Cuba",
+                    text: "Me encanta poder ver disponibilidad por mi zona. Los productos agotados no aparecen confundiendo y todo llega en buen estado.",
+                    rating: 5,
+                  },
+                  {
+                    name: "Luis A.",
+                    location: "Santiago de Cuba",
+                    text: "Muy buena calidad en las frutas y verduras. Los precios son justos y la atención es excelente.",
+                    rating: 5,
+                  },
+                  {
+                    name: "Dayana P.",
+                    location: "Santiago de Cuba",
+                    text: "Siempre puntual con las entregas. Los productos están frescos y bien seleccionados.",
+                    rating: 5,
+                  },
+                  {
+                    name: "Roberto F.",
+                    location: "Santiago de Cuba",
+                    text: "La mejor opción para comprar viandas en Santiago. Rápido, confiable y con muy buena calidad.",
+                    rating: 5,
+                  },
+                  {
+                    name: "Karla S.",
+                    location: "Santiago de Cuba",
+                    text: "Me encanta que puedo comprar todo desde casa. Las verduras llegan limpias y frescas.",
+                    rating: 5,
+                  },
+                  {
+                    name: "Javier H.",
+                    location: "Santiago de Cuba",
+                    text: "Servicio impecable. Siempre que he pedido, todo llega a tiempo y en perfectas condiciones.",
+                    rating: 5,
+                  },
+                  {
+                    name: "Lisandra G.",
+                    location: "Santiago de Cuba",
+                    text: "Los precios son muy buenos y la calidad superior. Ya no compro en otro lado.",
+                    rating: 5,
+                  },
+                  {
+                    name: "Orlando T.",
+                    location: "Santiago de Cuba",
+                    text: "Excelente atención al cliente. Resuelven cualquier duda al instante y el producto siempre es fresco.",
+                    rating: 5,
+                  },
+                ]
+                  .concat([
+                    {
+                      name: "María L.",
+                      location: "Santiago de Cuba",
+                      text: "Los productos llegan frescos y bien pesados. La entrega es puntual y siempre encuentro lo que necesito.",
+                      rating: 5,
+                    },
+                    {
+                      name: "Carlos M.",
+                      location: "Santiago de Cuba",
+                      text: "Excelente servicio. El envío gratuito a partir del monto ayuda mucho y el proceso de compra es muy fácil.",
+                      rating: 5,
+                    },
+                  ])
+                  .map((testimonial, index) => (
+                    <Card
+                      key={index}
+                      className="relative w-[280px] flex-shrink-0 overflow-hidden border bg-card shadow-sm sm:w-[320px]"
+                    >
+                      <CardContent className="p-6">
+                        <Quote className="absolute right-4 top-4 h-8 w-8 text-primary/10" />
+                        <div className="mb-3 flex gap-0.5">
+                          {Array.from({ length: testimonial.rating }).map((_, i) => (
+                            <Star key={i} className="h-4 w-4 fill-amber-400 text-amber-400" />
+                          ))}
+                        </div>
+                        <p className="mb-4 text-sm leading-relaxed text-foreground">
+                          &ldquo;{testimonial.text}&rdquo;
+                        </p>
+                        <div className="flex items-center gap-3">
+                          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold text-primary">
+                            {testimonial.name.charAt(0)}
+                          </div>
+                          <div>
+                            <p className="text-sm font-semibold text-foreground">{testimonial.name}</p>
+                            <p className="text-xs text-muted-foreground">{testimonial.location}</p>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+              </div>
             </div>
           </div>
+          <style jsx>{`
+            @keyframes testimonial-scroll {
+              0% {
+                transform: translateX(0);
+              }
+              100% {
+                transform: translateX(-50%);
+              }
+            }
+            .animate-testimonial-scroll {
+              animation: testimonial-scroll 50s linear infinite;
+            }
+            .animate-testimonial-scroll:hover {
+              animation-play-state: paused;
+            }
+          `}</style>
         </section>
 
         {/* Contenido local: responde a la búsqueda y enlaza las páginas de confianza. */}

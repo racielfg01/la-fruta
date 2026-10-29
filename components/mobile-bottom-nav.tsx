@@ -2,7 +2,20 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Grid3X3, ShoppingCart, Heart, User } from "lucide-react";
+import {
+  Home,
+  Grid3X3,
+  ShoppingCart,
+  Heart,
+  User,
+  Leaf,
+  Apple,
+  Citrus,
+  Cherry,
+  Grape,
+  Carrot,
+  Sprout,
+} from "lucide-react";
 import { useCartStore } from "@/lib/store";
 import { useAuthStore } from "@/lib/auth-context";
 import { Badge } from "@/components/ui/badge";
@@ -17,6 +30,21 @@ interface MobileBottomNavProps {
   toggleCategory: (category: string) => void;
   clearCategories: () => void;
 }
+
+const categoryConfig: Record<
+  string,
+  { icon: typeof Leaf; color: string; bgColor: string }
+> = {
+  Fruits: { icon: Apple, color: "text-emerald-600", bgColor: "bg-emerald-50" },
+  Citrus: { icon: Citrus, color: "text-orange-600", bgColor: "bg-orange-50" },
+  Berries: { icon: Cherry, color: "text-pink-600", bgColor: "bg-pink-50" },
+  Tropical: { icon: Grape, color: "text-amber-600", bgColor: "bg-amber-50" },
+  Melons: { icon: Grape, color: "text-green-600", bgColor: "bg-green-50" },
+  Vegetables: { icon: Carrot, color: "text-orange-700", bgColor: "bg-orange-50" },
+  Roots: { icon: Carrot, color: "text-amber-700", bgColor: "bg-amber-50" },
+  Greens: { icon: Leaf, color: "text-green-700", bgColor: "bg-green-50" },
+  Herbs: { icon: Sprout, color: "text-emerald-700", bgColor: "bg-emerald-50" },
+};
 
 const getCategoryLabel = (category: string): string => {
   const labels: Record<string, string> = {
@@ -127,6 +155,8 @@ export function MobileBottomNav({
             {categories.map((category) => {
               const isSelected = selectedCategories.includes(category);
               const count = categoryCounts[category] || 0;
+              const config = categoryConfig[category] || categoryConfig.Fruits;
+              const Icon = config.icon;
               return (
                 <Button
                   key={category}
@@ -136,10 +166,15 @@ export function MobileBottomNav({
                     toggleCategory(category);
                     setOpen(false);
                   }}
-                  className="rounded-full"
+                  className="rounded-full gap-1.5"
                 >
+                  {!isSelected && (
+                    <span className={`flex h-4 w-4 items-center justify-center rounded-full ${config.bgColor}`}>
+                      <Icon className={`h-2.5 w-2.5 ${config.color}`} />
+                    </span>
+                  )}
                   {getCategoryLabel(category)}
-                  <span className="ml-1.5 rounded-full bg-background/20 px-1.5 text-[10px]">
+                  <span className="ml-1 rounded-full bg-background/20 px-1.5 text-[10px]">
                     {count}
                   </span>
                 </Button>

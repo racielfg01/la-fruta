@@ -22,7 +22,7 @@ import { useCartStore } from "@/lib/store";
 import { useAuthStore } from "@/lib/auth-context";
 import { Badge } from "@/components/ui/badge";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 
 interface MobileBottomNavProps {
@@ -74,6 +74,11 @@ export function MobileBottomNav({
   const totalItems = useCartStore((state) => state.getTotalItems());
   const { isAuthenticated } = useAuthStore();
   const [open, setOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const isActive = (href: string) => {
     if (href === "/") return pathname === "/";
@@ -108,7 +113,7 @@ export function MobileBottomNav({
           >
             <div className="relative">
               <ShoppingCart className="h-5 w-5" />
-              {totalItems > 0 && (
+              {mounted && totalItems > 0 && (
                 <Badge className="absolute -right-2 -top-1 h-4 min-w-4 px-1 text-[10px] bg-destructive text-destructive-foreground">
                   {totalItems}
                 </Badge>

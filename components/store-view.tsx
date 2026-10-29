@@ -3,6 +3,7 @@
 import { useState, useMemo, useEffect, useRef } from "react";
 import { usePagination } from "@/lib/use-pagination";
 import { PaginationBar } from "@/components/pagination-bar";
+import { MobileBottomNav } from "@/components/mobile-bottom-nav";
 import { Header } from "@/components/header";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -549,7 +550,7 @@ export function StoreView({
 
             {/* Fila 2: categorías + zona */}
             <div className="flex items-center gap-2 pb-3">
-              <div className="min-w-0 flex-1 overflow-x-auto scrollbar-hide">
+              <div className="hidden min-w-0 flex-1 overflow-x-auto scrollbar-hide md:flex">
                 <div className="flex gap-2 pr-2">
                   <Button
                     variant={selectedCategories.length === 0 ? "default" : "outline"}
@@ -1452,6 +1453,10 @@ function getCategoryLabel(category: string): string {
     Berries: "Bayas",
     Tropical: "Tropicales",
     Melons: "Melones",
+    Vegetables: "Verduras",
+    Roots: "Tubérculos",
+    Greens: "Hortalizas",
+    Herbs: "Hierbas",
   };
   return labels[category] || category;
 }

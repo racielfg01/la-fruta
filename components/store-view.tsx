@@ -830,130 +830,8 @@ export function StoreView({
                 Confianza y frescura en cada pedido
               </p>
             </div>
-            <div className="relative overflow-hidden">
-              <div className="flex gap-4 animate-testimonial-scroll">
-                {[
-                  {
-                    name: "María L.",
-                    location: "Santiago de Cuba",
-                    text: "Los productos llegan frescos y bien pesados. La entrega es puntual y siempre encuentro lo que necesito.",
-                    rating: 5,
-                  },
-                  {
-                    name: "Carlos M.",
-                    location: "Santiago de Cuba",
-                    text: "Excelente servicio. El envío gratuito a partir del monto ayuda mucho y el proceso de compra es muy fácil.",
-                    rating: 5,
-                  },
-                  {
-                    name: "Yanet R.",
-                    location: "Santiago de Cuba",
-                    text: "Me encanta poder ver disponibilidad por mi zona. Los productos agotados no aparecen confundiendo y todo llega en buen estado.",
-                    rating: 5,
-                  },
-                  {
-                    name: "Luis A.",
-                    location: "Santiago de Cuba",
-                    text: "Muy buena calidad en las frutas y verduras. Los precios son justos y la atención es excelente.",
-                    rating: 5,
-                  },
-                  {
-                    name: "Dayana P.",
-                    location: "Santiago de Cuba",
-                    text: "Siempre puntual con las entregas. Los productos están frescos y bien seleccionados.",
-                    rating: 5,
-                  },
-                  {
-                    name: "Roberto F.",
-                    location: "Santiago de Cuba",
-                    text: "La mejor opción para comprar viandas en Santiago. Rápido, confiable y con muy buena calidad.",
-                    rating: 5,
-                  },
-                  {
-                    name: "Karla S.",
-                    location: "Santiago de Cuba",
-                    text: "Me encanta que puedo comprar todo desde casa. Las verduras llegan limpias y frescas.",
-                    rating: 5,
-                  },
-                  {
-                    name: "Javier H.",
-                    location: "Santiago de Cuba",
-                    text: "Servicio impecable. Siempre que he pedido, todo llega a tiempo y en perfectas condiciones.",
-                    rating: 5,
-                  },
-                  {
-                    name: "Lisandra G.",
-                    location: "Santiago de Cuba",
-                    text: "Los precios son muy buenos y la calidad superior. Ya no compro en otro lado.",
-                    rating: 5,
-                  },
-                  {
-                    name: "Orlando T.",
-                    location: "Santiago de Cuba",
-                    text: "Excelente atención al cliente. Resuelven cualquier duda al instante y el producto siempre es fresco.",
-                    rating: 5,
-                  },
-                ]
-                  .concat([
-                    {
-                      name: "María L.",
-                      location: "Santiago de Cuba",
-                      text: "Los productos llegan frescos y bien pesados. La entrega es puntual y siempre encuentro lo que necesito.",
-                      rating: 5,
-                    },
-                    {
-                      name: "Carlos M.",
-                      location: "Santiago de Cuba",
-                      text: "Excelente servicio. El envío gratuito a partir del monto ayuda mucho y el proceso de compra es muy fácil.",
-                      rating: 5,
-                    },
-                  ])
-                  .map((testimonial, index) => (
-                    <Card
-                      key={index}
-                      className="relative w-[280px] flex-shrink-0 overflow-hidden border bg-card shadow-sm sm:w-[320px]"
-                    >
-                      <CardContent className="p-6">
-                        <Quote className="absolute right-4 top-4 h-8 w-8 text-primary/10" />
-                        <div className="mb-3 flex gap-0.5">
-                          {Array.from({ length: testimonial.rating }).map((_, i) => (
-                            <Star key={i} className="h-4 w-4 fill-amber-400 text-amber-400" />
-                          ))}
-                        </div>
-                        <p className="mb-4 text-sm leading-relaxed text-foreground">
-                          &ldquo;{testimonial.text}&rdquo;
-                        </p>
-                        <div className="flex items-center gap-3">
-                          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold text-primary">
-                            {testimonial.name.charAt(0)}
-                          </div>
-                          <div>
-                            <p className="text-sm font-semibold text-foreground">{testimonial.name}</p>
-                            <p className="text-xs text-muted-foreground">{testimonial.location}</p>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-              </div>
-            </div>
+            <TestimonialsSlider />
           </div>
-          <style jsx>{`
-            @keyframes testimonial-scroll {
-              0% {
-                transform: translateX(0);
-              }
-              100% {
-                transform: translateX(-50%);
-              }
-            }
-            .animate-testimonial-scroll {
-              animation: testimonial-scroll 50s linear infinite;
-            }
-            .animate-testimonial-scroll:hover {
-              animation-play-state: paused;
-            }
-          `}</style>
         </section>
 
         {/* Contenido local: responde a la búsqueda y enlaza las páginas de confianza. */}
@@ -1601,6 +1479,133 @@ function EmptyState({
       <Button variant="outline" onClick={onClear}>
         Limpiar filtros
       </Button>
+    </div>
+  );
+}
+
+function TestimonialsSlider() {
+  const testimonials = [
+    {
+      name: "María L.",
+      location: "Santiago de Cuba",
+      text: "Los productos llegan frescos y bien pesados. La entrega es puntual y siempre encuentro lo que necesito.",
+      rating: 5,
+    },
+    {
+      name: "Carlos M.",
+      location: "Santiago de Cuba",
+      text: "Excelente servicio. El envío gratuito a partir del monto ayuda mucho y el proceso de compra es muy fácil.",
+      rating: 5,
+    },
+    {
+      name: "Yanet R.",
+      location: "Santiago de Cuba",
+      text: "Me encanta poder ver disponibilidad por mi zona. Los productos agotados no aparecen confundiendo y todo llega en buen estado.",
+      rating: 5,
+    },
+    {
+      name: "Luis A.",
+      location: "Santiago de Cuba",
+      text: "Muy buena calidad en las frutas y verduras. Los precios son justos y la atención es excelente.",
+      rating: 5,
+    },
+    {
+      name: "Dayana P.",
+      location: "Santiago de Cuba",
+      text: "Siempre puntual con las entregas. Los productos están frescos y bien seleccionados.",
+      rating: 5,
+    },
+    {
+      name: "Roberto F.",
+      location: "Santiago de Cuba",
+      text: "La mejor opción para comprar viandas en Santiago. Rápido, confiable y con muy buena calidad.",
+      rating: 5,
+    },
+    {
+      name: "Karla S.",
+      location: "Santiago de Cuba",
+      text: "Me encanta que puedo comprar todo desde casa. Las verduras llegan limpias y frescas.",
+      rating: 5,
+    },
+    {
+      name: "Javier H.",
+      location: "Santiago de Cuba",
+      text: "Servicio impecable. Siempre que he pedido, todo llega a tiempo y en perfectas condiciones.",
+      rating: 5,
+    },
+    {
+      name: "Lisandra G.",
+      location: "Santiago de Cuba",
+      text: "Los precios son muy buenos y la calidad superior. Ya no compro en otro lado.",
+      rating: 5,
+    },
+    {
+      name: "Orlando T.",
+      location: "Santiago de Cuba",
+      text: "Excelente atención al cliente. Resuelven cualquier duda al instante y el producto siempre es fresco.",
+      rating: 5,
+    },
+  ];
+
+  const [current, setCurrent] = useState(0);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrent((prev) => (prev + 1) % testimonials.length);
+    }, 5000);
+    return () => clearInterval(timer);
+  }, [testimonials.length]);
+
+  const goTo = (index: number) => setCurrent(index);
+
+  return (
+    <div className="relative mx-auto max-w-2xl">
+      <div className="overflow-hidden rounded-xl">
+        <div
+          className="flex transition-transform duration-700 ease-in-out"
+          style={{ transform: `translateX(-${current * 100}%)` }}
+        >
+          {testimonials.map((testimonial, index) => (
+            <Card
+              key={index}
+              className="relative w-full flex-shrink-0 overflow-hidden border bg-card shadow-sm"
+            >
+              <CardContent className="p-6 sm:p-8">
+                <Quote className="absolute right-4 top-4 h-8 w-8 text-primary/10 sm:right-6 sm:top-6" />
+                <div className="mb-4 flex gap-0.5">
+                  {Array.from({ length: testimonial.rating }).map((_, i) => (
+                    <Star key={i} className="h-4 w-4 fill-amber-400 text-amber-400" />
+                  ))}
+                </div>
+                <p className="mb-6 text-base leading-relaxed text-foreground sm:text-lg">
+                  &ldquo;{testimonial.text}&rdquo;
+                </p>
+                <div className="flex items-center gap-3">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-base font-semibold text-primary">
+                    {testimonial.name.charAt(0)}
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-foreground sm:text-base">{testimonial.name}</p>
+                    <p className="text-xs text-muted-foreground sm:text-sm">{testimonial.location}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
+      <div className="mt-4 flex justify-center gap-2">
+        {testimonials.map((_, index) => (
+          <button
+            key={index}
+            onClick={() => goTo(index)}
+            className={`h-2 rounded-full transition-all ${
+              index === current ? "w-6 bg-primary" : "w-2 bg-muted-foreground/30"
+            }`}
+            aria-label={`Ir al testimonio ${index + 1}`}
+          />
+        ))}
+      </div>
     </div>
   );
 }

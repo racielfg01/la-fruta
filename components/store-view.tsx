@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useMemo, useEffect, useRef } from "react";
+import { usePagination } from "@/lib/use-pagination";
+import { PaginationBar } from "@/components/pagination-bar";
 import { Header } from "@/components/header";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -750,29 +752,49 @@ export function StoreView({
               {/* Grid de productos */}
               {filteredProducts.length > 0 ? (
                 viewMode === "masonry" ? (
-                  <MasonryGrid
-                    products={filteredProducts}
-                    addItem={addItem}
-                    isInCart={isInCart}
-                    getCartQuantity={getCartQuantity}
-                    hoveredProduct={hoveredProduct}
-                    setHoveredProduct={setHoveredProduct}
-                  />
+                  <>
+                    <MasonryGrid
+                      products={paginatedData}
+                      addItem={addItem}
+                      isInCart={isInCart}
+                      getCartQuantity={getCartQuantity}
+                      hoveredProduct={hoveredProduct}
+                      setHoveredProduct={setHoveredProduct}
+                    />
+                    <PaginationBar
+                      currentPage={currentPage}
+                      totalPages={totalPages}
+                      totalItems={filteredProducts.length}
+                      perPage={perPage}
+                      onPageChange={goToPage}
+                      onPerPageChange={changePerPage}
+                    />
+                  </>
                 ) : (
-                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 lg:gap-6">
-                    {filteredProducts.map((product, productIndex) => (
-                      <ProductCard
-                        key={product.id}
-                        product={product}
-                        addItem={addItem}
-                        isInCart={isInCart(product.id)}
-                        cartQuantity={getCartQuantity(product.id)}
-                        isHovered={hoveredProduct === product.id}
-                        onHover={setHoveredProduct}
-                        priority={productIndex < 3}
-                      />
-                    ))}
-                  </div>
+                  <>
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 lg:gap-6">
+                      {paginatedData.map((product, productIndex) => (
+                        <ProductCard
+                          key={product.id}
+                          product={product}
+                          addItem={addItem}
+                          isInCart={isInCart(product.id)}
+                          cartQuantity={getCartQuantity(product.id)}
+                          isHovered={hoveredProduct === product.id}
+                          onHover={setHoveredProduct}
+                          priority={productIndex < 3}
+                        />
+                      ))}
+                    </div>
+                    <PaginationBar
+                      currentPage={currentPage}
+                      totalPages={totalPages}
+                      totalItems={filteredProducts.length}
+                      perPage={perPage}
+                      onPageChange={goToPage}
+                      onPerPageChange={changePerPage}
+                    />
+                  </>
                 )
               ) : (
                 <EmptyState onClear={clearFilters} searchQuery={searchQuery} />

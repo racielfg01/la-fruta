@@ -13,6 +13,7 @@ import { useCurrencyStore } from "@/lib/currency-store";
 import { optimizedImageUrl } from "@/lib/image";
 import { effectiveCupPrice, displayProductCupPrice } from "@/lib/price-margin";
 import { useMarginConfig } from "@/lib/use-price-margin";
+import { MobileBottomNav } from "@/components/mobile-bottom-nav";
 
 export default function FavoritosPage() {
   const favorites = useCartStore((state) => state.favorites);
@@ -153,6 +154,8 @@ export default function FavoritosPage() {
           )}
         </div>
       </main>
+      <div className="h-20 md:hidden" />
+      <MobileBottomNav categories={[]} categoryCounts={{}} selectedCategories={[]} toggleCategory={() => {}} clearCategories={() => {}} />
     </>
   );
 }

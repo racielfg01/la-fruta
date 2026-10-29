@@ -39,6 +39,7 @@ import {
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { useCurrency } from "@/lib/currency";
+import { MobileBottomNav } from "@/components/mobile-bottom-nav";
 
 export default function ProfilePage() {
   const { user, token, isAuthenticated, setUser } = useAuthStore();
@@ -582,6 +583,8 @@ export default function ProfilePage() {
           </Card>
         </div>
       </main>
+      <div className="h-20 md:hidden" />
+      <MobileBottomNav categories={[]} categoryCounts={{}} selectedCategories={[]} toggleCategory={() => {}} clearCategories={() => {}} />
     </div>
   );
 }

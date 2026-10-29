@@ -1188,7 +1188,11 @@ function MasonryCard({
           <button
             type="button"
             aria-label="Agregar a favoritos"
-            onClick={(e) => e.preventDefault()}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              useCartStore.getState().toggleFavorite(product);
+            }}
             className={`absolute right-2.5 top-2.5 flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-foreground shadow-md backdrop-blur transition-all duration-300 hover:bg-white hover:text-rose-500 ${
               isHovered
                 ? "translate-x-0 opacity-100"
@@ -1335,7 +1339,11 @@ function ProductCard({
           <button
             type="button"
             aria-label="Agregar a favoritos"
-            onClick={(e) => e.preventDefault()}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              useCartStore.getState().toggleFavorite(product);
+            }}
             className={`absolute right-2.5 top-2.5 flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-foreground shadow-md backdrop-blur transition-all duration-300 hover:bg-white hover:text-rose-500 ${
               isHovered
                 ? "translate-x-0 opacity-100"

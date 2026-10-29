@@ -75,6 +75,7 @@ export function availableStock(
 
 interface CartStore {
   items: CartItem[];
+  favorites: Product[];
   deliveryLocation: DeliveryLocation | null;
   onboardingComplete: boolean;
   userLocation: UserLocation | null;
@@ -87,12 +88,17 @@ interface CartStore {
   setUserLocation: (location: UserLocation | null) => void;
   getTotalItems: () => number;
   getTotalPrice: () => number;
+  toggleFavorite: (product: Product) => void;
+  removeFavorite: (productId: string) => void;
+  isFavorite: (productId: string) => boolean;
+  getFavorites: () => Product[];
 }
 
 export const useCartStore = create<CartStore>()(
   persist(
     (set, get) => ({
       items: [],
+      favorites: [],
       deliveryLocation: null,
       onboardingComplete: false,
       userLocation: null,
@@ -147,6 +153,20 @@ export const useCartStore = create<CartStore>()(
       getTotalItems: () => get().items.reduce((sum, item) => sum + item.quantity, 0),
       getTotalPrice: () =>
         get().items.reduce((sum, item) => sum + item.product.price * item.quantity, 0),
+      toggleFavorite: (product) => {
+        const favorites = get().favorites;
+        const exists = favorites.some((item) => item.id === product.id);
+        if (exists) {
+          set({ favorites: favorites.filter((item) => item.id !== product.id) });
+        } else {
+          set({ favorites: [...favorites, product] });
+        }
+      },
+      removeFavorite: (productId) => {
+        set({ favorites: get().favorites.filter((item) => item.id !== productId) });
+      },
+      isFavorite: (productId) => get().favorites.some((item) => item.id === productId),
+      getFavorites: () => get().favorites,
     }),
     { name: "la-fruta-cart" }
   )

@@ -47,7 +47,7 @@ export function Header() {
 
   // No renderizar el contador hasta que esté montado en el cliente
   const cartBadge = mounted && totalItems > 0 && (
-    <Badge className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full p-0 text-xs">
+    <Badge className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-destructive p-0 text-xs text-destructive-foreground">
       {totalItems}
     </Badge>
   );

@@ -85,6 +85,10 @@ export function MobileBottomNav({
     return pathname.startsWith(href);
   };
 
+  if (pathname === "/cart" || pathname === "/checkout") {
+    return null;
+  }
+
   return (
     <>
       <nav className="fixed bottom-0 left-0 right-0 z-50 border-t bg-background/95 pb-[env(safe-area-inset-bottom)] backdrop-blur supports-[backdrop-filter]:bg-background/80 md:hidden">

@@ -255,6 +255,15 @@ export function StoreView({
     userLocation,
   ]);
 
+  const {
+    currentPage,
+    totalPages,
+    perPage,
+    paginatedData,
+    goToPage,
+    changePerPage,
+  } = usePagination(filteredProducts, 24);
+
   const categoryCounts = useMemo(() => {
     const counts: Record<string, number> = {};
     products.forEach((p) => {

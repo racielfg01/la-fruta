@@ -875,6 +875,14 @@ export function StoreView({
           />
         </DialogContent>
       </Dialog>
+      <div className="h-20 md:hidden" />
+      <MobileBottomNav
+        categories={categories}
+        categoryCounts={categoryCounts}
+        selectedCategories={selectedCategories}
+        toggleCategory={toggleCategory}
+        clearCategories={() => setSelectedCategories([])}
+      />
     </TooltipProvider>
   );
 }

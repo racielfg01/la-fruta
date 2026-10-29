@@ -5,6 +5,7 @@ import { usePagination } from "@/lib/use-pagination";
 import { PaginationBar } from "@/components/pagination-bar";
 import { MobileBottomNav } from "@/components/mobile-bottom-nav";
 import { Header } from "@/components/header";
+import { Quote, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -835,6 +836,71 @@ export function StoreView({
             </div>
           </div>
         </div>
+
+        {/* Testimonios */}
+        <section aria-labelledby="testimonios" className="border-t bg-background py-12 sm:py-16">
+          <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="mx-auto mb-8 max-w-2xl text-center">
+              <h2
+                id="testimonios"
+                className="font-[family-name:var(--font-playfair)] text-2xl font-bold text-foreground sm:text-3xl"
+              >
+                Lo que dicen nuestros clientes
+              </h2>
+              <p className="mt-2 text-sm text-muted-foreground sm:text-base">
+                Confianza y frescura en cada pedido
+              </p>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {[
+                {
+                  name: "María L.",
+                  location: "Santiago de Cuba",
+                  text: "Los productos llegan frescos y bien pesados. La entrega es puntual y siempre encuentro lo que necesito.",
+                  rating: 5,
+                },
+                {
+                  name: "Carlos M.",
+                  location: "Santiago de Cuba",
+                  text: "Excelente servicio. El envío gratuito a partir del monto ayuda mucho y el proceso de compra es muy fácil.",
+                  rating: 5,
+                },
+                {
+                  name: "Yanet R.",
+                  location: "Santiago de Cuba",
+                  text: "Me encanta poder ver disponibilidad por mi zona. Los productos agotados no aparecen confundiendo y todo llega en buen estado.",
+                  rating: 5,
+                },
+              ].map((testimonial, index) => (
+                <Card
+                  key={index}
+                  className="relative overflow-hidden border bg-card shadow-sm transition-shadow hover:shadow-md"
+                >
+                  <CardContent className="p-6">
+                    <Quote className="absolute right-4 top-4 h-8 w-8 text-primary/10" />
+                    <div className="mb-3 flex gap-0.5">
+                      {Array.from({ length: testimonial.rating }).map((_, i) => (
+                        <Star key={i} className="h-4 w-4 fill-amber-400 text-amber-400" />
+                      ))}
+                    </div>
+                    <p className="mb-4 text-sm leading-relaxed text-foreground">
+                      &ldquo;{testimonial.text}&rdquo;
+                    </p>
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold text-primary">
+                        {testimonial.name.charAt(0)}
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold text-foreground">{testimonial.name}</p>
+                        <p className="text-xs text-muted-foreground">{testimonial.location}</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </div>
+        </section>
 
         {/* Contenido local: responde a la búsqueda y enlaza las páginas de confianza. */}
         <section

@@ -875,7 +875,7 @@ export function StoreView({
           />
         </DialogContent>
       </Dialog>
-      <div className="h-20 md:hidden" />
+      <div className="h-[calc(5rem+env(safe-area-inset-bottom))] md:hidden" />
       <MobileBottomNav
         categories={categories}
         categoryCounts={categoryCounts}

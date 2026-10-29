@@ -15,6 +15,8 @@ import {
   Grape,
   Carrot,
   Sprout,
+  Citrus as Lemon,
+  Banana,
 } from "lucide-react";
 import { useCartStore } from "@/lib/store";
 import { useAuthStore } from "@/lib/auth-context";
@@ -35,11 +37,11 @@ const categoryConfig: Record<
   string,
   { icon: typeof Leaf; color: string; bgColor: string }
 > = {
-  Fruits: { icon: Apple, color: "text-emerald-600", bgColor: "bg-emerald-50" },
-  Citrus: { icon: Citrus, color: "text-orange-600", bgColor: "bg-orange-50" },
+  Fruits: { icon: Apple, color: "text-red-600", bgColor: "bg-red-50" },
+  Citrus: { icon: Lemon, color: "text-orange-500", bgColor: "bg-orange-50" },
   Berries: { icon: Cherry, color: "text-pink-600", bgColor: "bg-pink-50" },
-  Tropical: { icon: Grape, color: "text-amber-600", bgColor: "bg-amber-50" },
-  Melons: { icon: Grape, color: "text-green-600", bgColor: "bg-green-50" },
+  Tropical: { icon: Banana, color: "text-yellow-600", bgColor: "bg-yellow-50" },
+  Melons: { icon: Grape, color: "text-emerald-600", bgColor: "bg-emerald-50" },
   Vegetables: { icon: Carrot, color: "text-orange-700", bgColor: "bg-orange-50" },
   Roots: { icon: Carrot, color: "text-amber-700", bgColor: "bg-amber-50" },
   Greens: { icon: Leaf, color: "text-green-700", bgColor: "bg-green-50" },
@@ -80,7 +82,7 @@ export function MobileBottomNav({
 
   return (
     <>
-      <nav className="fixed bottom-0 left-0 right-0 z-50 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 md:hidden">
+      <nav className="fixed bottom-0 left-0 right-0 z-50 border-t bg-background/95 pb-[env(safe-area-inset-bottom)] backdrop-blur supports-[backdrop-filter]:bg-background/80 md:hidden">
         <div className="grid grid-cols-5 h-16">
           <Link
             href="/"
@@ -136,11 +138,11 @@ export function MobileBottomNav({
       </nav>
 
       <Sheet open={open} onOpenChange={setOpen}>
-        <SheetContent side="bottom" className="h-[70vh]">
+        <SheetContent side="bottom" className="h-[75vh] rounded-t-2xl">
           <SheetHeader>
             <SheetTitle>Categorías</SheetTitle>
           </SheetHeader>
-          <div className="mt-4 flex flex-wrap gap-2 overflow-y-auto max-h-[calc(70vh-100px)]">
+          <div className="mt-4 flex flex-wrap gap-2 overflow-y-auto max-h-[calc(75vh-110px)] pb-4">
             <Button
               variant={selectedCategories.length === 0 ? "default" : "outline"}
               size="sm"
@@ -148,8 +150,9 @@ export function MobileBottomNav({
                 clearCategories();
                 setOpen(false);
               }}
-              className="rounded-full"
+              className="rounded-full gap-1.5"
             >
+              <Grid3X3 className="h-3.5 w-3.5" />
               Todos
             </Button>
             {categories.map((category) => {
@@ -168,13 +171,25 @@ export function MobileBottomNav({
                   }}
                   className="rounded-full gap-1.5"
                 >
-                  {!isSelected && (
-                    <span className={`flex h-4 w-4 items-center justify-center rounded-full ${config.bgColor}`}>
-                      <Icon className={`h-2.5 w-2.5 ${config.color}`} />
-                    </span>
-                  )}
+                  <span
+                    className={`flex h-5 w-5 items-center justify-center rounded-full ${
+                      isSelected ? "bg-primary-foreground/15" : config.bgColor
+                    }`}
+                  >
+                    <Icon
+                      className={`h-3 w-3 ${
+                        isSelected ? "text-primary-foreground" : config.color
+                      }`}
+                    />
+                  </span>
                   {getCategoryLabel(category)}
-                  <span className="ml-1 rounded-full bg-background/20 px-1.5 text-[10px]">
+                  <span
+                    className={`ml-1 rounded-full px-1.5 text-[10px] ${
+                      isSelected
+                        ? "bg-primary-foreground/20"
+                        : "bg-muted text-muted-foreground"
+                    }`}
+                  >
                     {count}
                   </span>
                 </Button>

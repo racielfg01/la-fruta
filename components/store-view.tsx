@@ -1160,7 +1160,7 @@ function MasonryCard({
 
           {isInCart && (
             <div className="absolute bottom-2.5 right-2.5">
-              <Badge className="bg-primary text-primary-foreground shadow-md">
+              <Badge className="bg-destructive text-destructive-foreground shadow-md">
                 <ShoppingCart className="mr-1 h-3 w-3" />
                 {cartQuantity}
               </Badge>
@@ -1307,7 +1307,7 @@ function ProductCard({
 
           {isInCart && (
             <div className="absolute bottom-2.5 right-2.5">
-              <Badge className="bg-primary text-primary-foreground shadow-md">
+              <Badge className="bg-destructive text-destructive-foreground shadow-md">
                 <ShoppingCart className="mr-1 h-3 w-3" />
                 {cartQuantity}
               </Badge>

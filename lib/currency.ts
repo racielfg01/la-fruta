@@ -35,8 +35,13 @@ export function convertPrice(amount: number, from: CurrencyInfo, to: CurrencyInf
 }
 
 export function formatPrice(amount: number, currency?: CurrencyInfo | null): string {
-  if (!currency) return `$${amount.toFixed(2)}`;
-  return `${currency.symbol}${amount.toFixed(2)} ${currency.code}`;
+  if (!currency) {
+    const n = Math.round(amount * 100) / 100;
+    return n % 1 === 0 ? `$${n.toFixed(0)}` : `$${n.toFixed(2)}`;
+  }
+  const n = Math.round(amount * 100) / 100;
+  const formatted = n % 1 === 0 ? n.toFixed(0) : n.toFixed(2);
+  return `${currency.symbol}${formatted} ${currency.code}`;
 }
 
 export function useCurrency() {

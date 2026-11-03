@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { useAdminStore, DeliveryZone } from "@/lib/admin-store";
+import { useAuthStore } from "@/lib/auth-context";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -48,9 +49,22 @@ import {
   ChevronRight,
   LayoutGrid,
   Rows3,
+  FileSpreadsheet,
+  Download,
+  Upload,
+  Loader2,
+  CheckCircle2,
+  XCircle,
 } from "lucide-react";
+import { toast } from "sonner";
 import { useCurrency } from "@/lib/currency";
 import { getPublicLocations } from "@/app/actions/public";
+import { applyDeliveryZoneImportAction } from "@/app/actions/admin";
+import {
+  buildZoneTemplateRows,
+  planZoneImport,
+  type ZoneImportPlan,
+} from "@/lib/delivery-zones-excel";
 
 const emptyZone: Omit<DeliveryZone, "id"> = {
   name: "",
@@ -76,6 +90,14 @@ export default function DeliveryAdmin() {
 
   const [provinces, setProvinces] = useState<{ id: string; name: string }[]>([]);
   const [municipalities, setMunicipalities] = useState<{ id: string; name: string; id_provincia: string }[]>([]);
+
+  const token = useAuthStore((s) => s.token);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [downloading, setDownloading] = useState(false);
+  const [readingFile, setReadingFile] = useState(false);
+  const [importPlan, setImportPlan] = useState<ZoneImportPlan | null>(null);
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [applying, setApplying] = useState(false);
 
   useEffect(() => {
     getPublicLocations().then((loc) => {
@@ -148,6 +170,110 @@ export default function DeliveryAdmin() {
     setDialogOpen(false);
     setFormData(emptyZone);
     setEditingZone(null);
+  };
+
+  const zoneRefs = () =>
+    deliveryZones.map((z) => ({
+      id: z.id,
+      name: z.name,
+      price: z.price,
+      provinceId: z.province,
+      municipalityId: z.municipality,
+    }));
+
+  const handleDownloadTemplate = async () => {
+    setDownloading(true);
+    try {
+      const { buildZonesWorkbook } = await import("@/lib/delivery-zones-xlsx");
+      const rows = buildZoneTemplateRows(
+        zoneRefs(),
+        provinces.map((p) => ({ id: p.id, name: p.name })),
+        municipalities.map((m) => ({ id: m.id, name: m.name, provinceId: m.id_provincia }))
+      );
+      const buffer = await buildZonesWorkbook(rows);
+      const blob = new Blob([buffer], {
+        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `zonas-envio-${new Date().toISOString().slice(0, 10)}.xlsx`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+      toast.success(`Plantilla descargada con ${rows.length} zonas`);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "No pudimos generar la plantilla");
+    } finally {
+      setDownloading(false);
+    }
+  };
+
+  const handleFileSelected = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+
+    setReadingFile(true);
+    try {
+      const { readZonesWorkbook } = await import("@/lib/delivery-zones-xlsx");
+      const { rows } = await readZonesWorkbook(await file.arrayBuffer());
+      const plan = planZoneImport(
+        rows,
+        zoneRefs(),
+        provinces.map((p) => ({ id: p.id, name: p.name })),
+        municipalities.map((m) => ({ id: m.id, name: m.name, provinceId: m.id_provincia }))
+      );
+      if (plan.updates.length === 0 && plan.creates.length === 0) {
+        toast.error("El archivo no tiene filas aplicables. Revisa los motivos antes de reintentar.");
+      }
+      setImportPlan(plan);
+      setPreviewOpen(true);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "No pudimos leer el archivo");
+    } finally {
+      setReadingFile(false);
+    }
+  };
+
+  const handleApplyImport = async () => {
+    if (!importPlan) return;
+    if (!token) {
+      toast.error("Tu sesión expiró. Vuelve a iniciar sesión.");
+      return;
+    }
+
+    setApplying(true);
+    try {
+      const result = await applyDeliveryZoneImportAction(
+        {
+          updates: importPlan.updates.map((u) => ({ id: u.id, price: u.price })),
+          creates: importPlan.creates,
+        },
+        token
+      );
+
+      const priceById = new Map(importPlan.updates.map((u) => [u.id, u.price]));
+      useAdminStore.setState((state) => ({
+        deliveryZones: [
+          ...state.deliveryZones.map((zone) =>
+            priceById.has(zone.id) ? { ...zone, price: priceById.get(zone.id)! } : zone
+          ),
+          ...result.created,
+        ],
+      }));
+
+      toast.success(
+        `Actualizadas ${result.updated} · Creadas ${result.created.length}`
+      );
+      setPreviewOpen(false);
+      setImportPlan(null);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "No pudimos aplicar los cambios");
+    } finally {
+      setApplying(false);
+    }
   };
 
   // ── Grouped data: Province > Municipality > Zones ──
@@ -336,7 +462,40 @@ export default function DeliveryAdmin() {
             Configura las zonas y tarifas de entrega por provincia y municipio.
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleDownloadTemplate}
+            disabled={downloading || deliveryZones.length === 0}
+          >
+            {downloading ? (
+              <Loader2 className="mr-1 h-4 w-4 animate-spin" />
+            ) : (
+              <Download className="mr-1 h-4 w-4" />
+            )}
+            Descargar plantilla
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={readingFile}
+          >
+            {readingFile ? (
+              <Loader2 className="mr-1 h-4 w-4 animate-spin" />
+            ) : (
+              <Upload className="mr-1 h-4 w-4" />
+            )}
+            Subir Excel
+          </Button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            className="hidden"
+            onChange={handleFileSelected}
+          />
           <Button variant="outline" size="sm" onClick={expandAll}>
             <LayoutGrid className="mr-1 h-4 w-4" /> Expandir
           </Button>
@@ -579,6 +738,125 @@ export default function DeliveryAdmin() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Excel Import Preview */}
+      <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <FileSpreadsheet className="h-5 w-5 text-primary" />
+              Revisar cambios del Excel
+            </DialogTitle>
+          </DialogHeader>
+
+          {importPlan && (
+            <div className="space-y-4">
+              <div className="grid gap-2 sm:grid-cols-3">
+                <div className="rounded-lg border bg-muted/30 p-3">
+                  <p className="text-xs text-muted-foreground">Se actualizan</p>
+                  <p className="text-xl font-bold">{importPlan.updates.length}</p>
+                </div>
+                <div className="rounded-lg border bg-muted/30 p-3">
+                  <p className="text-xs text-muted-foreground">Se crean</p>
+                  <p className="text-xl font-bold">{importPlan.creates.length}</p>
+                </div>
+                <div className="rounded-lg border bg-muted/30 p-3">
+                  <p className="text-xs text-muted-foreground">Con problemas</p>
+                  <p className="text-xl font-bold">{importPlan.errors.length}</p>
+                </div>
+              </div>
+
+              <div className="max-h-[50vh] space-y-4 overflow-y-auto pr-1">
+                {importPlan.updates.length > 0 && (
+                  <section>
+                    <h4 className="mb-2 flex items-center gap-1.5 text-sm font-semibold">
+                      <CheckCircle2 className="h-4 w-4 text-green-600" />
+                      Precios que cambian
+                    </h4>
+                    <ul className="space-y-1 text-sm">
+                      {importPlan.updates.map((u) => (
+                        <li key={u.id} className="flex justify-between gap-3 rounded border px-2 py-1">
+                          <span className="min-w-0 truncate">
+                            {u.zone} · {u.municipalityName}, {u.provinceName}
+                          </span>
+                          <span className="shrink-0 font-semibold text-primary">
+                            {formatPrice(u.price, cupCurrency)}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  </section>
+                )}
+
+                {importPlan.creates.length > 0 && (
+                  <section>
+                    <h4 className="mb-2 flex items-center gap-1.5 text-sm font-semibold">
+                      <Plus className="h-4 w-4 text-primary" />
+                      Zonas nuevas
+                    </h4>
+                    <ul className="space-y-1 text-sm">
+                      {importPlan.creates.map((c) => (
+                        <li
+                          key={`${c.provinceId}-${c.municipalityId}-${c.zone}`}
+                          className="flex justify-between gap-3 rounded border px-2 py-1"
+                        >
+                          <span className="min-w-0 truncate">
+                            {c.zone} · {c.municipalityName}, {c.provinceName}
+                          </span>
+                          <span className="shrink-0 font-semibold text-primary">
+                            {formatPrice(c.price, cupCurrency)}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                    <p className="mt-1.5 text-xs text-muted-foreground">
+                      Se crean con 0-0 km y tiempo &quot;Por definir&quot;; edítalas después.
+                    </p>
+                  </section>
+                )}
+
+                {importPlan.errors.length > 0 && (
+                  <section>
+                    <h4 className="mb-2 flex items-center gap-1.5 text-sm font-semibold">
+                      <XCircle className="h-4 w-4 text-destructive" />
+                      Filas que no se aplican
+                    </h4>
+                    <ul className="space-y-1 text-sm">
+                      {importPlan.errors.map((e) => (
+                        <li key={`${e.row}-${e.message}`} className="rounded border px-2 py-1">
+                          <span className="font-mono text-xs text-muted-foreground">
+                            Fila {e.row}:
+                          </span>{" "}
+                          {e.message}
+                        </li>
+                      ))}
+                    </ul>
+                  </section>
+                )}
+              </div>
+            </div>
+          )}
+
+          <DialogFooter className="gap-2">
+            <DialogClose asChild>
+              <Button type="button" variant="outline">
+                Cancelar
+              </Button>
+            </DialogClose>
+            <Button
+              onClick={handleApplyImport}
+              disabled={
+                applying ||
+                !importPlan ||
+                importPlan.updates.length + importPlan.creates.length === 0
+              }
+            >
+              {applying && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Aplicar cambios
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Zone Form Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>

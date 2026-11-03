@@ -9,6 +9,7 @@ import { after } from 'next/server';
 import type PocketBase from 'pocketbase';
 import { Product } from '@/lib/store';
 import { Category, DeliveryZone, User, Order, Currency } from '@/lib/admin-store';
+import { buildZoneCreateRecord, buildZonePriceUpdate } from '@/lib/delivery-zones-excel';
 import { randomBytes } from 'crypto';
 
 async function getDataPB(token: string): Promise<PocketBase> {
@@ -320,6 +321,45 @@ export async function removeDeliveryZoneAction(id: string, token: string) {
   await verifyAdminAndGetUserId(token);
   const pb = await getDataPB(token);
   await pb.collection('delivery_zones').delete(id);
+}
+
+type ZoneImportUpdates = { id: string; price: number }[];
+type ZoneImportCreates = Parameters<typeof buildZoneCreateRecord>[0][];
+
+/**
+ * Aplica el resultado de una plantilla Excel: actualiza precios existentes
+ * y crea las zonas nuevas. Devuelve las zonas creadas ya con su id real.
+ */
+export async function applyDeliveryZoneImportAction(
+  plan: { updates: ZoneImportUpdates; creates: ZoneImportCreates },
+  token: string
+) {
+  await verifyAdminAndGetUserId(token);
+  const pb = await getDataPB(token);
+
+  let updated = 0;
+  for (const item of plan.updates) {
+    await pb.collection('delivery_zones').update(item.id, buildZonePriceUpdate(item.price));
+    updated += 1;
+  }
+
+  const created: DeliveryZone[] = [];
+  for (const item of plan.creates) {
+    const record = await pb.collection('delivery_zones').create(buildZoneCreateRecord(item));
+    created.push({
+      id: record.id,
+      name: record.name,
+      minDistance: Number(record.min_distance) || 0,
+      maxDistance: Number(record.max_distance) || 0,
+      price: Number(record.price) || 0,
+      estimatedTime: record.estimated_time || '',
+      active: record.active !== false,
+      province: record.province || '',
+      municipality: record.municipality || '',
+    });
+  }
+
+  return { updated, created };
 }
 
 function generatePassword(): string {

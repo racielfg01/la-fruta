@@ -66,7 +66,7 @@ export async function getPublicDeliveryZones() {
   try {
     const pb = getPB();
     const zones = await getAllRecords(pb, 'delivery_zones', {
-      sort: 'min_distance',
+      sort: 'name',
     });
     return zones.map((z: any) => ({
       id: z.id,

@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Package, ShoppingCart, ShieldCheck, Truck } from "lucide-react";
 import { PageShell } from "@/components/page-shell";
 import { ContactForm } from "@/components/contact-form";
+import { StoreContactPanel } from "@/components/store-contact";
 
 export const metadata: Metadata = {
   title: "Contacto",
@@ -51,6 +52,18 @@ export default function ContactoPage() {
       subtitle="Estamos para ayudarte con tu pedido, la entrega o cualquier duda."
     >
       <div className="space-y-10">
+        <section aria-labelledby="contact-info-title">
+          <h2
+            id="contact-info-title"
+            className="font-[family-name:var(--font-playfair)] text-xl font-bold text-foreground"
+          >
+            Cómo contactarnos
+          </h2>
+          <div className="mt-4">
+            <StoreContactPanel />
+          </div>
+        </section>
+
         <section aria-labelledby="form-title">
           <h2
             id="form-title"

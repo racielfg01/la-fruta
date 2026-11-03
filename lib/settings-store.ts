@@ -30,6 +30,8 @@ export interface StoreSettings {
   whatsappPhone?: string;
   /** Envío gratis a partir de este monto en CUP. 0 o vacío = desactivado. */
   freeShippingMin?: number;
+  /** Horario de atención visible en la tienda (texto libre). */
+  storeSchedule?: string;
 }
 
 const EMPTY: StoreSettings = {
@@ -43,6 +45,7 @@ const EMPTY: StoreSettings = {
   showPaymentTransfer: true,
   whatsappPhone: '',
   freeShippingMin: 0,
+  storeSchedule: 'Lunes a sábado, 8:00 AM - 6:00 PM',
 };
 
 interface SettingsState {
@@ -83,6 +86,7 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
       showPaymentTransfer: data.showPaymentTransfer !== false,
       whatsappPhone: data.whatsappPhone || '',
       freeShippingMin: Number(data.freeShippingMin) || 0,
+      storeSchedule: data.storeSchedule || 'Lunes a sábado, 8:00 AM - 6:00 PM',
     };
     set({ settings: s, loading: false, initialized: true });
     applyBrandCSS(s);

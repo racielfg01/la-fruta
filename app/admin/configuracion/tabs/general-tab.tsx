@@ -39,6 +39,7 @@ const DEFAULTS: StoreSettings = {
   showPaymentTransfer: true,
   whatsappPhone: "",
   freeShippingMin: 0,
+  storeSchedule: "Lunes a sábado\n8:00 AM - 6:00 PM",
 };
 
 export default function ConfiguracionPage() {
@@ -215,6 +216,18 @@ export default function ConfiguracionPage() {
                   </span>
                 </p>
               )}
+              <Field>
+                <FieldLabel>Horario de atención</FieldLabel>
+                <Input
+                  value={form.storeSchedule ?? ""}
+                  onChange={(e) => update({ storeSchedule: e.target.value })}
+                  placeholder="Ej: Lunes a sábado, 8:00 AM - 6:00 PM"
+                />
+                <p className="mt-1.5 text-xs text-muted-foreground">
+                  Se muestra en el perfil del cliente. Si lo dejas vacío, no
+                  aparece el bloque de horario.
+                </p>
+              </Field>
             </CardContent>
           </Card>
 

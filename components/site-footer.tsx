@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import { StoreScheduleFooter } from "@/components/store-contact";
 
 /** Pie de página compartido por la tienda y las páginas de información. */
 export function SiteFooter() {
@@ -41,6 +42,9 @@ export function SiteFooter() {
             &copy; {new Date().getFullYear()} MercaToma. Todos los derechos
             reservados.
           </p>
+        </div>
+        <div className="mt-6 border-t pt-6">
+          <StoreScheduleFooter />
         </div>
       </div>
     </footer>

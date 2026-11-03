@@ -400,6 +400,7 @@ const EMPTY_SETTINGS = {
   showPaymentTransfer: true,
   whatsappPhone: '',
   freeShippingMin: 0,
+  storeSchedule: 'Lunes a sábado, 8:00 AM - 6:00 PM',
 };
 
 export async function getSettingsAction(token: string) {
@@ -430,6 +431,7 @@ export async function getSettingsAction(token: string) {
     showPaymentTransfer: s.payment_transfer_enabled !== false,
     whatsappPhone: s.whatsapp_phone || '',
     freeShippingMin: Number(s.free_shipping_min) || 0,
+    storeSchedule: s.store_schedule || EMPTY_SETTINGS.storeSchedule,
   };
 }
 
@@ -456,6 +458,9 @@ export async function updateSettingsAction(data: Partial<typeof EMPTY_SETTINGS>,
     font_family: data.font_family,
     whatsapp_phone: data.whatsappPhone ?? '',
   };
+  if (data.storeSchedule !== undefined) {
+    body.store_schedule = data.storeSchedule;
+  }
   // El margen solo se toca si el llamador lo envía (evita borrarlo al
   // guardar desde otra pestaña que no lo incluye).
   if (data.priceMargin !== undefined) {

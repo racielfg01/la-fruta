@@ -170,6 +170,7 @@ async function setup() {
     T.bool("payment_cash_enabled"),
     T.bool("payment_transfer_enabled"),
     T.text("whatsapp_phone"),
+    T.text("store_schedule"),
   ]);
 
   // 7. products: zonas disponibles (CSV de ids de municipio)
@@ -214,6 +215,7 @@ async function setup() {
     T.text("font_family"),
     T.number("price_margin"),
     T.number("operational_cost"),
+    T.text("store_schedule"),
   ]);
 
   // ── Seed (solo si la colección está vacía) ──

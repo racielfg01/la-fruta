@@ -113,10 +113,11 @@ export async function getPublicSettings() {
       showPaymentTransfer: s.payment_transfer_enabled !== false,
       whatsappPhone: s.whatsapp_phone || '',
       freeShippingMin: Number(s.free_shipping_min) || 0,
+      storeSchedule: s.store_schedule || 'Lunes a sábado, 8:00 AM - 6:00 PM',
     };
   } catch (error) {
     console.error('Error fetching settings:', error);
-    return { storeName: '', storeDescription: '', logo: '', theme: 'system', font: 'poppins', background_color: '', primary_color: '', accent_color: '', success_color: '', warning_color: '', light_background_color: '', light_primary_color: '', light_accent_color: '', light_success_color: '', light_warning_color: '', font_family: '', priceMargin: 0, operationalCost: 0, showPaymentCash: true, showPaymentTransfer: true, whatsappPhone: '', freeShippingMin: 0 };
+    return { storeName: '', storeDescription: '', logo: '', theme: 'system', font: 'poppins', background_color: '', primary_color: '', accent_color: '', success_color: '', warning_color: '', light_background_color: '', light_primary_color: '', light_accent_color: '', light_success_color: '', light_warning_color: '', font_family: '', priceMargin: 0, operationalCost: 0, showPaymentCash: true, showPaymentTransfer: true, whatsappPhone: '', freeShippingMin: 0, storeSchedule: 'Lunes a sábado, 8:00 AM - 6:00 PM' };
   }
 }
 // ── Banners (portada) ──

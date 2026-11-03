@@ -12,7 +12,6 @@ import { Header } from "@/components/header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import {
   Loader2,
   User,
@@ -24,12 +23,8 @@ import {
   Edit2,
   Save,
   X,
-  ChevronDown,
-  ChevronUp,
   Search,
   ShoppingBag,
-  CreditCard,
-  Truck,
   ChevronLeft,
   ChevronRight,
   Headphones,
@@ -38,27 +33,37 @@ import {
   Gift,
 } from "lucide-react";
 import Link from "next/link";
-import { cn } from "@/lib/utils";
-import { useCurrency } from "@/lib/currency";
 import { MobileBottomNav } from "@/components/mobile-bottom-nav";
 import ProfileReferrals from "@/components/profile-referrals";
+import { OrderDetailDialog } from "@/components/order-detail-dialog";
+import { OrderStatusBadge } from "@/components/order-badges";
+import { useOrderMoney } from "@/lib/use-order-money";
+import { formatOrderDate } from "@/lib/order-dates";
+import { useSettingsStore } from "@/lib/settings-store";
+import { whatsAppLink } from "@/lib/whatsapp";
+import type { Order } from "@/lib/admin-store";
 
 export default function ProfilePage() {
   const { user, token, isAuthenticated, setUser } = useAuthStore();
   const router = useRouter();
-  const { defaultCurrency, currencies, formatPrice, convertPrice } = useCurrency();
-  const cupCurrency = currencies.find(c => c.code === 'CUP');
-  const convertToUSD = (amount: number) =>
-    cupCurrency && defaultCurrency ? convertPrice(amount, cupCurrency, defaultCurrency) : amount;
-  const [orders, setOrders] = useState<any[]>([]);
-  const [filteredOrders, setFilteredOrders] = useState<any[]>([]);
+  const { formatOrderMoney } = useOrderMoney();
+  const settings = useSettingsStore((s) => s.settings);
+  const initSettings = useSettingsStore((s) => s.init);
+  const whatsappHref = whatsAppLink(
+    settings.whatsappPhone,
+    "Hola, necesito ayuda con mi pedido"
+  );
+  const scheduleText = (settings.storeSchedule || "").trim();
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [filteredOrders, setFilteredOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(5);
-  const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
+  const [viewingOrder, setViewingOrder] = useState<Order | null>(null);
+  const [detailOpen, setDetailOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<"profile" | "orders" | "referrals">("orders");
   const [formData, setFormData] = useState({
     name: "",
@@ -69,6 +74,10 @@ export default function ProfilePage() {
   });
 
   // Redirigir si no autenticado
+  useEffect(() => {
+    initSettings();
+  }, [initSettings]);
+
   useEffect(() => {
     if (!isAuthenticated) {
       router.push("/auth/login");
@@ -109,13 +118,14 @@ export default function ProfilePage() {
     try {
       const data = await getUserOrders(token);
       // Normalizar números (PostgreSQL devuelve numeric como string)
-      const normalized = data.map((order: any) => ({
+      const normalized: Order[] = data.map((order: any) => ({
         ...order,
         subtotal: Number(order.subtotal) || 0,
-        delivery_fee: Number(order.delivery_fee) || 0,
+        deliveryFee: Number(order.deliveryFee) || 0,
         total: Number(order.total) || 0,
         items: order.items.map((item: any) => ({
           ...item,
+          quantity: Number(item.quantity) || 0,
           price: Number(item.price) || 0,
         })),
       }));
@@ -154,19 +164,6 @@ export default function ProfilePage() {
     }
   };
 
-  const getStatusBadge = (status: string) => {
-    const config: Record<string, { color: string; label: string }> = {
-      pending: { color: "bg-yellow-100 text-yellow-700", label: "Pendiente" },
-      confirmed: { color: "bg-blue-100 text-blue-700", label: "Confirmado" },
-      preparing: { color: "bg-orange-100 text-orange-700", label: "Preparando" },
-      shipped: { color: "bg-purple-100 text-purple-700", label: "Enviado" },
-      delivered: { color: "bg-green-100 text-green-700", label: "Entregado" },
-      cancelled: { color: "bg-red-100 text-red-700", label: "Cancelado" },
-    };
-    const { color, label } = config[status] || { color: "bg-gray-100 text-gray-700", label: status };
-    return <Badge className={color}>{label}</Badge>;
-  };
-
   // Paginación
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
@@ -200,10 +197,6 @@ export default function ProfilePage() {
       }
     }
     return pages;
-  };
-
-  const toggleExpand = (orderId: string) => {
-    setExpandedOrderId(expandedOrderId === orderId ? null : orderId);
   };
 
   if (!isAuthenticated) return null;
@@ -362,121 +355,55 @@ export default function ProfilePage() {
                     </div>
                   ) : (
                     <>
-                      <div className="space-y-4">
-                        {currentOrders.map((order) => {
-                          const isExpanded = expandedOrderId === order.id;
-                          return (
-                            <Card
-                              key={order.id}
-                              className={cn(
-                                "transition-all duration-200",
-                                isExpanded && "ring-1 ring-primary/20"
-                              )}
+                      <div className="space-y-3">
+                        {currentOrders.map((order) => (
+                          <Card
+                            key={order.id}
+                            className="overflow-hidden transition-shadow hover:shadow-sm"
+                          >
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setViewingOrder(order);
+                                setDetailOpen(true);
+                              }}
+                              aria-haspopup="dialog"
+                              className="flex w-full flex-wrap items-center justify-between gap-3 p-4 text-left transition-colors hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
                             >
-                              <CardContent className="p-4">
-                                {/* Cabecera compacta (siempre visible) */}
-                                <div
-                                  className="flex flex-wrap items-center justify-between gap-2 cursor-pointer"
-                                  onClick={() => toggleExpand(order.id)}
-                                >
-                                  <div className="flex-1 min-w-0">
-                                    <div className="flex items-center gap-2 flex-wrap">
-                                      <span className="font-mono text-sm font-semibold">
-                                        #{order.id.slice(0, 8)}
-                                      </span>
-                                      <span className="text-xs text-muted-foreground">
-                                        {new Date(order.created_at).toLocaleDateString()}
-                                      </span>
-                                      {getStatusBadge(order.status)}
-                                    </div>
-                                    <div className="mt-1 text-sm text-muted-foreground">
-                                      {order.items.length} producto(s)
-                                    </div>
-                                  </div>
-                                  <div className="text-right">
-                                    <div className="font-bold text-lg">{formatPrice(convertToUSD(order.total), defaultCurrency)}</div>
-                                    <Button variant="ghost" size="sm" className="h-8 px-2">
-                                      {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                                    </Button>
-                                  </div>
+                              <div className="min-w-0 flex-1">
+                                <div className="flex flex-wrap items-center gap-2">
+                                  <span className="font-mono text-sm font-semibold">
+                                    #{order.id.slice(0, 8)}
+                                  </span>
+                                  <span className="text-xs text-muted-foreground">
+                                    {formatOrderDate(order.createdAt)}
+                                  </span>
+                                  <OrderStatusBadge status={order.status} />
                                 </div>
-
-                                {/* Detalles expandidos */}
-                                {isExpanded && (
-                                  <div className="mt-4 pt-4 border-t space-y-4">
-                                    {/* Items */}
-                                    <div className="space-y-2">
-                                      <h4 className="text-sm font-medium text-foreground flex items-center gap-1">
-                                        <Package className="h-4 w-4" /> Productos
-                                      </h4>
-                                      {order.items.map((item: any, idx: number) => (
-                                        <div
-                                          key={idx}
-                                          className="flex justify-between text-sm py-1 border-b last:border-0"
-                                        >
-                                          <span>
-                                            {item.productName} x{item.quantity}
-                                          </span>
-                                          <span className="font-medium">
-                                            {formatPrice(convertToUSD(item.price * item.quantity), defaultCurrency)}
-                                          </span>
-                                        </div>
-                                      ))}
-                                    </div>
-
-                                    {/* Resumen de precios */}
-                                    <div className="bg-muted/30 rounded-lg p-3 space-y-1 text-sm">
-                                      <div className="flex justify-between">
-                                        <span className="text-muted-foreground">Subtotal</span>
-                                        <span>{formatPrice(convertToUSD(order.subtotal), defaultCurrency)}</span>
-                                      </div>
-                                      <div className="flex justify-between">
-                                        <span className="text-muted-foreground flex items-center gap-1">
-                                          <Truck className="h-3 w-3" /> Envío
-                                        </span>
-                                        <span>{formatPrice(convertToUSD(order.deliveryFee), defaultCurrency)}</span>
-                                      </div>
-                                      <div className="flex justify-between font-bold pt-1 border-t">
-                                        <span>Total</span>
-                                        <span>{formatPrice(convertToUSD(order.total), defaultCurrency)}</span>
-                                      </div>
-                                    </div>
-
-                                    {/* Información de pago y entrega */}
-                                    <div className="grid gap-3 sm:grid-cols-2 text-sm">
-                                      <div className="space-y-1">
-                                        <p className="text-muted-foreground flex items-center gap-1">
-                                          <CreditCard className="h-3 w-3" /> Pago
-                                        </p>
-                                        <p className="font-medium capitalize">
-                                          {order.paymentMethod} -{" "}
-                                          {order.paymentStatus === "paid" ? "Pagado" : "Pendiente"}
-                                        </p>
-                                      </div>
-                                      <div className="space-y-1">
-                                        <p className="text-muted-foreground flex items-center gap-1">
-                                          <MapPin className="h-3 w-3" /> Entrega
-                                        </p>
-                                        <p className="font-medium">{order.deliveryAddress}</p>
-                                        {order.deliveryNotes && (
-                                          <p className="text-xs text-muted-foreground">
-                                            Nota: {order.deliveryNotes}
-                                          </p>
-                                        )}
-                                      </div>
-                                    </div>
-
-                                    {order.cancelReason && (
-                                      <p className="text-xs text-destructive">
-                                        Motivo de cancelación: {order.cancelReason}
-                                      </p>
+                                <p className="mt-1 truncate text-sm text-muted-foreground">
+                                  {order.items.length} producto
+                                  {order.items.length !== 1 && "s"}
+                                  {order.userName &&
+                                    order.userName !== user?.name && (
+                                      <> · Para: {order.userName}</>
                                     )}
-                                  </div>
-                                )}
-                              </CardContent>
-                            </Card>
-                          );
-                        })}
+                                </p>
+                              </div>
+                              <div className="flex shrink-0 items-center gap-2">
+                                <span className="text-lg font-bold tabular-nums">
+                                  {formatOrderMoney(
+                                    order.total,
+                                    order.currencyCode
+                                  )}
+                                </span>
+                                <ChevronRight
+                                  className="size-4 text-muted-foreground"
+                                  aria-hidden="true"
+                                />
+                              </div>
+                            </button>
+                          </Card>
+                        ))}
                       </div>
 
                       {/* Paginación completa */}
@@ -555,23 +482,25 @@ export default function ProfilePage() {
             </CardHeader>
             <CardContent>
               <div className="grid gap-4 sm:grid-cols-3">
-                <div className="flex items-start gap-3 rounded-lg bg-muted/30 p-4">
-                  <MessageCircle className="h-5 w-5 text-primary shrink-0 mt-0.5" />
-                  <div>
-                    <p className="text-sm font-medium">WhatsApp</p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Escríbenos para atención personalizada
-                    </p>
-                    <a
-                      href="https://wa.me/5355555555"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-xs text-primary hover:underline mt-1 inline-block"
-                    >
-                      +53 5 555 5555
-                    </a>
+                {whatsappHref && (
+                  <div className="flex items-start gap-3 rounded-lg bg-muted/30 p-4">
+                    <MessageCircle className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+                    <div>
+                      <p className="text-sm font-medium">WhatsApp</p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Escríbenos para atención personalizada
+                      </p>
+                      <a
+                        href={whatsappHref}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs text-primary hover:underline mt-1 inline-block"
+                      >
+                        {settings.whatsappPhone}
+                      </a>
+                    </div>
                   </div>
-                </div>
+                )}
                 <div className="flex items-start gap-3 rounded-lg bg-muted/30 p-4">
                   <Mail className="h-5 w-5 text-primary shrink-0 mt-0.5" />
                   <div>
@@ -587,23 +516,30 @@ export default function ProfilePage() {
                     </a>
                   </div>
                 </div>
-                <div className="flex items-start gap-3 rounded-lg bg-muted/30 p-4">
-                  <Clock className="h-5 w-5 text-primary shrink-0 mt-0.5" />
-                  <div>
-                    <p className="text-sm font-medium">Horario</p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Lunes a sábado
-                    </p>
-                    <p className="text-xs font-medium mt-1">
-                      8:00 AM - 6:00 PM
-                    </p>
+                {scheduleText && (
+                  <div className="flex items-start gap-3 rounded-lg bg-muted/30 p-4">
+                    <Clock className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+                    <div>
+                      <p className="text-sm font-medium">Horario</p>
+                      <p className="text-xs text-muted-foreground mt-1 whitespace-pre-line">
+                        {scheduleText}
+                      </p>
+                    </div>
                   </div>
-                </div>
+                )}
               </div>
             </CardContent>
           </Card>
         </div>
       </main>
+      <OrderDetailDialog
+        order={viewingOrder}
+        open={detailOpen}
+        onOpenChange={setDetailOpen}
+        readOnly
+        customer={user ? { name: user.name, email: user.email } : null}
+      />
+
       <div className="h-20 md:hidden" />
       <MobileBottomNav categories={[]} categoryCounts={{}} selectedCategories={[]} toggleCategory={() => {}} clearCategories={() => {}} />
     </div>

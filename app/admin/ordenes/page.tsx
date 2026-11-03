@@ -634,11 +634,11 @@ export default function OrdersPage() {
 
         {/* Order Detail Dialog (sin cambios) */}
         <Dialog open={isDetailOpen} onOpenChange={setIsDetailOpen}>
-          <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
+          <DialogContent className="max-h-[90vh] w-[calc(100vw-1rem)] max-w-2xl overflow-y-auto sm:w-full">
             <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
-                <Package className="h-5 w-5" />
-                Orden {viewingOrder?.id}
+              <DialogTitle className="flex items-center gap-2 break-all">
+                <Package className="h-5 w-5 shrink-0" />
+                <span className="break-all">Orden {viewingOrder?.id}</span>
               </DialogTitle>
             </DialogHeader>
             {viewingOrder && (
@@ -959,7 +959,7 @@ export default function OrdersPage() {
                     <CardContent className="space-y-2">
                       <div>
                         <p className="text-sm text-muted-foreground">Creada</p>
-                        <p className="text-sm font-medium">
+                        <p className="text-sm font-medium break-all">
                           {formatDate(viewingOrder.createdAt)}
                         </p>
                       </div>
@@ -967,7 +967,7 @@ export default function OrdersPage() {
                         <p className="text-sm text-muted-foreground">
                           Última actualización
                         </p>
-                        <p className="text-sm font-medium">
+                        <p className="text-sm font-medium break-all">
                           {formatDate(viewingOrder.updatedAt)}
                         </p>
                       </div>

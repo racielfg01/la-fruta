@@ -1,10 +1,13 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { fetchCurrencies, CurrencyInfo, convertPrice } from './currency';
+import { chooseCurrency } from './currency-selection';
 
 interface CurrencyState {
   currencies: CurrencyInfo[];
   currencyId: string | null;
+  /** true solo si la persona eligió una moneda; el default no cuenta. */
+  userSelected: boolean;
   loading: boolean;
   initialized: boolean;
   init: () => Promise<void>;
@@ -16,39 +19,37 @@ export const useCurrencyStore = create<CurrencyState>()(
     (set, get) => ({
       currencies: [],
       currencyId: null,
+      userSelected: false,
       loading: true,
       initialized: false,
 
       init: async () => {
         if (get().initialized) return;
         const data = await fetchCurrencies();
-        set((state) => {
-          const current = state.currencies;
-          const id =
-            state.currencyId ||
-            (current.length ? state.currencyId : (data.find((c) => c.isDefault) || data[0])?.id) ||
-            null;
-          return {
-            currencies: data,
-            currencyId: id || null,
-            loading: false,
-            initialized: true,
-          };
-        });
+        set((state) => ({
+          currencies: data,
+          // Sin elección explícita se usa CUP, no la moneda marcada en la base.
+          currencyId: chooseCurrency(data, state.userSelected ? state.currencyId : null)?.id ?? null,
+          loading: false,
+          initialized: true,
+        }));
       },
 
-      setCurrency: (id) => set({ currencyId: id }),
+      setCurrency: (id) => set({ currencyId: id, userSelected: true }),
     }),
     {
       name: 'currency-storage',
-      partialize: (state) => ({ currencyId: state.currencyId }),
+      partialize: (state) => ({
+        currencyId: state.currencyId,
+        userSelected: state.userSelected,
+      }),
     }
   )
 );
 
 export function useSelectedCurrency() {
   const { currencies, currencyId } = useCurrencyStore();
-  return currencies.find((c) => c.id === currencyId) || currencies.find((c) => c.isDefault) || currencies[0] || null;
+  return chooseCurrency(currencies, currencyId);
 }
 
 export { convertPrice };

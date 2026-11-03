@@ -61,8 +61,20 @@ import {
   X,
   PackageOpen,
   SearchX,
+  Download,
+  Upload,
+  Loader2,
+  FileSpreadsheet,
+  CheckCircle2,
+  XCircle,
 } from "lucide-react";
 import Link from "next/link";
+import { applyProductPriceImportAction } from "@/app/actions/admin";
+import {
+  buildProductTemplateRows,
+  planProductPriceImport,
+  type ProductImportPlan,
+} from "@/lib/product-prices-excel";
 import { ImageUpload } from "@/components/upload-button";
 import { ProductLocationsField } from "@/components/admin/product-locations-field";
 import type {
@@ -130,6 +142,104 @@ function ProductsAdmin() {
   const [editingStockValue, setEditingStockValue] = useState<string>("");
   const [savingStockId, setSavingStockId] = useState<string | null>(null);
   const token = useAuthStore((s) => s.token);
+
+  // ── Plantilla Excel de precios ──
+  const priceFileInputRef = useRef<HTMLInputElement>(null);
+  const [downloadingPrices, setDownloadingPrices] = useState(false);
+  const [readingPriceFile, setReadingPriceFile] = useState(false);
+  const [pricePlan, setPricePlan] = useState<ProductImportPlan | null>(null);
+  const [pricePreviewOpen, setPricePreviewOpen] = useState(false);
+  const [applyingPricePlan, setApplyingPricePlan] = useState(false);
+
+  const handleDownloadPriceTemplate = async () => {
+    setDownloadingPrices(true);
+    try {
+      const { buildProductPricesWorkbook } = await import("@/lib/product-prices-xlsx");
+      const rows = buildProductTemplateRows(
+        products.map((p) => ({ name: p.name, price: p.price, category: p.category }))
+      );
+      const buffer = await buildProductPricesWorkbook(rows);
+      const blob = new Blob([buffer], {
+        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `precios-productos-${new Date().toISOString().slice(0, 10)}.xlsx`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+      toast.success(`Plantilla descargada con ${rows.length} productos`);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "No pudimos generar la plantilla");
+    } finally {
+      setDownloadingPrices(false);
+    }
+  };
+
+  const handlePriceFileSelected = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+
+    setReadingPriceFile(true);
+    try {
+      const { readProductPricesWorkbook } = await import("@/lib/product-prices-xlsx");
+      const { rows } = await readProductPricesWorkbook(await file.arrayBuffer());
+      const plan = planProductPriceImport(
+        rows,
+        products.map((p) => ({
+          id: p.id,
+          name: p.name,
+          price: p.price,
+          category: p.category,
+        }))
+      );
+      if (plan.updates.length === 0) {
+        toast.error("El archivo no tiene precios aplicables. Revisa los motivos antes de reintentar.");
+      }
+      setPricePlan(plan);
+      setPricePreviewOpen(true);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "No pudimos leer el archivo");
+    } finally {
+      setReadingPriceFile(false);
+    }
+  };
+
+  const handleApplyPriceImport = async () => {
+    if (!pricePlan) return;
+    if (!token) {
+      toast.error("Tu sesión expiró. Vuelve a iniciar sesión.");
+      return;
+    }
+
+    setApplyingPricePlan(true);
+    try {
+      const result = await applyProductPriceImportAction(
+        pricePlan.updates.map((u) => ({ id: u.id, price: u.price })),
+        token
+      );
+
+      const priceById = new Map(pricePlan.updates.map((u) => [u.id, u.price]));
+      useAdminStore.setState((state) => ({
+        products: state.products.map((product) =>
+          priceById.has(product.id)
+            ? { ...product, price: priceById.get(product.id)! }
+            : product
+        ),
+      }));
+
+      toast.success(`Precios actualizados: ${result.updated}`);
+      setPricePreviewOpen(false);
+      setPricePlan(null);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "No pudimos aplicar los cambios");
+    } finally {
+      setApplyingPricePlan(false);
+    }
+  };
 
   useEffect(() => {
     if (!token) return;
@@ -532,13 +642,48 @@ function ProductsAdmin() {
     </p>
   </div>
 
-  <Button
-    onClick={handleNewProduct}
-    className="w-full shrink-0 gap-2 sm:w-auto"
-  >
-    <Plus className="h-4 w-4" />
-    Agregar producto
-  </Button>
+  <div className="flex w-full shrink-0 flex-wrap items-center gap-2 sm:w-auto">
+    <Button
+      variant="outline"
+      onClick={handleDownloadPriceTemplate}
+      disabled={downloadingPrices || products.length === 0}
+      className="gap-2"
+    >
+      {downloadingPrices ? (
+        <Loader2 className="h-4 w-4 animate-spin" />
+      ) : (
+        <Download className="h-4 w-4" />
+      )}
+      Plantilla de precios
+    </Button>
+    <Button
+      variant="outline"
+      onClick={() => priceFileInputRef.current?.click()}
+      disabled={readingPriceFile}
+      className="gap-2"
+    >
+      {readingPriceFile ? (
+        <Loader2 className="h-4 w-4 animate-spin" />
+      ) : (
+        <Upload className="h-4 w-4" />
+      )}
+      Subir Excel
+    </Button>
+    <input
+      ref={priceFileInputRef}
+      type="file"
+      accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+      className="hidden"
+      onChange={handlePriceFileSelected}
+    />
+    <Button
+      onClick={handleNewProduct}
+      className="gap-2"
+    >
+      <Plus className="h-4 w-4" />
+      Agregar producto
+    </Button>
+  </div>
 </div>
 
 {/* Toolbar: búsqueda + filtro */}
@@ -945,6 +1090,104 @@ function ProductsAdmin() {
             )}
           </CardContent>
         </Card>
+
+        {/* Revisión de la plantilla de precios */}
+        <Dialog open={pricePreviewOpen} onOpenChange={setPricePreviewOpen}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <FileSpreadsheet className="h-5 w-5 text-primary" />
+                Revisar cambios de precios
+              </DialogTitle>
+            </DialogHeader>
+
+            {pricePlan && (
+              <div className="space-y-4">
+                <div className="grid gap-2 sm:grid-cols-2">
+                  <div className="rounded-lg border bg-muted/30 p-3">
+                    <p className="text-xs text-muted-foreground">Se actualizan</p>
+                    <p className="text-xl font-bold">{pricePlan.updates.length}</p>
+                  </div>
+                  <div className="rounded-lg border bg-muted/30 p-3">
+                    <p className="text-xs text-muted-foreground">Con problemas</p>
+                    <p className="text-xl font-bold">{pricePlan.errors.length}</p>
+                  </div>
+                </div>
+
+                <div className="max-h-[50vh] space-y-4 overflow-y-auto pr-1">
+                  {pricePlan.updates.length > 0 && (
+                    <section>
+                      <h4 className="mb-2 flex items-center gap-1.5 text-sm font-semibold">
+                        <CheckCircle2 className="h-4 w-4 text-green-600" />
+                        Precios que cambian
+                      </h4>
+                      <ul className="space-y-1 text-sm">
+                        {pricePlan.updates.map((u) => {
+                          const previous = products.find((p) => p.id === u.id)?.price;
+                          return (
+                            <li
+                              key={u.id}
+                              className="flex items-center justify-between gap-3 rounded border px-2 py-1"
+                            >
+                              <span className="min-w-0 truncate">
+                                {u.product}
+                                {u.category ? (
+                                  <span className="text-muted-foreground"> · {u.category}</span>
+                                ) : null}
+                              </span>
+                              <span className="shrink-0 font-semibold text-primary">
+                                {previous !== undefined && previous !== u.price ? (
+                                  <span className="mr-1 font-normal text-muted-foreground line-through">
+                                    {formatProductPrice(previous)}
+                                  </span>
+                                ) : null}
+                                {formatProductPrice(u.price)}
+                              </span>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    </section>
+                  )}
+
+                  {pricePlan.errors.length > 0 && (
+                    <section>
+                      <h4 className="mb-2 flex items-center gap-1.5 text-sm font-semibold">
+                        <XCircle className="h-4 w-4 text-destructive" />
+                        Filas que no se aplican
+                      </h4>
+                      <ul className="space-y-1 text-sm">
+                        {pricePlan.errors.map((e) => (
+                          <li key={`${e.row}-${e.message}`} className="rounded border px-2 py-1">
+                            <span className="font-mono text-xs text-muted-foreground">
+                              Fila {e.row}:
+                            </span>{" "}
+                            {e.message}
+                          </li>
+                        ))}
+                      </ul>
+                    </section>
+                  )}
+                </div>
+              </div>
+            )}
+
+            <DialogFooter className="gap-2">
+              <DialogClose asChild>
+                <Button type="button" variant="outline">
+                  Cancelar
+                </Button>
+              </DialogClose>
+              <Button
+                onClick={handleApplyPriceImport}
+                disabled={applyingPricePlan || !pricePlan || pricePlan.updates.length === 0}
+              >
+                {applyingPricePlan && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Aplicar cambios
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
         {/* Diálogo de producto — header/footer sticky, body scrollable */}
         <Dialog open={dialogOpen} onOpenChange={handleDialogOpenChange}>

@@ -10,6 +10,7 @@ import type PocketBase from 'pocketbase';
 import { Product } from '@/lib/store';
 import { Category, DeliveryZone, User, Order, Currency } from '@/lib/admin-store';
 import { buildZoneCreateRecord, buildZonePriceUpdate } from '@/lib/delivery-zones-excel';
+import { buildProductPriceUpdate } from '@/lib/product-prices-excel';
 import { randomBytes } from 'crypto';
 
 async function getDataPB(token: string): Promise<PocketBase> {
@@ -247,6 +248,29 @@ export async function editProductAction(id: string, data: Partial<Product>, toke
   }
   if (Object.keys(updateData).length === 0) return;
   await pb.collection('products').update(id, updateData);
+}
+
+type ProductPriceUpdates = { id: string; price: number }[];
+
+/**
+ * Aplica la plantilla Excel: actualiza el precio base de los productos.
+ * Nunca crea productos; las filas desconocidas se rechazan antes de llegar aquí.
+ */
+export async function applyProductPriceImportAction(
+  updates: ProductPriceUpdates,
+  token: string
+): Promise<{ updated: number }> {
+  await verifyAdminAndGetUserId(token);
+  if (updates.length === 0) return { updated: 0 };
+
+  const pb = await getDataPB(token);
+  let updated = 0;
+  for (const item of updates) {
+    await pb.collection('products').update(item.id, buildProductPriceUpdate(item.price));
+    updated += 1;
+  }
+
+  return { updated };
 }
 
 export async function removeProductAction(id: string, token: string) {

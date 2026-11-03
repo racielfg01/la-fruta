@@ -1,3 +1,8 @@
+import {
+  normalizeTextKey as normalizeZoneKey,
+  parsePriceValue as parseZonePrice,
+} from "./sheet-values";
+
 /**
  * Lógica pura del intercambio de precios de zonas de envío en Excel.
  * Sin dependencias de librerías: solo transforma filas ya leídas.
@@ -66,49 +71,10 @@ export interface ZoneImportPlan {
   errors: ZoneRowError[];
 }
 
-/** Minúsculas, sin tildes y con espacios colapsados, para comparar nombres. */
-export function normalizeZoneKey(value: unknown): string {
-  return String(value ?? "")
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase()
-    .trim()
-    .replace(/\s+/g, " ");
-}
-
-/**
- * Convierte el valor de precio de una celda a número.
- * Acepta 1234.5, "1234,5", "1.234,50", " 350 " y "$ 350".
- * Devuelve null si no es un precio válido (vacío, texto o negativo).
- */
-export function parseZonePrice(value: string | number | null | undefined): number | null {
-  if (value === null || value === undefined) return null;
-
-  let raw: string;
-  if (typeof value === "number") {
-    if (!Number.isFinite(value)) return null;
-    return value < 0 ? null : value;
-  }
-
-  raw = value.replace(/[^\d.,-]/g, "").trim();
-  if (!raw) return null;
-
-  const hasComma = raw.includes(",");
-  const hasDot = raw.includes(".");
-
-  if (hasComma && hasDot) {
-    // El separador que aparece más a la derecha es el decimal.
-    const decimal = raw.lastIndexOf(",") > raw.lastIndexOf(".") ? "," : ".";
-    const thousands = decimal === "," ? "." : ",";
-    raw = raw.split(thousands).join("").replace(decimal, ".");
-  } else if (hasComma) {
-    raw = raw.replace(",", ".");
-  }
-
-  const parsed = Number(raw);
-  if (!Number.isFinite(parsed) || parsed < 0) return null;
-  return parsed;
-}
+export {
+  normalizeTextKey as normalizeZoneKey,
+  parsePriceValue as parseZonePrice,
+} from "./sheet-values";
 
 /** Filas de la plantilla, con nombres en vez de ids y orden estable. */
 export function buildZoneTemplateRows(

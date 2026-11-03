@@ -806,16 +806,16 @@ export default function OrdersPage() {
                   <CardContent className="grid gap-3 sm:grid-cols-2">
                     <div>
                       <p className="text-sm text-muted-foreground">Nombre</p>
-                      <p className="font-medium">{viewingOrder.userName}</p>
+                      <p className="font-medium break-all">{(viewingOrder as any).userName || (viewingOrder as any).user_name || (viewingOrder as any).user?.name || '-'}</p>
                     </div>
                     <div>
                       <p className="text-sm text-muted-foreground">Teléfono</p>
                       {viewingOrder.contactPhone ? (
-                        <p className="font-medium flex items-center gap-1.5">
+                        <p className="font-medium flex items-center gap-1.5 break-all">
                           <Phone className="h-3.5 w-3.5 text-muted-foreground" />
                           <a
                             href={`tel:${viewingOrder.contactPhone}`}
-                            className="hover:underline"
+                            className="hover:underline break-all"
                           >
                             {viewingOrder.contactPhone}
                           </a>

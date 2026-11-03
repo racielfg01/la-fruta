@@ -786,11 +786,11 @@ export default function OrdersPage() {
                   <CardContent className="grid gap-3 sm:grid-cols-2">
                     <div>
                       <p className="text-sm text-muted-foreground">Nombre</p>
-                      <p className="font-medium">{viewingOrder.userName}</p>
+                      <p className="font-medium break-all">{(viewingOrder as any).userName || (viewingOrder as any).user_name || '-'}</p>
                     </div>
                     <div>
                       <p className="text-sm text-muted-foreground">Email</p>
-                      <p className="font-medium">{viewingOrder.userEmail}</p>
+                      <p className="font-medium break-all">{(viewingOrder as any).userEmail || (viewingOrder as any).user_email || '-'}</p>
                     </div>
                   </CardContent>
                 </Card>

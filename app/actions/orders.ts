@@ -5,6 +5,7 @@ import { getAdminPB, getAllRecords, sanitize } from "@/lib/pocketbase";
 import { parseLocations, matchLocationIndex, StoredLocation } from "@/lib/order-stock";
 import { orderItemPrice } from "@/lib/price-margin";
 import { orderTotalCup } from "@/lib/order-total";
+import { orderDates } from "@/lib/order-dates";
 import { notifyNewOrder } from "@/lib/push/notify";
 import { after } from "next/server";
 import { randomUUID } from "crypto";
@@ -314,10 +315,13 @@ export async function getUserOrders(token: string) {
         filter: `order_id = "${sanitize(order.id)}"`,
       });
       return {
+        ...orderDates(order),
         id: order.id,
         userId: order.user_id,
         userName: order.user_name,
         userEmail: order.user_email,
+        contactPhone: order.contact_phone || '',
+        contactCarnet: order.contact_carnet || '',
         subtotal: Number(order.subtotal),
         deliveryFee: Number(order.delivery_fee),
         total: Number(order.total),
@@ -334,8 +338,6 @@ export async function getUserOrders(token: string) {
         bankName: order.bank_name || '',
         accountNumber: order.account_number || '',
         transferAmount: Number(order.transfer_amount) || 0,
-        createdAt: order.created,
-        updatedAt: order.updated,
         items: items.map((i: any) => ({
           productId: i.product_id,
           productName: i.product_name,

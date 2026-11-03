@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, Fragment } from "react";
+import { useState, useMemo } from "react";
 import { useAdminStore, Order } from "@/lib/admin-store";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,13 +13,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@/components/ui/dialog";
 import {
   Select,
   SelectContent,
@@ -40,67 +33,36 @@ import {
   Clock,
   CheckCircle,
   Truck,
-  Package,
   CreditCard,
-  MapPin,
-  User,
-  UserCheck,
-  Phone,
-  Calendar,
   Info,
   ChevronLeft,
   ChevronRight,
-  XCircle,
-  Ban,
-  ChevronsRight,
-  FileText,
-  Check,
 } from "lucide-react";
+import { OrderDetailDialog } from "@/components/order-detail-dialog";
 import { cn } from "@/lib/utils";
-import { FieldGroup, Field, FieldLabel } from "@/components/ui/field";
-import { Textarea } from "@/components/ui/textarea";
+import {
+  OrderStatusBadge,
+  PaymentStatusBadge,
+} from "@/components/order-badges";
+import { formatOrderDate } from "@/lib/order-dates";
+import { useOrderMoney } from "@/lib/use-order-money";
 import { useCurrency } from "@/lib/currency";
 
 export default function OrdersPage() {
-  const { orders, deliveryZones, updateOrderStatus, updatePaymentStatus } = useAdminStore();
-  const { defaultCurrency, currencies, formatPrice, convertPrice } = useCurrency();
-  const cupCurrency = currencies.find(c => c.code === 'CUP');
+  const { orders, users, deliveryZones, updateOrderStatus, updatePaymentStatus } = useAdminStore();
+  const { defaultCurrency, formatPrice, convertPrice } = useCurrency();
+  const {
+    formatOrderMoney: orderMoney,
+    hasCupBase: showCupBase,
+    cupCurrency,
+  } = useOrderMoney();
 
-  // Los montos de las órdenes se guardan en la moneda base (CUP). Los mostramos
-  // convertidos a la moneda con la que pagó el cliente, con la base como apoyo.
-  const orderMoney = (cupAmount: number, code: string) => {
-    const target = currencies.find((c) => c.code === code);
-    if (cupCurrency && target && target.code !== cupCurrency.code) {
-      return formatPrice(convertPrice(cupAmount, cupCurrency, target), target);
-    }
-    return formatPrice(cupAmount, target || cupCurrency || null);
-  };
-  const showCupBase = (code: string) =>
-    !!cupCurrency && code !== cupCurrency.code;
-
-  const getZoneName = (zoneId: string) => {
-    const zone = deliveryZones.find((z) => z.id === zoneId);
-    return zone ? zone.name : zoneId || "No especificada";
-  };
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [paymentFilter, setPaymentFilter] = useState<string>("all");
-  const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [viewingOrder, setViewingOrder] = useState<Order | null>(null);
+  const [detailOpen, setDetailOpen] = useState(false);
 
-  // Cancelación con motivo obligatorio
-  const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
-  const [cancelReason, setCancelReason] = useState("");
-  const [cancelling, setCancelling] = useState(false);
-
-  const orderedStatuses = ["pending", "confirmed", "preparing", "shipped", "delivered"] as const;
-
-  const getCurrentStepIndex = (status: Order["status"]) => orderedStatuses.indexOf(status as any);
-  const getNextStatus = (status: Order["status"]): Order["status"] | null => {
-    const idx = getCurrentStepIndex(status);
-    if (idx >= 0 && idx < orderedStatuses.length - 1) return orderedStatuses[idx + 1];
-    return null;
-  };
   // Paginación
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
@@ -168,49 +130,6 @@ export default function OrdersPage() {
   }, [normalizedOrders]);
 
   // Badges con fallback
-  const getStatusBadge = (status: Order["status"]) => {
-    const config: Record<string, { color: string; label: string }> = {
-      pending: { color: "bg-yellow-100 text-yellow-700", label: "Pendiente" },
-      confirmed: { color: "bg-blue-100 text-blue-700", label: "Confirmado" },
-      preparing: { color: "bg-orange-100 text-orange-700", label: "Preparando" },
-      shipped: { color: "bg-purple-100 text-purple-700", label: "Enviado" },
-      delivered: { color: "bg-green-100 text-green-700", label: "Entregado" },
-      cancelled: { color: "bg-red-100 text-red-700", label: "Cancelado" },
-    };
-    const fallback = { color: "bg-gray-100 text-gray-700", label: "Desconocido" };
-    const { color, label } = config[status] || fallback;
-    return (
-      <span className={cn("px-2 py-1 rounded-full text-xs font-medium", color)}>
-        {label}
-      </span>
-    );
-  };
-
-  const getPaymentBadge = (status: Order["paymentStatus"]) => {
-    const config: Record<string, { color: string; label: string }> = {
-      pending: { color: "bg-yellow-100 text-yellow-700", label: "Pendiente" },
-      paid: { color: "bg-green-100 text-green-700", label: "Pagado" },
-      refunded: { color: "bg-gray-100 text-gray-700", label: "Reembolsado" },
-    };
-    const fallback = { color: "bg-gray-100 text-gray-700", label: "Desconocido" };
-    const { color, label } = config[status] || fallback;
-    return (
-      <span className={cn("px-2 py-1 rounded-full text-xs font-medium", color)}>
-        {label}
-      </span>
-    );
-  };
-
-  const formatDate = (dateString: string) => {
-    if (!dateString) return "Fecha no disponible";
-    return new Date(dateString).toLocaleDateString("es-ES", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  };
 
   const formatNumber = (num: number) => {
     return new Intl.NumberFormat("es-ES").format(num);
@@ -218,51 +137,48 @@ export default function OrdersPage() {
 
   const handleViewDetails = (order: Order) => {
     setViewingOrder(order);
-    setIsDetailOpen(true);
+    setDetailOpen(true);
   };
 
-  const handleStatusChange = (orderId: string, newStatus: Order["status"]) => {
-    updateOrderStatus(orderId, newStatus);
-    if (viewingOrder && viewingOrder.id === orderId) {
-      setViewingOrder({ ...viewingOrder, status: newStatus });
-    }
+  const viewingCustomer = useMemo(() => {
+    if (!viewingOrder) return null;
+    const account = users.find((user) => user.id === viewingOrder.userId);
+    return account ? { name: account.name, email: account.email } : null;
+  }, [users, viewingOrder]);
+
+  const handleAdvance = async (order: Order, nextStatus: Order["status"]) => {
+    await updateOrderStatus(order.id, nextStatus);
+    setViewingOrder((current) =>
+      current && current.id === order.id
+        ? { ...current, status: nextStatus, updatedAt: new Date().toISOString() }
+        : current
+    );
   };
 
-  const handlePaymentStatusChange = (
+  const handlePaymentStatusChange = async (
     orderId: string,
     newStatus: Order["paymentStatus"]
   ) => {
-    updatePaymentStatus(orderId, newStatus);
-    if (viewingOrder && viewingOrder.id === orderId) {
-      setViewingOrder({ ...viewingOrder, paymentStatus: newStatus });
-    }
+    await updatePaymentStatus(orderId, newStatus);
+    setViewingOrder((current) =>
+      current && current.id === orderId
+        ? { ...current, paymentStatus: newStatus, updatedAt: new Date().toISOString() }
+        : current
+    );
   };
 
-  const advanceStatus = (order: Order) => {
-    const next = getNextStatus(order.status);
-    if (!next) return;
-    handleStatusChange(order.id, next);
-  };
-
-  const openCancelDialog = (order: Order) => {
-    setCancelReason("");
-    setCancelDialogOpen(true);
-    if (viewingOrder?.id === order.id) setViewingOrder(order);
-  };
-
-  const confirmCancel = async () => {
-    if (!viewingOrder || !cancelReason.trim()) return;
-    setCancelling(true);
-    try {
-      const reason = cancelReason.trim();
-      await updateOrderStatus(viewingOrder.id, "cancelled", reason);
-      setViewingOrder((o) =>
-        o ? { ...o, status: "cancelled" as Order["status"], cancelReason: reason } : o
-      );
-      setCancelDialogOpen(false);
-    } finally {
-      setCancelling(false);
-    }
+  const handleCancelOrder = async (orderId: string, reason: string) => {
+    await updateOrderStatus(orderId, "cancelled", reason);
+    setViewingOrder((current) =>
+      current && current.id === orderId
+        ? {
+            ...current,
+            status: "cancelled",
+            cancelReason: reason,
+            updatedAt: new Date().toISOString(),
+          }
+        : current
+    );
   };
 
   const statCards = [
@@ -475,8 +391,8 @@ export default function OrdersPage() {
                 </div>
                   <div className="flex justify-between items-center">
                     <div className="flex gap-2">
-                      {getStatusBadge(order.status)}
-                      {getPaymentBadge(order.paymentStatus)}
+                      <OrderStatusBadge status={order.status} />
+                      <PaymentStatusBadge status={order.paymentStatus} />
                     </div>
                     <p className="font-bold text-lg">{orderMoney(order.total, order.currencyCode)}</p>
                     {showCupBase(order.currencyCode) && (
@@ -487,7 +403,7 @@ export default function OrdersPage() {
                   </div>
                 <div className="text-xs text-muted-foreground flex justify-between">
                   <span>{order.items.length} producto(s)</span>
-                  <span>{formatDate(order.createdAt)}</span>
+                  <span>{formatOrderDate(order.createdAt)}</span>
                 </div>
               </CardContent>
             </Card>
@@ -548,10 +464,14 @@ export default function OrdersPage() {
                             </p>
                           )}
                         </TableCell>
-                        <TableCell>{getStatusBadge(order.status)}</TableCell>
-                        <TableCell>{getPaymentBadge(order.paymentStatus)}</TableCell>
+                        <TableCell>
+                          <OrderStatusBadge status={order.status} />
+                        </TableCell>
+                        <TableCell>
+                          <PaymentStatusBadge status={order.paymentStatus} />
+                        </TableCell>
                         <TableCell className="text-sm text-muted-foreground">
-                          {formatDate(order.createdAt)}
+                          {formatOrderDate(order.createdAt)}
                         </TableCell>
                         <TableCell className="text-right">
                           <Button
@@ -632,397 +552,16 @@ export default function OrdersPage() {
           </div>
         )}
 
-        {/* Order Detail Dialog (sin cambios) */}
-        <Dialog open={isDetailOpen} onOpenChange={setIsDetailOpen}>
-          <DialogContent className="max-h-[90vh] w-[calc(100vw-1rem)] max-w-2xl overflow-y-auto sm:w-full">
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2 break-all">
-                <Package className="h-5 w-5 shrink-0" />
-                <span className="break-all">Orden {viewingOrder?.id}</span>
-              </DialogTitle>
-            </DialogHeader>
-            {viewingOrder && (
-              <div className="space-y-6">
-                {/* Status Controls */}
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <Field>
-                    <FieldLabel>Estado de la Orden</FieldLabel>
-                    <div className="space-y-3">
-                      {/* Stepper lineal: solo avanza al siguiente paso */}
-                      <div className="flex items-center justify-between gap-1">
-                        {orderedStatuses.map((step, idx) => {
-                          const orderIdx = getCurrentStepIndex(viewingOrder.status);
-                          const isDone = orderIdx >= idx;
-                          const isCurrent = orderIdx === idx;
-                          return (
-                            <Fragment key={step}>
-                              <div className="flex flex-col items-center gap-1">
-                                <div
-                                  className={cn(
-                                    "flex h-8 w-8 items-center justify-center rounded-full border-2 text-xs font-semibold",
-                                    isDone
-                                      ? "border-primary bg-primary text-primary-foreground"
-                                      : "border-border bg-background text-muted-foreground",
-                                    isCurrent && "ring-2 ring-primary/40"
-                                  )}
-                                >
-                                  {isDone ? <Check className="h-3.5 w-3.5" /> : idx + 1}
-                                </div>
-                                <span className="text-[10px] text-muted-foreground capitalize">{step}</span>
-                              </div>
-                              {idx < orderedStatuses.length - 1 && (
-                                <ChevronsRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground/40" />
-                              )}
-                            </Fragment>
-                          );
-                        })}
-                      </div>
-                      <div className="flex flex-wrap gap-2">
-                        {getNextStatus(viewingOrder.status) && (
-                          <Button
-                            size="sm"
-                            onClick={() => advanceStatus(viewingOrder)}
-                            className="gap-1"
-                          >
-                            <ChevronsRight className="h-4 w-4" />
-                            Avanzar a{" "}
-                            <span className="capitalize">
-                              {getNextStatus(viewingOrder.status)}
-                            </span>
-                          </Button>
-                        )}
-                        {viewingOrder.status !== "cancelled" && viewingOrder.status !== "delivered" && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="text-destructive border-destructive/40 hover:bg-destructive/10"
-                            onClick={() => openCancelDialog(viewingOrder)}
-                          >
-                            <Ban className="mr-1 h-4 w-4" /> Cancelar orden
-                          </Button>
-                        )}
-                      </div>
-                      {viewingOrder.status === "cancelled" && viewingOrder.cancelReason && (
-                        <p className="text-xs text-destructive">
-                          Motivo: {viewingOrder.cancelReason}
-                        </p>
-                      )}
-                    </div>
-                  </Field>
-                  <div className="space-y-3">
-                    <Field>
-                      <FieldLabel>Estado del Pago</FieldLabel>
-                      <Select
-                        value={viewingOrder.paymentStatus}
-                        onValueChange={(value: Order["paymentStatus"]) =>
-                          handlePaymentStatusChange(viewingOrder.id, value)
-                        }
-                      >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="pending">Pendiente</SelectItem>
-                          <SelectItem value="paid">Pagado</SelectItem>
-                          <SelectItem value="refunded">Reembolsado</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </Field>
-                    {/* Confirmación de pago para transferencias */}
-                    {viewingOrder.paymentMethod === "transfer" && (
-                      <div className="rounded-lg border p-3 space-y-2 bg-muted/30">
-                        <p className="text-xs font-medium text-muted-foreground">
-                          Datos de la transferencia
-                        </p>
-                        {viewingOrder.bankName && (
-                          <p className="text-xs">Banco: {viewingOrder.bankName}</p>
-                        )}
-                        {viewingOrder.accountNumber && (
-                          <p className="text-xs font-mono">Cuenta: {viewingOrder.accountNumber}</p>
-                        )}
-                        {viewingOrder.reference && (
-                          <p className="text-xs">Referencia: {viewingOrder.reference}</p>
-                        )}
-                        {viewingOrder.transferAmount ? (
-                          <p className="text-sm font-medium">
-                            Monto: {viewingOrder.transferAmount.toFixed(2)} {viewingOrder.currencyCode}
-                          </p>
-                        ) : null}
-                        {viewingOrder.receipt && (
-                          <a
-                            href={viewingOrder.receipt}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="flex items-center gap-1 text-xs text-primary underline"
-                          >
-                            <FileText className="h-3 w-3" /> Ver comprobante
-                          </a>
-                        )}
-                        {viewingOrder.paymentStatus !== "paid" && (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="w-full gap-1 text-green-700 border-green-600/40 hover:bg-green-50 dark:hover:bg-green-500/10"
-                            onClick={() =>
-                              handlePaymentStatusChange(viewingOrder.id, "paid")
-                            }
-                          >
-                            <CheckCircle className="h-4 w-4" /> Confirmar pago
-                          </Button>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Customer Info */}
-                <Card>
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-base flex items-center gap-2">
-                      <User className="h-4 w-4" />
-                      Información del Cliente
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="grid gap-3 sm:grid-cols-2">
-                    <div>
-                      <p className="text-sm text-muted-foreground">Nombre</p>
-                      <p className="font-medium break-all">{(viewingOrder as any).userName || (viewingOrder as any).user_name || '-'}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-muted-foreground">Email</p>
-                      <p className="font-medium break-all">{(viewingOrder as any).userEmail || (viewingOrder as any).user_email || '-'}</p>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {/* Beneficiary: persona que recoge el pedido */}
-                <Card>
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-base flex items-center gap-2">
-                      <UserCheck className="h-4 w-4" />
-                      Beneficiario (recoge el pedido)
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="grid gap-3 sm:grid-cols-2">
-                    <div>
-                      <p className="text-sm text-muted-foreground">Nombre</p>
-                      <p className="font-medium break-all">{(viewingOrder as any).userName || (viewingOrder as any).user_name || (viewingOrder as any).user?.name || '-'}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-muted-foreground">Teléfono</p>
-                      {viewingOrder.contactPhone ? (
-                        <p className="font-medium flex items-center gap-1.5 break-all">
-                          <Phone className="h-3.5 w-3.5 text-muted-foreground" />
-                          <a
-                            href={`tel:${viewingOrder.contactPhone}`}
-                            className="hover:underline break-all"
-                          >
-                            {viewingOrder.contactPhone}
-                          </a>
-                        </p>
-                      ) : (
-                        <p className="font-medium text-muted-foreground">
-                          No registrado
-                        </p>
-                      )}
-                    </div>
-                    <div>
-                      <p className="text-sm text-muted-foreground">
-                        Carnet de identidad
-                      </p>
-                      <p className="font-medium">
-                        {viewingOrder.contactCarnet || (
-                          <span className="text-muted-foreground">
-                            No registrado
-                          </span>
-                        )}
-                      </p>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {/* Delivery Info */}
-                <Card>
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-base flex items-center gap-2">
-                      <MapPin className="h-4 w-4" />
-                      Información de Entrega
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    <div>
-                      <p className="text-sm text-muted-foreground">Dirección</p>
-                      <p className="font-medium">{viewingOrder.deliveryAddress}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-muted-foreground">Zona de envío</p>
-                      <p className="font-medium">{getZoneName(viewingOrder.zoneId)}</p>
-                    </div>
-                    {viewingOrder.deliveryNotes && (
-                      <div>
-                        <p className="text-sm text-muted-foreground">Notas</p>
-                        <p className="font-medium">{viewingOrder.deliveryNotes}</p>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-
-                {/* Order Items */}
-                <Card>
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-base flex items-center gap-2">
-                      <ShoppingBag className="h-4 w-4" />
-                      Productos ({viewingOrder.items.length})
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-3">
-                      {viewingOrder.items.map((item, index) => (
-                        <div
-                          key={index}
-                          className="flex items-center justify-between py-2 border-b last:border-0"
-                        >
-                          <div>
-                            <p className="font-medium">{item.productName}</p>
-                            <p className="text-sm text-muted-foreground">
-                              {orderMoney(item.price, viewingOrder.currencyCode)} x {item.quantity}
-                            </p>
-                          </div>
-                          <p className="font-medium">
-                            {orderMoney(item.price * item.quantity, viewingOrder.currencyCode)}
-                          </p>
-                        </div>
-                      ))}
-                    </div>
-                    <div className="mt-4 pt-4 border-t space-y-2">
-                      <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">Subtotal</span>
-                        <span className="text-right">
-                          <div>{orderMoney(viewingOrder.subtotal, viewingOrder.currencyCode)}</div>
-                          {showCupBase(viewingOrder.currencyCode) && (
-                            <div className="text-xs text-muted-foreground">
-                              {formatPrice(viewingOrder.subtotal, cupCurrency)}
-                            </div>
-                          )}
-                        </span>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">Envío</span>
-                        <span className="text-right">
-                          <div>{orderMoney(viewingOrder.deliveryFee, viewingOrder.currencyCode)}</div>
-                          {showCupBase(viewingOrder.currencyCode) && (
-                            <div className="text-xs text-muted-foreground">
-                              {formatPrice(viewingOrder.deliveryFee, cupCurrency)}
-                            </div>
-                          )}
-                        </span>
-                      </div>
-                      <div className="flex justify-between font-bold text-lg pt-2 border-t">
-                        <span>Total</span>
-                        <span className="text-right">
-                          <div>{orderMoney(viewingOrder.total, viewingOrder.currencyCode)}</div>
-                          {showCupBase(viewingOrder.currencyCode) && (
-                            <div className="text-xs font-normal text-muted-foreground">
-                              {formatPrice(viewingOrder.total, cupCurrency)}
-                            </div>
-                          )}
-                        </span>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {/* Payment & Dates */}
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <Card>
-                    <CardHeader className="pb-3">
-                      <CardTitle className="text-base flex items-center gap-2">
-                        <CreditCard className="h-4 w-4" />
-                        Pago
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <p className="font-medium capitalize">{viewingOrder.paymentMethod === "cash" ? "Efectivo" : viewingOrder.paymentMethod === "transfer_cup" ? "Transferencia CUP" : viewingOrder.paymentMethod}</p>
-                      <p className="text-sm text-muted-foreground mt-1">Moneda: {viewingOrder.currencyCode}</p>
-                      <div className="mt-2">
-                        {getPaymentBadge(viewingOrder.paymentStatus)}
-                      </div>
-                    </CardContent>
-                  </Card>
-                  <Card>
-                    <CardHeader className="pb-3">
-                      <CardTitle className="text-base flex items-center gap-2">
-                        <Calendar className="h-4 w-4" />
-                        Fechas
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-2">
-                      <div>
-                        <p className="text-sm text-muted-foreground">Creada</p>
-                        <p className="text-sm font-medium break-all">
-                          {formatDate((viewingOrder as any).createdAt || (viewingOrder as any).created_at || (viewingOrder as any).created)}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-muted-foreground">
-                          Última actualización
-                        </p>
-                        <p className="text-sm font-medium break-all">
-                          {formatDate((viewingOrder as any).updatedAt || (viewingOrder as any).updated_at || (viewingOrder as any).updated)}
-                        </p>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
-              </div>
-            )}
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setIsDetailOpen(false)}>
-                Cerrar
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-
-        {/* Cancelación con motivo obligatorio */}
-        <Dialog open={cancelDialogOpen} onOpenChange={setCancelDialogOpen}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
-                <XCircle className="h-5 w-5 text-destructive" />
-                Cancelar orden {viewingOrder?.id}
-              </DialogTitle>
-            </DialogHeader>
-            <div className="space-y-3">
-              <p className="text-sm text-muted-foreground">
-                Indica el motivo de la cancelación (obligatorio):
-              </p>
-              <Textarea
-                value={cancelReason}
-                onChange={(e) => setCancelReason(e.target.value)}
-                placeholder="Ej: Cliente lo solicitó, sin stock de un producto..."
-                rows={3}
-              />
-            </div>
-            <DialogFooter className="gap-2">
-              <Button variant="outline" onClick={() => setCancelDialogOpen(false)}>
-                Volver
-              </Button>
-              <Button
-                variant="destructive"
-                onClick={confirmCancel}
-                disabled={cancelling || !cancelReason.trim()}
-              >
-                {cancelling ? (
-                  <Clock className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Ban className="mr-1 h-4 w-4" />
-                )}
-                Confirmar cancelación
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+        <OrderDetailDialog
+          order={viewingOrder}
+          open={detailOpen}
+          onOpenChange={setDetailOpen}
+          deliveryZones={deliveryZones}
+          customer={viewingCustomer}
+          onAdvance={handleAdvance}
+          onPaymentStatusChange={handlePaymentStatusChange}
+          onCancel={handleCancelOrder}
+        />
       </div>
     </TooltipProvider>
   );

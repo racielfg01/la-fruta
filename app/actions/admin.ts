@@ -3,6 +3,7 @@
 import { decodePocketBaseToken, getRoleIds } from '@/lib/auth';
 import { getAdminPB, getTokenPB, getAllRecords, sanitize, buildOrFilter } from '@/lib/pocketbase';
 import { restoreOrderStock } from '@/lib/order-stock';
+import { orderDates } from '@/lib/order-dates';
 import { notifyNewUser } from '@/lib/push/notify';
 import { after } from 'next/server';
 import type PocketBase from 'pocketbase';
@@ -90,6 +91,7 @@ function mapDeliveryZone(z: any) {
 
 function mapOrder(o: any) {
   return {
+    ...orderDates(o),
     id: o.id,
     userId: o.user_id,
     userName: o.user_name,
@@ -112,8 +114,6 @@ function mapOrder(o: any) {
     bankName: o.bank_name || '',
     accountNumber: o.account_number || '',
     transferAmount: Number(o.transfer_amount) || 0,
-    createdAt: o.created,
-    updatedAt: o.updated,
   };
 }
 
@@ -125,7 +125,7 @@ export async function getAdminData(token: string) {
   const [products, categories, deliveryZones, users, orders, currencies, roles] = await Promise.all([
     getAllRecords(pb, 'products', { sort: 'name', expand: 'category' }),
     getAllRecords(pb, 'categories', { sort: 'name' }),
-    getAllRecords(pb, 'delivery_zones', { sort: 'min_distance' }),
+    getAllRecords(pb, 'delivery_zones', { sort: 'name' }),
     getAllRecords(pb, 'users', { sort: '-created', expand: 'role_id' }),
     getAllRecords(pb, 'orders', { sort: '-created_at' }),
     getAllRecords(pb, 'currencies', { sort: 'code' }),

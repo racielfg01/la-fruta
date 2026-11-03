@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { CheckCircle, Package, Truck, Home, ArrowRight } from "lucide-react";
 import { Suspense } from "react";
+import { useCurrency } from "@/lib/currency";
 
 function OrderConfirmationContent() {
   const searchParams = useSearchParams();
@@ -14,6 +15,14 @@ function OrderConfirmationContent() {
   const currencyCode = searchParams.get("currency") || "";
   const amount = Number(searchParams.get("amount")) || 0;
   const paymentMethod = searchParams.get("paymentMethod") || "";
+  const { currencies, formatPrice } = useCurrency();
+  const currency = currencies.find((c) => c.code === currencyCode) ?? null;
+  const totalLabel =
+    paymentMethod === "transfer"
+      ? "Total transferido"
+      : paymentMethod === "cash"
+        ? "Total del pedido"
+        : "Total";
 
   const steps = [
     { icon: CheckCircle, label: "Pedido Confirmado", status: "complete" },
@@ -29,20 +38,42 @@ function OrderConfirmationContent() {
       </div>
 
       <h1 className="mb-2 font-[family-name:var(--font-playfair)] text-3xl font-bold text-foreground md:text-4xl">
-        ¡Pedido Confirmado!
+        ¡Pedido creado!
       </h1>
       <p className="mb-2 text-lg text-muted-foreground">
         Gracias por comprar en MercaToma
       </p>
-      <p className="mb-2 text-sm text-muted-foreground">
-        ID del pedido:{" "}
-        <span className="font-mono font-semibold text-foreground">{orderId}</span>
+      <p className="mb-6 max-w-md text-sm text-muted-foreground">
+        Tu pedido quedó registrado. Puedes seguirlo en tu historial de órdenes.
       </p>
-      {currencyCode && amount > 0 && (
-        <p className="mb-8 text-lg font-bold text-primary">
-          Total pagado: {currencyCode} {amount.toFixed(2)}
+
+      <div className="mb-7 flex w-full max-w-md flex-col items-center gap-2 rounded-lg border bg-muted/30 px-4 py-3 text-sm">
+        <p className="min-w-0 text-muted-foreground">
+          Pedido{" "}
+          <span className="break-all font-mono font-semibold text-foreground">
+            {orderId}
+          </span>
         </p>
-      )}
+        {currencyCode && amount > 0 && (
+          <p className="text-base font-bold text-primary">
+            {totalLabel}:{" "}
+            {currency ? formatPrice(amount, currency) : `${amount} ${currencyCode}`}
+          </p>
+        )}
+      </div>
+
+      <div className="mb-10 flex w-full max-w-md flex-col gap-3 sm:flex-row sm:justify-center">
+        <Button asChild size="lg" className="w-full sm:w-auto">
+          <Link href="/perfil">
+            Ver mis pedidos
+            <ArrowRight className="ml-2 h-4 w-4" />
+          </Link>
+        </Button>
+        <Button asChild size="lg" variant="outline" className="w-full sm:w-auto">
+          <Link href="/">Seguir comprando</Link>
+        </Button>
+      </div>
+
       {paymentMethod === "transfer" && (
         <div className="mb-8 w-full max-w-md rounded-lg bg-muted/50 p-4 text-center text-sm text-muted-foreground">
           Recibimos tu comprobante de transferencia. Tu pedido será confirmado
@@ -97,7 +128,7 @@ function OrderConfirmationContent() {
                 1
               </span>
               <span>
-                Registraremos los detalles de tu pedido en breve.
+                Tu pedido ya está registrado; puedes seguirlo desde tu perfil.
               </span>
             </li>
             <li className="flex items-start gap-3">
@@ -120,15 +151,6 @@ function OrderConfirmationContent() {
           </ul>
         </CardContent>
       </Card>
-
-      <div className="flex flex-col gap-4 sm:flex-row">
-        <Link href="/">
-          <Button size="lg">
-            Seguir comprando
-            <ArrowRight className="ml-2 h-4 w-4" />
-          </Button>
-        </Link>
-      </div>
     </div>
   );
 }

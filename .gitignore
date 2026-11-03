@@ -130,3 +130,9 @@ pnpm-lock.yaml
 
 # Playwright MCP debug artifacts
 /.playwright-mcp/
+
+# rsc local state (hooks, seals, logs) and managed skill links — machine-local
+.opencode/rsc/design
+.opencode/rsc/seo-geo
+.opencode/rsc/ux
+.opencode/rsc/tidy

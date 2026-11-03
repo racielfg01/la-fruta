@@ -960,7 +960,7 @@ export default function OrdersPage() {
                       <div>
                         <p className="text-sm text-muted-foreground">Creada</p>
                         <p className="text-sm font-medium break-all">
-                          {formatDate(viewingOrder.createdAt)}
+                          {formatDate((viewingOrder as any).createdAt || (viewingOrder as any).created_at || (viewingOrder as any).created)}
                         </p>
                       </div>
                       <div>
@@ -968,7 +968,7 @@ export default function OrdersPage() {
                           Última actualización
                         </p>
                         <p className="text-sm font-medium break-all">
-                          {formatDate(viewingOrder.updatedAt)}
+                          {formatDate((viewingOrder as any).updatedAt || (viewingOrder as any).updated_at || (viewingOrder as any).updated)}
                         </p>
                       </div>
                     </CardContent>

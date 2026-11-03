@@ -35,11 +35,13 @@ import {
   Headphones,
   MessageCircle,
   Clock,
+  Gift,
 } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { useCurrency } from "@/lib/currency";
 import { MobileBottomNav } from "@/components/mobile-bottom-nav";
+import ProfileReferrals from "@/components/profile-referrals";
 
 export default function ProfilePage() {
   const { user, token, isAuthenticated, setUser } = useAuthStore();
@@ -57,6 +59,7 @@ export default function ProfilePage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(5);
   const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<"profile" | "orders" | "referrals">("orders");
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -214,9 +217,23 @@ export default function ProfilePage() {
             Mi Perfil
           </h1>
 
-          <div className="grid gap-8 md:grid-cols-3">
-            {/* Sidebar - Datos del usuario */}
-            <div className="space-y-6 md:col-span-1">
+          <div className="flex gap-2 mb-6 overflow-x-auto">
+            <Button variant={activeTab === "orders" ? "default" : "outline"} onClick={() => setActiveTab("orders")}>
+              <Package className="h-4 w-4 mr-2" />
+              Mis Órdenes
+            </Button>
+            <Button variant={activeTab === "referrals" ? "default" : "outline"} onClick={() => setActiveTab("referrals")}>
+              <Gift className="h-4 w-4 mr-2" />
+              Referidos y Puntos
+            </Button>
+            <Button variant={activeTab === "profile" ? "default" : "outline"} onClick={() => setActiveTab("profile")}>
+              <User className="h-4 w-4 mr-2" />
+              Mi Perfil
+            </Button>
+          </div>
+
+          {activeTab === "profile" && (
+            <div className="grid gap-8 md:grid-cols-2">
               <Card>
                 <CardContent className="p-6">
                   <div className="flex flex-col items-center text-center">
@@ -297,29 +314,33 @@ export default function ProfilePage() {
                   </div>
                 </CardContent>
               </Card>
-
-              <SavedAddressesSection token={token} />
-              <BeneficiariesSection token={token} />
+              <div className="space-y-6">
+                <SavedAddressesSection token={token} />
+                <BeneficiariesSection token={token} />
+              </div>
             </div>
+          )}
 
-            {/* Historial de órdenes */}
-            <div className="md:col-span-2">
-              <Card>
-                <CardHeader className="space-y-3 sm:flex-row sm:items-center sm:justify-between">
-                  <CardTitle className="flex items-center gap-2">
-                    <Package className="h-5 w-5 text-primary" />
-                    Historial de Órdenes
-                  </CardTitle>
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                    <Input
-                      placeholder="Buscar por ID, producto o dirección..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="pl-9 h-9 w-full sm:w-64"
-                    />
-                  </div>
-                </CardHeader>
+          {activeTab === "referrals" && <ProfileReferrals token={token} />}
+
+          {activeTab === "orders" && (
+          <div className="max-w-4xl">
+            <Card>
+              <CardHeader className="space-y-3 sm:flex-row sm:items-center sm:justify-between">
+                <CardTitle className="flex items-center gap-2">
+                  <Package className="h-5 w-5 text-primary" />
+                  Historial de Órdenes
+                </CardTitle>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    placeholder="Buscar por ID, producto o dirección..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-9 h-9 w-full sm:w-64"
+                  />
+                </div>
+              </CardHeader>
                 <CardContent>
                   {loading ? (
                     <div className="space-y-4">
@@ -522,7 +543,7 @@ export default function ProfilePage() {
                 </CardContent>
               </Card>
             </div>
-          </div>
+          )}
 
           {/* Soporte */}
           <Card className="mt-8">

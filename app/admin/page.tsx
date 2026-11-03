@@ -14,6 +14,7 @@ import {
   Coins,
   Clock,
   CheckCircle,
+  Gift,
 } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -337,6 +338,12 @@ export default function AdminDashboard() {
               <Link href="/admin/configuracion?tab=monedas">
                 <Coins className="mr-2 h-4 w-4" />
                 Configurar Monedas
+              </Link>
+            </Button>
+            <Button variant="outline" asChild className="justify-start w-full">
+              <Link href="/admin/referidos">
+                <Gift className="mr-2 h-4 w-4" />
+                Sistema de Referidos
               </Link>
             </Button>
           </CardContent>

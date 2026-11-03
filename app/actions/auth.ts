@@ -111,7 +111,7 @@ function validateGender(gender: string): { valid: boolean; error?: string } {
   return { valid: true };
 }
 
-export async function signupAction(data: SignupData): Promise<AuthResponse> {
+export async function signupAction(data: SignupData & { referralCode?: string }): Promise<AuthResponse> {
   try {
     const nameValidation = validateName(data.name);
     if (!nameValidation.valid) return { success: false, message: '', error: nameValidation.error };
@@ -153,6 +153,15 @@ export async function signupAction(data: SignupData): Promise<AuthResponse> {
     const newUser = await createUser(data);
     if (!newUser) {
       return { success: false, message: '', error: 'Error al registrar el usuario. Intenta de nuevo.' };
+    }
+
+    if (data.referralCode) {
+      try {
+        const { applyReferralCode } = await import('@/app/actions/referrals');
+        await applyReferralCode(data.referralCode, newUser.id);
+      } catch (e) {
+        console.error('Error applying referral code:', e);
+      }
     }
 
     const pb = getEphemeralPB();

@@ -23,10 +23,22 @@ export default function SignupForm() {
     gender: '',
     password: '',
     confirmPassword: '',
+    referralCode: '',
   });
   const [touched, setTouched] = useState({
     name: false, email: false, phone: false, gender: false, password: false, confirmPassword: false
   });
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const ref = params.get('ref') || localStorage.getItem('referral_code') || '';
+      if (ref) {
+        setFormData((prev) => ({ ...prev, referralCode: ref.toUpperCase() }));
+        localStorage.setItem('referral_code', ref.toUpperCase());
+      }
+    }
+  }, []);
 
   const isValidName = (v: string) => v.trim().length >= 2;
   const isValidEmail = (v: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
@@ -59,7 +71,7 @@ export default function SignupForm() {
     }
     setIsLoading(true);
     try {
-      const result = await signupAction(formData);
+      const result = await signupAction(formData as any);
       if (result.success && result.user) {
         setUser(result.user);
         if (result.token) setToken(result.token);

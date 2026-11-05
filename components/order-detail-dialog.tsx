@@ -8,6 +8,7 @@ import {
   Check,
   CheckCircle2,
   ChevronsRight,
+  Clock,
   Copy,
   CreditCard,
   ExternalLink,
@@ -17,8 +18,8 @@ import {
   Package,
   Phone,
   ShoppingBag,
+  StickyNote,
   User,
-  UserCheck,
   XCircle,
   type LucideIcon,
 } from "lucide-react";
@@ -95,6 +96,9 @@ export function OrderDetailDialog({
   const [cancelOpen, setCancelOpen] = useState(false);
   const [cancelReason, setCancelReason] = useState("");
   const [copied, setCopied] = useState(false);
+  const [copiedField, setCopiedField] = useState<
+    "phone" | "address" | null
+  >(null);
 
   if (!order) return null;
 
@@ -107,6 +111,9 @@ export function OrderDetailDialog({
   const showAdvance = !readOnly && !!nextStatus && !!onAdvance;
   const showZone = !!zone || !readOnly;
   const isTransfer = order.paymentMethod?.startsWith("transfer");
+  const canEditPayment = !readOnly && !!onPaymentStatusChange;
+  const isPaid = order.paymentStatus === "paid";
+  const phoneHref = order.contactPhone?.replace(/[^\d+]/g, "");
   const money = (amount: number) =>
     formatOrderMoney(amount, order.currencyCode);
 
@@ -143,6 +150,7 @@ export function OrderDetailDialog({
 
   const handlePaymentStatusChange = (status: string) => {
     if (!onPaymentStatusChange) return;
+    if (order.paymentStatus === "paid") return;
     const next = status as Order["paymentStatus"];
     if (next === order.paymentStatus) return;
     void run(
@@ -160,6 +168,24 @@ export function OrderDetailDialog({
       window.setTimeout(() => setCopied(false), 1500);
     } catch {
       toast.error("No se pudo copiar el ID");
+    }
+  };
+
+  const copyField = async (
+    field: "phone" | "address",
+    value: string,
+    label: string
+  ) => {
+    try {
+      await navigator.clipboard.writeText(value);
+      setCopiedField(field);
+      toast.success(`${label} copiado`);
+      window.setTimeout(
+        () => setCopiedField((current) => (current === field ? null : current)),
+        1500
+      );
+    } catch {
+      toast.error(`No se pudo copiar ${label.toLowerCase()}`);
     }
   };
 
@@ -345,31 +371,149 @@ export function OrderDetailDialog({
                 )}
               </Section>
 
-              <Section icon={UserCheck} title="Quién recibe">
-                <dl className="grid gap-3 sm:grid-cols-2">
-                  <DetailField label="Nombre completo" className="sm:col-span-2">
-                    {order.userName || "No registrado"}
-                  </DetailField>
-                  <DetailField label="Teléfono">
-                    {order.contactPhone ? (
-                      <a
-                        href={`tel:${order.contactPhone}`}
-                        className="inline-flex items-center gap-1.5 hover:underline underline-offset-4"
+              <Section icon={MapPin} title="Entrega">
+                <div className="overflow-hidden rounded-lg border">
+                  <div className="flex items-start gap-3 p-3">
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs text-muted-foreground">
+                        Quién recibe
+                      </p>
+                      <p
+                        className={cn(
+                          "mt-0.5 text-sm font-semibold break-words",
+                          !order.userName && "font-normal text-muted-foreground"
+                        )}
                       >
-                        <Phone
-                          className="size-3.5 text-muted-foreground"
+                        {order.userName || "Sin nombre registrado"}
+                      </p>
+                      <div className="mt-1 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-xs">
+                        {order.contactPhone ? (
+                          <a
+                            href={`tel:${phoneHref}`}
+                            className="inline-flex items-center gap-1 font-medium text-foreground underline-offset-4 hover:underline"
+                          >
+                            <Phone
+                              className="size-3 text-muted-foreground"
+                              aria-hidden="true"
+                            />
+                            {order.contactPhone}
+                          </a>
+                        ) : (
+                          <span className="text-muted-foreground">
+                            Sin teléfono
+                          </span>
+                        )}
+                        <span
+                          className="h-3 w-px bg-border"
                           aria-hidden="true"
                         />
-                        {order.contactPhone}
-                      </a>
-                    ) : (
-                      "No registrado"
+                        <span className="text-muted-foreground">
+                          {order.contactCarnet
+                            ? `CI ${order.contactCarnet}`
+                            : "CI no registrada"}
+                        </span>
+                      </div>
+                    </div>
+                    {order.contactPhone && (
+                      <Button
+                        variant="ghost"
+                        size="icon-sm"
+                        className="-mr-1 -mt-1 shrink-0"
+                        onClick={() =>
+                          void copyField(
+                            "phone",
+                            order.contactPhone!,
+                            "Teléfono"
+                          )
+                        }
+                        aria-label="Copiar el teléfono de quien recibe"
+                      >
+                        {copiedField === "phone" ? (
+                          <Check className="size-3.5 text-primary" />
+                        ) : (
+                          <Copy className="size-3.5" />
+                        )}
+                      </Button>
                     )}
-                  </DetailField>
-                  <DetailField label="Carnet de identidad">
-                    {order.contactCarnet || "No registrado"}
-                  </DetailField>
-                </dl>
+                  </div>
+
+                  <div className="border-t p-3">
+                    <div className="flex items-start gap-3">
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs text-muted-foreground">
+                          Dirección de entrega
+                        </p>
+                        <p
+                          className={cn(
+                            "mt-0.5 text-sm font-medium break-words",
+                            !order.deliveryAddress &&
+                              "font-normal text-muted-foreground"
+                          )}
+                        >
+                          {order.deliveryAddress || "No especificada"}
+                        </p>
+                      </div>
+                      {order.deliveryAddress && (
+                        <Button
+                          variant="ghost"
+                          size="icon-sm"
+                          className="-mr-1 -mt-1 shrink-0"
+                          onClick={() =>
+                            void copyField(
+                              "address",
+                              order.deliveryAddress,
+                              "Dirección"
+                            )
+                          }
+                          aria-label="Copiar la dirección de entrega"
+                        >
+                          {copiedField === "address" ? (
+                            <Check className="size-3.5 text-primary" />
+                          ) : (
+                            <Copy className="size-3.5" />
+                          )}
+                        </Button>
+                      )}
+                    </div>
+                    {showZone && (
+                      <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1.5">
+                        {zone ? (
+                          <span className="inline-flex items-center gap-1 rounded-full border bg-muted/50 px-2 py-0.5 text-[11px] font-medium">
+                            <MapPin
+                              className="size-3 text-muted-foreground"
+                              aria-hidden="true"
+                            />
+                            {zone.name}
+                          </span>
+                        ) : (
+                          <span className="text-[11px] text-muted-foreground">
+                            Zona no especificada
+                          </span>
+                        )}
+                        {zone?.estimatedTime &&
+                          zone.estimatedTime !== "Por definir" && (
+                            <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground">
+                              <Clock className="size-3" aria-hidden="true" />
+                              {zone.estimatedTime}
+                            </span>
+                          )}
+                      </div>
+                    )}
+                  </div>
+
+                  {order.deliveryNotes && (
+                    <div className="flex items-start gap-2 border-t bg-muted/40 px-3 py-2.5">
+                      <StickyNote
+                        className="mt-0.5 size-3.5 shrink-0 text-muted-foreground"
+                        aria-hidden="true"
+                      />
+                      <p className="min-w-0 text-xs break-words">
+                        <span className="font-medium">Nota de entrega: </span>
+                        {order.deliveryNotes}
+                      </p>
+                    </div>
+                  )}
+                </div>
               </Section>
 
               <Section
@@ -437,21 +581,6 @@ export function OrderDetailDialog({
                 )}
               </Section>
 
-              <Section icon={MapPin} title="Entrega">
-                <dl className="grid gap-3 sm:grid-cols-2">
-                  <DetailField label="Dirección" className="sm:col-span-2">
-                    {order.deliveryAddress || "No especificada"}
-                  </DetailField>
-                  {showZone && (
-                    <DetailField label="Zona de envío">
-                      {zone?.name || "No especificada"}
-                    </DetailField>
-                  )}
-                  <DetailField label="Notas de entrega">
-                    {order.deliveryNotes || "Sin notas"}
-                  </DetailField>
-                </dl>
-              </Section>
             </div>
 
             <aside className="space-y-7">
@@ -489,34 +618,56 @@ export function OrderDetailDialog({
                         Cobro en {order.currencyCode}
                       </p>
                     </div>
-                    <PaymentStatusBadge status={order.paymentStatus} />
+                    {!(isPaid && canEditPayment) && (
+                      <PaymentStatusBadge status={order.paymentStatus} />
+                    )}
                   </div>
 
-                  {!readOnly && onPaymentStatusChange && (
+                  {canEditPayment && (
                     <div className="space-y-1.5">
-                      <label
-                        htmlFor="order-payment-status"
-                        className="text-xs text-muted-foreground"
-                      >
-                        Estado del pago
-                      </label>
-                      <Select
-                        value={order.paymentStatus}
-                        onValueChange={handlePaymentStatusChange}
-                        disabled={busy !== null}
-                      >
-                        <SelectTrigger
-                          id="order-payment-status"
-                          className="w-full"
-                        >
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="pending">Pendiente</SelectItem>
-                          <SelectItem value="paid">Pagado</SelectItem>
-                          <SelectItem value="refunded">Reembolsado</SelectItem>
-                        </SelectContent>
-                      </Select>
+                      {isPaid ? (
+                        <>
+                          <p className="text-xs text-muted-foreground">
+                            Estado del pago
+                          </p>
+                          <div className="flex items-center justify-between gap-2 rounded-md border bg-muted/30 px-3 py-2">
+                            <PaymentStatusBadge status="paid" />
+                            <span className="text-xs text-muted-foreground">
+                              No modificable
+                            </span>
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <label
+                            htmlFor="order-payment-status"
+                            className="text-xs text-muted-foreground"
+                          >
+                            Estado del pago
+                          </label>
+                          <Select
+                            value={order.paymentStatus}
+                            onValueChange={handlePaymentStatusChange}
+                            disabled={busy !== null}
+                          >
+                            <SelectTrigger
+                              id="order-payment-status"
+                              className="w-full"
+                            >
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="pending">
+                                Pendiente
+                              </SelectItem>
+                              <SelectItem value="paid">Pagado</SelectItem>
+                              <SelectItem value="refunded">
+                                Reembolsado
+                              </SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </>
+                      )}
                     </div>
                   )}
 

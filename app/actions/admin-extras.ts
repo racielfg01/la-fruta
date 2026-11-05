@@ -308,12 +308,10 @@ export async function deleteBankAction(id: string, token: string) {
 export async function getBankAccountsAction(token: string) {
   await verifyAdminAndGetUserId(token);
   const pb = await getDataPB(token);
-  let rows: any[];
-  try {
-    rows = await getAllRecords(pb, 'bank_accounts', { sort: '-active,name', expand: 'bank' });
-  } catch {
-    rows = await getAllRecords(pb, 'bank_accounts', { sort: '-active,name' });
-  }
+  const rows = await getAllRecords(pb, 'bank_accounts', {
+    sort: '-active,owner',
+    expand: 'bank',
+  });
   return rows.map((a: any) => ({
     id: a.id,
     bank: a.expand?.bank?.name || a.bank || '',

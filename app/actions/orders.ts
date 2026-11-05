@@ -6,6 +6,7 @@ import { parseLocations, matchLocationIndex, StoredLocation } from "@/lib/order-
 import { orderItemPrice } from "@/lib/price-margin";
 import { orderTotalCup } from "@/lib/order-total";
 import { roundCashUp } from "@/lib/cash-rounding";
+import { validateTransferAccount } from "@/lib/payment-methods";
 import { orderDates } from "@/lib/order-dates";
 import { notifyNewOrder } from "@/lib/push/notify";
 import { after } from "next/server";
@@ -136,6 +137,36 @@ export async function createOrderAction(
         return { success: false, error: 'Zona de envío inválida.' };
       }
       const deliveryFee = Math.max(0, Number(zone.price) || 0);
+
+      // La cuenta de transferencia pudo desactivarse, cambiar de moneda o
+      // alcanzar su límite entre la carga del checkout y el envío.
+      if (orderData.paymentMethod === 'transfer') {
+        const account = orderData.bankAccountId
+          ? await pb
+              .collection('bank_accounts')
+              .getOne(orderData.bankAccountId)
+              .catch(() => null)
+          : null;
+        const bank = account?.bank
+          ? await pb
+              .collection('banks')
+              .getOne(account.bank)
+              .catch(() => null)
+          : null;
+        const accountError = validateTransferAccount({
+          account: account
+            ? {
+                active: account.active,
+                currency: account.currency,
+                transfer_limit: account.transfer_limit,
+                transfer_count: account.transfer_count,
+              }
+            : null,
+          bank: bank ? { active: bank.active } : null,
+          currencyCode: orderData.currencyCode,
+        });
+        if (accountError) return { success: false, error: accountError };
+      }
 
       // Margen de ganancia global (%) de la configuración de la tienda.
       // Solo se aplica a órdenes pagadas en CUP (orderItemPrice).

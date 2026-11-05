@@ -32,6 +32,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { ImageUpload } from "@/components/upload-button";
 import {
   Plus,
   Pencil,
@@ -39,6 +40,8 @@ import {
   Loader2,
   Landmark,
   Copy,
+  Check,
+  X,
   Image as ImageIcon,
 } from "lucide-react";
 import {
@@ -74,6 +77,7 @@ export default function BancosTab() {
   const [bankDialog, setBankDialog] = useState(false);
   const [editingBank, setEditingBank] = useState<Bank | null>(null);
   const [bankForm, setBankForm] = useState({ name: "", logo: "", country: "", currency: "" });
+  const [logoUploaded, setLogoUploaded] = useState(false);
 
   const [accDialog, setAccDialog] = useState(false);
   const [editingAcc, setEditingAcc] = useState<Account | null>(null);
@@ -91,8 +95,20 @@ export default function BancosTab() {
     if (token) load();
   }, [token, load]);
 
-  const openNewBank = () => { setEditingBank(null); setBankForm({ name: "", logo: "", country: "", currency: "" }); setBankDialog(true); };
-  const openEditBank = (b: Bank) => { setEditingBank(b); setBankForm({ name: b.name, logo: b.logo, country: b.country, currency: b.currency }); setBankDialog(true); };
+  const openNewBank = () => { setEditingBank(null); setBankForm({ name: "", logo: "", country: "", currency: "" }); setLogoUploaded(false); setBankDialog(true); };
+  const openEditBank = (b: Bank) => { setEditingBank(b); setBankForm({ name: b.name, logo: b.logo, country: b.country, currency: b.currency }); setLogoUploaded(false); setBankDialog(true); };
+  const handleLogoUpload = (url: string) => {
+    setBankForm((prev) => ({ ...prev, logo: url }));
+    setLogoUploaded(true);
+  };
+  const handleLogoUrlChange = (value: string) => {
+    setBankForm((prev) => ({ ...prev, logo: value }));
+    setLogoUploaded(false);
+  };
+  const clearLogo = () => {
+    setBankForm((prev) => ({ ...prev, logo: "" }));
+    setLogoUploaded(false);
+  };
   const saveBank = async () => {
     if (!token || !bankForm.name.trim()) return;
     if (editingBank) await updateBankAction(editingBank.id, bankForm, token);
@@ -152,7 +168,7 @@ export default function BancosTab() {
                       <TableRow key={b.id} className={b.active ? "" : "opacity-60"}>
                         <TableCell>
                           {b.logo ? (
-                            <img src={b.logo} alt={b.name} className="h-8 w-8 rounded object-cover border" />
+                            <img src={b.logo} alt={b.name} className="h-8 w-8 rounded border bg-white object-contain p-0.5" />
                           ) : (
                             <div className="h-8 w-8 rounded bg-muted flex items-center justify-center">
                               <ImageIcon className="h-4 w-4 text-muted-foreground" />
@@ -195,7 +211,7 @@ export default function BancosTab() {
               {loading ? <Loader2 className="h-6 w-6 animate-spin text-primary mx-auto" /> : (
                 <Table>
                   <TableHeader><TableRow>
-                    <TableHead>Banco</TableHead><TableHead>Cuenta</TableHead><TableHead>Moneda</TableHead>
+                    <TableHead>Banco</TableHead><TableHead>Cuenta</TableHead><TableHead>Titular</TableHead><TableHead>Moneda</TableHead>
                     <TableHead>Transferencias</TableHead><TableHead>Límite</TableHead><TableHead>Estado</TableHead>
                     <TableHead className="text-right">Acciones</TableHead>
                   </TableRow></TableHeader>
@@ -213,6 +229,7 @@ export default function BancosTab() {
                               </Button>
                             </span>
                           </TableCell>
+                          <TableCell>{a.owner || "—"}</TableCell>
                           <TableCell>{a.currency}</TableCell>
                           <TableCell>{a.transferCount}</TableCell>
                           <TableCell>{a.transferLimit || "∞"}</TableCell>
@@ -231,7 +248,7 @@ export default function BancosTab() {
                       );
                     })}
                     {accounts.length === 0 && (
-                      <TableRow><TableCell colSpan={7} className="text-center py-8 text-muted-foreground">No hay cuentas creadas</TableCell></TableRow>
+                      <TableRow><TableCell colSpan={8} className="text-center py-8 text-muted-foreground">No hay cuentas creadas</TableCell></TableRow>
                     )}
                   </TableBody>
                 </Table>
@@ -249,8 +266,47 @@ export default function BancosTab() {
             <Field><FieldLabel>Nombre</FieldLabel>
               <Input value={bankForm.name} onChange={(e) => setBankForm({ ...bankForm, name: e.target.value })} placeholder="Ej: Banco de Crédito y Comercio (BANDEC)" />
             </Field>
-            <Field><FieldLabel>Logo (URL)</FieldLabel>
-              <Input value={bankForm.logo} onChange={(e) => setBankForm({ ...bankForm, logo: e.target.value })} placeholder="https://..." />
+            <Field><FieldLabel htmlFor="bank-logo">Logo</FieldLabel>
+              <div className="space-y-3">
+                <div className="flex gap-2">
+                  <Input
+                    id="bank-logo"
+                    type="url"
+                    value={bankForm.logo}
+                    onChange={(e) => handleLogoUrlChange(e.target.value)}
+                    placeholder="Pega una URL o sube una imagen"
+                    className="flex-1"
+                  />
+                  <ImageUpload endpoint="bankLogo" onUploadComplete={handleLogoUpload} />
+                </div>
+
+                {logoUploaded && (
+                  <p className="flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-500">
+                    <Check className="h-3.5 w-3.5" />
+                    Imagen subida correctamente
+                  </p>
+                )}
+
+                {bankForm.logo && (
+                  <div className="relative h-28 w-full overflow-hidden rounded-lg border bg-white">
+                    <img
+                      src={bankForm.logo}
+                      alt="Vista previa del logo"
+                      className="h-full w-full object-contain p-3"
+                    />
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="sm"
+                      onClick={clearLogo}
+                      className="absolute right-2 top-2 h-8 gap-1.5 px-2.5 shadow-md"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                      Quitar
+                    </Button>
+                  </div>
+                )}
+              </div>
             </Field>
             <div className="grid gap-4 sm:grid-cols-2">
               <Field><FieldLabel>País</FieldLabel>

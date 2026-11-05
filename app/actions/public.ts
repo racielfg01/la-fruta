@@ -40,6 +40,7 @@ export async function getPublicTransferData() {
       .filter((a: any) => a.active !== false && activeBankIds.has(a.bank))
       .map((a: any) => ({
         id: a.id,
+        bankId: a.bank || '',
         bank: a.expand?.bank?.name || '',
         accountNumber: a.account_number || '',
         accountType: a.account_type || '',
@@ -50,7 +51,12 @@ export async function getPublicTransferData() {
         transferCount: Number(a.transfer_count) || 0,
       }));
     return {
-      banks: banks.map((b: any) => ({ id: b.id, name: b.name })),
+      banks: banks.map((b: any) => ({
+        id: b.id,
+        name: b.name,
+        logo: b.logo || '',
+        currency: b.currency || '',
+      })),
       accounts: usable,
     };
   } catch (error) {

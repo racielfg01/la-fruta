@@ -139,30 +139,34 @@ export async function createOrderAction(
       const deliveryFee = Math.max(0, Number(zone.price) || 0);
 
       // La cuenta de transferencia pudo desactivarse, cambiar de moneda o
-      // alcanzar su límite entre la carga del checkout y el envío.
+      // alcanzar su límite entre la carga del checkout y el envío. Los datos
+      // del banco y la cuenta se guardan desde el registro validado, no desde
+      // lo que envíe el cliente.
+      let transferAccount: any = null;
+      let transferBank: any = null;
       if (orderData.paymentMethod === 'transfer') {
-        const account = orderData.bankAccountId
+        transferAccount = orderData.bankAccountId
           ? await pb
               .collection('bank_accounts')
               .getOne(orderData.bankAccountId)
               .catch(() => null)
           : null;
-        const bank = account?.bank
+        transferBank = transferAccount?.bank
           ? await pb
               .collection('banks')
-              .getOne(account.bank)
+              .getOne(transferAccount.bank)
               .catch(() => null)
           : null;
         const accountError = validateTransferAccount({
-          account: account
+          account: transferAccount
             ? {
-                active: account.active,
-                currency: account.currency,
-                transfer_limit: account.transfer_limit,
-                transfer_count: account.transfer_count,
+                active: transferAccount.active,
+                currency: transferAccount.currency,
+                transfer_limit: transferAccount.transfer_limit,
+                transfer_count: transferAccount.transfer_count,
               }
             : null,
-          bank: bank ? { active: bank.active } : null,
+          bank: transferBank ? { active: transferBank.active } : null,
           currencyCode: orderData.currencyCode,
         });
         if (accountError) return { success: false, error: accountError };
@@ -286,8 +290,8 @@ export async function createOrderAction(
         delivery_municipality: orderData.municipalityId || '',
         delivery_province: orderData.provinceId || '',
         bank_account_id: orderData.bankAccountId || '',
-        bank_name: orderData.bankName || '',
-        account_number: orderData.accountNumber || '',
+        bank_name: transferBank?.name || '',
+        account_number: transferAccount?.account_number || '',
         receipt: orderData.receipt || '',
         reference: orderData.reference || '',
         transfer_amount: orderData.transferAmount || 0,

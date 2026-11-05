@@ -6,7 +6,7 @@ tags: [sdd, spec, checkout, pagos, bancos, zelle, usdt]
 timestamp: 2026-11-05T12:00:00Z
 topic: sdd
 slug: pagos-cuadricula
-status: draft
+status: approved
 ---
 
 # Spec — Cuadrícula de opciones de pago

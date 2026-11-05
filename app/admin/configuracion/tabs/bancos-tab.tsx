@@ -350,7 +350,7 @@ export default function BancosTab() {
                 <Input value={accForm.accountNumber} onChange={(e) => setAccForm({ ...accForm, accountNumber: e.target.value })} />
               </Field>
               <Field><FieldLabel>Tipo</FieldLabel>
-                <Input value={accForm.accountType} onChange={(e) => setAccForm({ ...accForm, accountType: e.target.value })} placeholder="Ej: Cuenta Corriente" />
+                <Input value={accForm.accountType} onChange={(e) => setAccForm({ ...accForm, accountType: e.target.value })} placeholder="Ej: BEP-20 / Cuenta Corriente" />
               </Field>
             </div>
             <div className="grid gap-4 sm:grid-cols-2">

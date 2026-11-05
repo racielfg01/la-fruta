@@ -309,9 +309,11 @@ export default function ConfiguracionPage() {
               </div>
               <div className="flex items-center justify-between gap-4">
                 <div>
-                  <p className="font-medium text-sm">Transferencia bancaria</p>
+                  <p className="font-medium text-sm">
+                    Transferencias y pagos digitales
+                  </p>
                   <p className="text-xs text-muted-foreground">
-                    Sube comprobante de pago
+                    Zelle, USDT y cuentas bancarias; sube comprobante
                   </p>
                 </div>
                 <Switch

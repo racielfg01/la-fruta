@@ -99,6 +99,9 @@ nuevo sigue escondido y el cliente sigue eligiendo banco y cuenta a mano.
 - Elegir un tile de banco fija la moneda del pedido a la del banco y muestra, en el
   mismo bloque, los datos de su cuenta: número/teléfono/wallet con botón de copiar,
   tipo, titular y CI/RUC si existe.
+- La moneda del tile es la del banco (`banks.currency`). Si el banco no la tiene, se
+  usa la de su primera cuenta usable. Las cuentas que se listan son las activas, con
+  cupo y de esa misma moneda.
 - Si el banco tiene una sola cuenta usable, sus datos se muestran directamente. Si
   tiene varias, aparece un selector de cuenta con la primera elegida.
 - Se mantiene el monto a transferir, el comprobante obligatorio y la referencia
@@ -112,9 +115,16 @@ nuevo sigue escondido y el cliente sigue eligiendo banco y cuenta a mano.
 - Al cargar, se preselecciona el tile de efectivo de la moneda global de la tienda
   (CUP por defecto). Si esa moneda no tiene efectivo, se elige el primer tile
   disponible.
+- Elegir un tile sigue actualizando la moneda global de la tienda, como hoy: la
+  tienda y el checkout no muestran monedas distintas.
 - La barra de totales, el resumen y la confirmación usan la moneda del tile.
-- Bajo la cuadrícula se muestran la tasa del día (`1 USD = 780.00 CUP`) y el aviso de
-  ahorro al pagar en USD cuando corresponda.
+- Bajo la cuadrícula se muestra la tasa del día en CUP. Sigue a la moneda elegida:
+  con CUP elegido muestra la del primer USD activo; con USD o un banco USD muestra
+  `1 USD = 780.00 CUP`.
+- El aviso de ahorro al pagar en USD se mantiene. «Ver en USD» elige el primer tile
+  disponible en USD (efectivo primero) para que el cambio sea real.
+- El bloque «Precio en otras monedas» se mantiene: es informativo y ya no duplica el
+  selector.
 
 ### Configuración
 
@@ -130,6 +140,9 @@ nuevo sigue escondido y el cliente sigue eligiendo banco y cuenta a mano.
 
 - Un pago por banco se guarda como `payment_method = transfer`, con el nombre del
   banco, el id y número de cuenta y el comprobante, como hoy.
+- El servidor valida la cuenta al crear el pedido: existe, está activa, su banco
+  está activo, su moneda coincide con la del pedido y no alcanzó su límite. Si algo
+  falla, no crea el pedido y devuelve el error al cliente.
 - El contador de transferencias de la cuenta se incrementa igual que hoy. El detalle
   del pedido y el panel de órdenes no cambian.
 - La confirmación muestra el monto en la moneda del tile.
@@ -139,8 +152,9 @@ nuevo sigue escondido y el cliente sigue eligiendo banco y cuenta a mano.
 - Si falla la carga de bancos, quedan los tiles de efectivo y el checkout sigue.
 - Si no hay ningún tile disponible, la cuadrícula lo explica y la confirmación queda
   bloqueada con un aviso.
-- Si el tile elegido deja de estar disponible (por ejemplo, se alcanzó un límite
-  entre la carga y el envío), el servidor rechaza el pedido con su error actual.
+- Si el tile elegido deja de estar disponible entre la carga y el envío, el servidor
+  rechaza el pedido con «La cuenta de pago ya no está disponible. Intenta con otra.»
+  y la página lo muestra sin perder los datos del formulario.
 
 ## Acceptance criteria
 
@@ -169,6 +183,13 @@ nuevo sigue escondido y el cliente sigue eligiendo banco y cuenta a mano.
 - Given un tile de banco elegido con comprobante, When se confirma, Then el pedido se
   crea como transferencia con banco, cuenta y comprobante, y la confirmación muestra
   la moneda del banco.
+- Given una cuenta desactivada, de un banco inactivo, de otra moneda o sin cupo,
+  When se intenta crear un pedido con su id, Then el servidor no crea el pedido y
+  devuelve «La cuenta de pago ya no está disponible. Intenta con otra.».
+- Given el tile de Zelle (USD) elegido, When se elige, Then la moneda global de la
+  tienda queda en USD, igual que hoy con el selector.
+- Given CUP elegido y un USD activo, When se muestra la tasa, Then dice
+  `1 USD = 780.00 CUP`; Given un banco en USD elegido, Then dice lo mismo.
 - Given una cuenta con el límite alcanzado, When se listan las cuentas del banco,
   Then esa cuenta no aparece y no se puede elegir.
 - Given que la carga de bancos falla, When se abre el checkout, Then los tiles de
@@ -197,6 +218,26 @@ nuevo sigue escondido y el cliente sigue eligiendo banco y cuenta a mano.
   añade en otro ciclo.
 - **decisión diferida** — orden manual de tiles, pago dividido y pasarela automática.
   Fuera de este ciclo.
+
+## Decisiones de construcción (builder check)
+
+Resueltas por el agente; no cambian lo que se construye, solo cómo:
+
+- **Moneda del banco.** Manda `banks.currency`; si está vacía, la moneda de la
+  primera cuenta usable. Las cuentas listadas deben coincidir con la moneda del tile.
+  Un banco en moneda inactiva no se muestra.
+- **Moneda global.** Elegir un tile sigue escribiendo en el store global de moneda,
+  como el selector actual. Evita que tienda y checkout muestren monedas distintas.
+- **Tasa.** Sigue a la moneda elegida, con el mismo criterio que hoy: si es CUP, usa
+  el primer USD activo; si es USD o un banco USD, `1 USD = … CUP`.
+- **Ahorro y panel de monedas.** Se mantienen; «Ver en USD» elige el primer tile
+  disponible en USD (efectivo primero). El panel «Precio en otras monedas» queda como
+  información.
+- **Validación en servidor.** Se añade en `createOrderAction` para cuentas de
+  transferencia: existencia, cuenta activa, banco activo, moneda y cupo. Sin ella, la
+  promesa de rechazo de esta spec no se cumple.
+- **Efectivo.** Solo se generan tiles para CUP y USD activos; una moneda inactiva no
+  tiene tasa y no aparece.
 
 ## Clarifications
 

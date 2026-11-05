@@ -65,6 +65,7 @@ import {
 import { getPublicTransferData } from "@/app/actions/public";
 import { isValidPhone } from "@/lib/contact-validation";
 import { useCurrencyStore } from "@/lib/currency-store";
+import { chooseCurrency } from "@/lib/currency-selection";
 import { roundCashUp } from "@/lib/cash-rounding";
 import { effectiveMargin } from "@/lib/price-margin";
 import { cupSavingForItems } from "@/lib/usd-saving";
@@ -565,11 +566,7 @@ export default function CheckoutPage() {
       const data = await getPublicCurrencies();
       setCurrencies(data);
       const globalId = useCurrencyStore.getState().currencyId;
-      const preferred =
-        data.find((c) => c.id === globalId) ||
-        data.find((c) => c.isDefault) ||
-        data[0];
-      setSelectedCurrency(preferred || null);
+      setSelectedCurrency(chooseCurrency(data, globalId));
       setIsLoadingCurrencies(false);
     };
     loadCurrencies();
@@ -677,7 +674,7 @@ export default function CheckoutPage() {
     const other =
       selectedCurrency && selectedCurrency.code !== "CUP"
         ? selectedCurrency
-        : currencies.find((c) => c.code !== "CUP");
+        : currencies.find((c) => c.code === "USD");
     if (!other || !other.exchangeRate) return null;
     const perUnit = cupCurrency.exchangeRate / other.exchangeRate;
     return `1 ${other.code} = ${perUnit.toFixed(2)} ${cupCurrency.code}`;
@@ -754,7 +751,9 @@ export default function CheckoutPage() {
       errors.carnet = "El carnet de identidad es obligatorio";
     else if (!/^\d{11}$/.test(formData.carnet))
       errors.carnet = "El carnet de identidad debe tener 11 dígitos";
-    if (!selectedCurrency) errors.currency = "Selecciona una moneda de pago";
+    if (!selectedCurrency)
+      errors.currency =
+        "No pudimos cargar las monedas de pago. Recarga la página.";
     if (selectedCurrency && !selectedOption?.available)
       errors.payment = `No hay un método de pago disponible en ${selectedCurrency.code}`;
     if (selectedPaymentMethod === "transfer" && !transferAccountId)
@@ -1341,11 +1340,23 @@ export default function CheckoutPage() {
             >
               <div className="space-y-5">
                 <div className="space-y-2">
-                  <Label>Forma de pago</Label>
+                  <Label id="payment-method-label">Forma de pago</Label>
+                  {paymentOptions.length === 0 && (
+                    <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-400">
+                      <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+                      <p>
+                        No hay formas de pago disponibles ahora mismo. Contacta
+                        con la tienda.
+                      </p>
+                    </div>
+                  )}
                   <RadioGroup
+                    aria-labelledby="payment-method-label"
                     value={selectedTileId}
                     onValueChange={handleOptionChange}
-                    className="grid grid-cols-2 gap-2.5 sm:grid-cols-4"
+                    className={`grid grid-cols-2 gap-2.5 sm:grid-cols-4 ${
+                      paymentOptions.length === 0 ? "hidden" : ""
+                    }`}
                   >
                     {paymentOptions.map((option) => {
                       const inputId = `payment-${option.id.replace(":", "-")}`;
@@ -1412,12 +1423,20 @@ export default function CheckoutPage() {
                       );
                     })}
                   </RadioGroup>
+                  {fieldErrors.payment && (
+                    <p className="flex items-center gap-1 text-xs text-destructive">
+                      <AlertCircle className="h-3 w-3" /> {fieldErrors.payment}
+                    </p>
+                  )}
                   {rateHint && (
                     <p className="text-xs text-muted-foreground">{rateHint}</p>
                   )}
                   {selectedCurrency?.code === "CUP" &&
                     saving.savingCup > 0 &&
-                    usdCurrency && (
+                    usdCurrency &&
+                    paymentOptions.some(
+                      (o) => o.available && o.currencyCode === "USD",
+                    ) && (
                       <SavingHint
                         className="mt-1"
                         currencyCode="USD"
@@ -1836,7 +1855,7 @@ export default function CheckoutPage() {
                   className="min-h-[44px] w-full gap-2"
                   size="lg"
                   onClick={() => handleSubmit()}
-                  disabled={isProcessing}
+                  disabled={isProcessing || !selectedOption?.available}
                 >
                   {isProcessing ? (
                     <>
@@ -1880,7 +1899,7 @@ export default function CheckoutPage() {
             className="min-h-[44px] shrink-0 gap-2"
             size="lg"
             onClick={() => handleSubmit()}
-            disabled={isProcessing}
+            disabled={isProcessing || !selectedOption?.available}
           >
             {isProcessing ? (
               <>

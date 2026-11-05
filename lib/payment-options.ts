@@ -91,25 +91,33 @@ export function buildPaymentOptions(input: {
     ? [...input.banks]
         .sort((a, b) => a.name.localeCompare(b.name, "es"))
         .flatMap((bank) => {
-          const usableAccounts = input.accounts.filter(
-            (account) => account.bankId === bank.id && hasCapacity(account),
+          const bankAccounts = input.accounts.filter(
+            (account) => account.bankId === bank.id,
           );
+          const isActiveCurrency = (code: string) =>
+            input.currencies.some((c) => c.code === code);
+          // La moneda del banco manda. Si falta, se usa la primera cuenta
+          // usable, luego una de moneda activa y, por último, la primera.
+          // Así un banco sin moneda pero con el cupo agotado sigue visible
+          // y deshabilitado en vez de desaparecer.
           const currencyCode =
             bank.currency?.trim() ||
-            usableAccounts[0]?.currency ||
+            bankAccounts.find(
+              (a) => hasCapacity(a) && isActiveCurrency(a.currency),
+            )?.currency ||
+            bankAccounts.find((a) => isActiveCurrency(a.currency))?.currency ||
+            bankAccounts[0]?.currency ||
             "";
 
           // Sin moneda no hay tasa con la que cobrar; sin moneda activa
           // tampoco: el tile no se muestra.
-          if (
-            !currencyCode ||
-            !input.currencies.some((c) => c.code === currencyCode)
-          ) {
+          if (!currencyCode || !isActiveCurrency(currencyCode)) {
             return [];
           }
 
-          const accounts = usableAccounts.filter(
-            (account) => account.currency === currencyCode,
+          const accounts = bankAccounts.filter(
+            (account) =>
+              account.currency === currencyCode && hasCapacity(account),
           );
           const available = accounts.length > 0;
 

@@ -153,4 +153,46 @@ describe("buildPaymentOptions", () => {
       "cash:CUP",
     ]);
   });
+
+  it("deshabilita un banco sin moneda cuyas cuentas agotaron el cupo", () => {
+    const options = buildPaymentOptions({
+      ...base,
+      banks: [{ id: "b6", name: "Sin moneda", currency: "" }],
+      accounts: [
+        account({
+          id: "a6",
+          bankId: "b6",
+          transferLimit: 1,
+          transferCount: 1,
+        }),
+      ],
+    });
+    expect(options.find((o) => o.id === "bank:b6")).toMatchObject({
+      currencyCode: "USD",
+      available: false,
+      reason: "No hay cuentas activas en USD.",
+    });
+  });
+
+  it("con moneda vacía usa la primera cuenta de una moneda activa", () => {
+    const options = buildPaymentOptions({
+      ...base,
+      banks: [{ id: "b7", name: "Mixto", currency: "" }],
+      accounts: [
+        account({ id: "eur", bankId: "b7", currency: "EUR" }),
+        account({
+          id: "usd",
+          bankId: "b7",
+          currency: "USD",
+          accountType: "BEP-20",
+        }),
+      ],
+    });
+    expect(options.find((o) => o.id === "bank:b7")).toMatchObject({
+      currencyCode: "USD",
+      available: true,
+      accountIds: ["usd"],
+      subtitle: "BEP-20",
+    });
+  });
 });

@@ -387,10 +387,10 @@ export default function CheckoutPage() {
     }
   };
 
-  const copyAccount = async (num: string) => {
+  const copyToClipboard = async (text: string, label: string) => {
     try {
-      await navigator.clipboard.writeText(num);
-      toast.success("Número de cuenta copiado");
+      await navigator.clipboard.writeText(text);
+      toast.success(`${label} copiado`);
     } catch {
       toast.error("No se pudo copiar, cópialo manualmente");
     }
@@ -941,7 +941,7 @@ export default function CheckoutPage() {
 
         <div className="grid gap-6 lg:grid-cols-[1fr_360px] lg:gap-8">
           {/* Columna izquierda — formulario */}
-          <form onSubmit={handleSubmit} className="space-y-5">
+          <form onSubmit={handleSubmit} className="min-w-0 space-y-5">
             {/* 1. Entrega */}
             <Section
               step={1}
@@ -1487,13 +1487,16 @@ export default function CheckoutPage() {
                               }}
                             >
                               <SelectTrigger
-                                className={`h-10 ${
+                                className={`h-10 min-w-0 ${
                                   fieldErrors.bank
                                     ? "border-destructive focus:ring-destructive"
                                     : ""
                                 }`}
                               >
-                                <SelectValue placeholder="Selecciona la cuenta" />
+                                <SelectValue
+                                  placeholder="Selecciona la cuenta"
+                                  className="truncate"
+                                />
                               </SelectTrigger>
                               <SelectContent>
                                 {selectedBankAccounts.map((a) => (
@@ -1513,58 +1516,81 @@ export default function CheckoutPage() {
                         )}
 
                         {selectedTransferAccount && (
-                              <div className="rounded-lg border bg-background p-3.5 text-sm">
-                                <div className="flex items-center justify-between gap-2">
-                                  <span className="text-muted-foreground">
-                                    Nº de cuenta
-                                  </span>
-                                  <div className="flex items-center gap-2">
-                                    <span className="font-mono text-xs sm:text-sm">
-                                      {selectedTransferAccount.accountNumber}
-                                    </span>
-                                    <Button
-                                      type="button"
-                                      variant="ghost"
-                                      size="sm"
-                                      className="h-7 px-2"
-                                      onClick={() =>
-                                        copyAccount(
-                                          selectedTransferAccount.accountNumber,
-                                        )
-                                      }
-                                    >
-                                      <Copy className="h-3 w-3" />
-                                    </Button>
-                                  </div>
-                                </div>
-                                {selectedTransferAccount.accountType && (
-                                  <div className="mt-1.5 flex justify-between">
-                                    <span className="text-muted-foreground">
-                                      Tipo
-                                    </span>
-                                    <span>
-                                      {selectedTransferAccount.accountType}
-                                    </span>
-                                  </div>
-                                )}
-                                <div className="mt-1.5 flex justify-between">
-                                  <span className="text-muted-foreground">
-                                    Titular
-                                  </span>
-                                  <span>{selectedTransferAccount.owner}</span>
-                                </div>
-                                {selectedTransferAccount.ci && (
-                                  <div className="mt-1.5 flex justify-between">
-                                    <span className="text-muted-foreground">
-                                      CI / RUC
-                                    </span>
-                                    <span className="font-mono text-xs">
-                                      {selectedTransferAccount.ci}
-                                    </span>
-                                  </div>
-                                )}
+                          <div className="min-w-0 rounded-lg border bg-background p-3.5 text-sm">
+                            <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between sm:gap-2">
+                              <span className="shrink-0 text-muted-foreground">
+                                Nº de cuenta
+                              </span>
+                              <div className="flex min-w-0 items-start gap-1.5 sm:justify-end">
+                                <span className="min-w-0 break-all font-mono text-xs leading-5 sm:text-right sm:text-sm">
+                                  {selectedTransferAccount.accountNumber}
+                                </span>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-11 w-11 shrink-0 px-0 sm:h-7 sm:w-auto sm:px-2"
+                                  aria-label="Copiar número de cuenta"
+                                  title="Copiar número de cuenta"
+                                  onClick={() =>
+                                    copyToClipboard(
+                                      selectedTransferAccount.accountNumber,
+                                      "Número de cuenta",
+                                    )
+                                  }
+                                >
+                                  <Copy className="h-4 w-4 sm:h-3 sm:w-3" />
+                                </Button>
+                              </div>
+                            </div>
+                            {selectedTransferAccount.accountType && (
+                              <div className="mt-1.5 flex items-start justify-between gap-3">
+                                <span className="shrink-0 text-muted-foreground">
+                                  Tipo
+                                </span>
+                                <span className="min-w-0 break-words text-right">
+                                  {selectedTransferAccount.accountType}
+                                </span>
                               </div>
                             )}
+                            <div className="mt-1.5">
+                              <span className="text-muted-foreground">
+                                Titular
+                              </span>
+                              <div className="mt-0.5 flex min-w-0 items-start justify-between gap-2">
+                                <span className="min-w-0 break-words">
+                                  {selectedTransferAccount.owner}
+                                </span>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-11 w-11 shrink-0 px-0 sm:h-7 sm:w-auto sm:px-2"
+                                  aria-label="Copiar nombre del titular"
+                                  title="Copiar nombre del titular"
+                                  onClick={() =>
+                                    copyToClipboard(
+                                      selectedTransferAccount.owner,
+                                      "Nombre del titular",
+                                    )
+                                  }
+                                >
+                                  <Copy className="h-4 w-4 sm:h-3 sm:w-3" />
+                                </Button>
+                              </div>
+                            </div>
+                            {selectedTransferAccount.ci && (
+                              <div className="mt-1.5 flex items-start justify-between gap-3">
+                                <span className="shrink-0 text-muted-foreground">
+                                  CI / RUC
+                                </span>
+                                <span className="min-w-0 break-all text-right font-mono text-xs">
+                                  {selectedTransferAccount.ci}
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                        )}
 
                             <div className="rounded-lg border border-primary/20 bg-primary/5 p-3">
                               <p className="text-xs text-muted-foreground">

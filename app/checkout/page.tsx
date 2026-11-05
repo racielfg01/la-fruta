@@ -24,6 +24,8 @@ import { useSettingsStore } from "@/lib/settings-store";
 import {
   resolveVisiblePaymentMethodIds,
   clampSelectedPaymentMethod,
+  isCashSupported,
+  usableAccountsForCurrency,
 } from "@/lib/payment-methods";
 import { useAuthStore } from "@/lib/auth-context";
 import { getPublicDeliveryZones } from "@/app/actions/public";
@@ -277,6 +279,29 @@ export default function CheckoutPage() {
   const [uploading, setUploading] = useState(false);
   const [reference, setReference] = useState("");
 
+  // Disponibilidad de pago según la moneda elegida y las cuentas activas en
+  // esa moneda. El efectivo solo existe para CUP y USD (billetes exactos).
+  const cashAvailable = isCashSupported(selectedCurrency?.code);
+  const transferAccounts = usableAccountsForCurrency(
+    transferData.accounts,
+    selectedCurrency?.code,
+  );
+  const transferAvailable = transferAccounts.length > 0;
+  const availableMethodIds = visibleMethodIds.filter((id) =>
+    id === "cash" ? cashAvailable : transferAvailable,
+  );
+  const availableMethodKey = availableMethodIds.join(",");
+
+  // Si el método elegido deja de estar disponible al cambiar de moneda,
+  // se pasa al único disponible. Si no queda ninguno, se deselecciona
+  // (la confirmación queda bloqueada y ambos se ven deshabilitados).
+  useEffect(() => {
+    const ids = availableMethodKey ? availableMethodKey.split(",") : [];
+    setSelectedPaymentMethod((prev) =>
+      ids.includes(prev) ? prev : (ids[0] ?? ""),
+    );
+  }, [availableMethodKey]);
+
   // Validación
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [touchedFields, setTouchedFields] = useState<Record<string, boolean>>(
@@ -333,21 +358,36 @@ export default function CheckoutPage() {
     getPublicTransferData().then(setTransferData).catch(() => {});
   }, []);
 
-  const accountsForBank = transferData.accounts.filter((a) => {
-    const full = a.transferLimit > 0 && a.transferCount >= a.transferLimit;
-    return !full && a.bank === transferBank;
-  });
+  const accountsForBank = transferAccounts.filter(
+    (a) => a.bank === transferBank,
+  );
+  // Solo bancos con al menos una cuenta usable en la moneda del pedido.
+  const transferBankNames = Array.from(
+    new Set(transferAccounts.map((a) => a.bank)),
+  );
   const selectedTransferAccount = transferData.accounts.find(
     (a) => a.id === transferAccountId,
   );
 
+  const handleCurrencyChange = (id: string) => {
+    const next = currencies.find((c) => c.id === id) || null;
+    setSelectedCurrency(next);
+    useCurrencyStore.getState().setCurrency(id);
+
+    // La cuenta elegida solo se conserva si sigue sirviendo en la nueva moneda.
+    const usable = usableAccountsForCurrency(transferData.accounts, next?.code);
+    setTransferBank((prev) =>
+      usable.some((a) => a.bank === prev) ? prev : "",
+    );
+    setTransferAccountId((prev) =>
+      usable.some((a) => a.id === prev) ? prev : "",
+    );
+  };
+
   const handleBankChange = (bank: string) => {
     setTransferBank(bank);
     setTransferAccountId("");
-    const pool = transferData.accounts.filter((a) => {
-      const full = a.transferLimit > 0 && a.transferCount >= a.transferLimit;
-      return !full && a.bank === bank;
-    });
+    const pool = transferAccounts.filter((a) => a.bank === bank);
     const preferred =
       pool.find((a) => a.currency === selectedCurrency?.code) || pool[0];
     if (preferred) setTransferAccountId(preferred.id);
@@ -667,17 +707,16 @@ export default function CheckoutPage() {
     );
   };
 
-  // Tasa de cambio bien orientada: "1 USD = 610 CUP" o "1 CUP = 0.0016 USD".
-  const rateLine = useMemo(() => {
-    if (!selectedCurrency || !cupCurrency) return null;
-    if (selectedCurrency.code === "CUP") {
-      const other = currencies.find((c) => c.code !== "CUP");
-      if (!other) return null;
-      const perCup = (1 / cupCurrency.exchangeRate) * other.exchangeRate;
-      return `1 ${cupCurrency.code} = ${perCup.toFixed(4)} ${other.code}`;
-    }
-    const perUnit = cupCurrency.exchangeRate / selectedCurrency.exchangeRate;
-    return `1 ${selectedCurrency.code} = ${perUnit.toFixed(4)} ${cupCurrency.code}`;
+  // Tasa del día, siempre en CUP: "1 USD = 780.00 CUP".
+  const rateHint = useMemo(() => {
+    if (!cupCurrency) return null;
+    const other =
+      selectedCurrency && selectedCurrency.code !== "CUP"
+        ? selectedCurrency
+        : currencies.find((c) => c.code !== "CUP");
+    if (!other || !other.exchangeRate) return null;
+    const perUnit = cupCurrency.exchangeRate / other.exchangeRate;
+    return `1 ${other.code} = ${perUnit.toFixed(2)} ${cupCurrency.code}`;
   }, [selectedCurrency, cupCurrency, currencies]);
 
   // Importe en una moneda concreta (no la seleccionada).
@@ -697,8 +736,7 @@ export default function CheckoutPage() {
 
   const switchToUsd = () => {
     if (!usdCurrency) return;
-    setSelectedCurrency(usdCurrency);
-    useCurrencyStore.getState().setCurrency(usdCurrency.id);
+    handleCurrencyChange(usdCurrency.id);
   };
 
   const subtotalConverted = convertAmount(subtotalBase);
@@ -751,6 +789,11 @@ export default function CheckoutPage() {
     else if (!/^\d{11}$/.test(formData.carnet))
       errors.carnet = "El carnet de identidad debe tener 11 dígitos";
     if (!selectedCurrency) errors.currency = "Selecciona una moneda de pago";
+    if (
+      selectedCurrency &&
+      !availableMethodIds.includes(selectedPaymentMethod)
+    )
+      errors.payment = `No hay un método de pago disponible en ${selectedCurrency.code}`;
     if (selectedPaymentMethod === "transfer" && !transferAccountId)
       errors.bank = "Selecciona la cuenta a la que harás la transferencia";
     if (selectedPaymentMethod === "transfer" && !receiptUrl)
@@ -923,10 +966,7 @@ export default function CheckoutPage() {
     (m) => m.id === selectedPaymentMethod,
   );
 
-  const availableTransferAccounts = transferData.accounts.filter((a) => {
-    const full = a.transferLimit > 0 && a.transferCount >= a.transferLimit;
-    return !full;
-  });
+  const availableTransferAccounts = transferAccounts;
 
   return (
     <div className="min-h-screen bg-background">
@@ -1345,30 +1385,42 @@ export default function CheckoutPage() {
               <div className="space-y-5">
                 <div className="space-y-2">
                   <Label>Moneda de pago</Label>
-                  <Select
+                  <RadioGroup
                     value={selectedCurrency?.id}
-                    onValueChange={(val) => {
-                      setSelectedCurrency(
-                        currencies.find((c) => c.id === val) || null,
-                      );
-                      useCurrencyStore.getState().setCurrency(val);
-                    }}
+                    onValueChange={handleCurrencyChange}
+                    className="grid grid-cols-2 gap-2.5 sm:max-w-md"
                   >
-                    <SelectTrigger className="h-11 w-full sm:w-64">
-                      <SelectValue placeholder="Seleccionar moneda" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {currencies.map((c) => (
-                        <SelectItem key={c.id} value={c.id}>
-                          {c.symbol} {c.code}
-                           {/* — {c.name} */}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  {/* {rateLine && (
-                    <p className="text-xs text-muted-foreground">{rateLine}</p>
-                  )} */}
+                    {currencies.map((c) => {
+                      const isSelected = selectedCurrency?.id === c.id;
+                      return (
+                        <label
+                          key={c.id}
+                          htmlFor={`currency-${c.id}`}
+                          className={`flex cursor-pointer items-center gap-2.5 rounded-lg border p-3 transition-colors focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 ${
+                            isSelected
+                              ? "border-primary bg-primary/5 ring-1 ring-primary/30"
+                              : "border-border hover:border-primary/40 hover:bg-muted/30"
+                          }`}
+                        >
+                          <RadioGroupItem
+                            id={`currency-${c.id}`}
+                            value={c.id}
+                          />
+                          <span className="flex min-w-0 flex-col">
+                            <span className="text-sm font-semibold leading-tight">
+                              {c.code}
+                            </span>
+                            <span className="truncate text-xs text-muted-foreground">
+                              {c.name}
+                            </span>
+                          </span>
+                        </label>
+                      );
+                    })}
+                  </RadioGroup>
+                  {rateHint && (
+                    <p className="text-xs text-muted-foreground">{rateHint}</p>
+                  )}
                   {selectedCurrency?.code === "CUP" &&
                     saving.savingCup > 0 &&
                     usdCurrency && (
@@ -1394,8 +1446,17 @@ export default function CheckoutPage() {
                   >
                     {visiblePaymentMethods.map((method) => {
                       const Icon = method.icon;
-                      const isSelected = selectedPaymentMethod === method.id;
-                      const isDisabled = method.disabled === true;
+                      const unavailableReason =
+                        method.id === "cash"
+                          ? "Solo disponible en CUP y USD."
+                          : `No hay cuentas activas en ${selectedCurrency?.code ?? "esta moneda"}.`;
+                      const isDisabled =
+                        method.disabled === true ||
+                        (method.id === "cash"
+                          ? !cashAvailable
+                          : !transferAvailable);
+                      const isSelected =
+                        selectedPaymentMethod === method.id && !isDisabled;
                       return (
                         <label
                           key={method.id}
@@ -1406,7 +1467,7 @@ export default function CheckoutPage() {
                               : "border-border hover:border-primary/40 hover:bg-muted/30"
                           } ${
                             isDisabled
-                              ? "cursor-not-allowed opacity-60 hover:border-border hover:bg-transparent"
+                              ? "cursor-not-allowed bg-muted/20 hover:border-border hover:bg-muted/20"
                               : ""
                           }`}
                         >
@@ -1418,14 +1479,30 @@ export default function CheckoutPage() {
                           />
                           <div className="flex-1">
                             <div className="flex items-center gap-2">
-                              <Icon className="h-4 w-4 text-primary" />
-                              <span className="text-sm font-medium">
+                              <Icon
+                                className={`h-4 w-4 ${
+                                  isDisabled
+                                    ? "text-muted-foreground"
+                                    : "text-primary"
+                                }`}
+                              />
+                              <span
+                                className={`text-sm font-medium ${
+                                  isDisabled ? "text-muted-foreground" : ""
+                                }`}
+                              >
                                 {method.name}
                               </span>
                             </div>
                             <p className="mt-0.5 text-xs text-muted-foreground">
                               {method.description}
                             </p>
+                            {isDisabled && (
+                              <p className="mt-1 flex items-start gap-1 text-xs text-amber-700 dark:text-amber-500">
+                                <AlertCircle className="mt-0.5 h-3 w-3 shrink-0" />
+                                {unavailableReason}
+                              </p>
+                            )}
                           </div>
                         </label>
                       );
@@ -1478,9 +1555,9 @@ export default function CheckoutPage() {
                                     <SelectValue placeholder="Selecciona un banco" />
                                   </SelectTrigger>
                                   <SelectContent>
-                                    {transferData.banks.map((b) => (
-                                      <SelectItem key={b.id} value={b.name}>
-                                        {b.name}
+                                    {transferBankNames.map((name) => (
+                                      <SelectItem key={name} value={name}>
+                                        {name}
                                       </SelectItem>
                                     ))}
                                   </SelectContent>

@@ -116,6 +116,8 @@ function mapOrder(o: any) {
     bankName: o.bank_name || '',
     accountNumber: o.account_number || '',
     transferAmount: Number(o.transfer_amount) || 0,
+    cashAmount: Number(o.cash_amount) || 0,
+    exchangeRateUsed: Number(o.exchange_rate_used) || 0,
   };
 }
 

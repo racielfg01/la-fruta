@@ -21,7 +21,7 @@ function OrderConfirmationContent() {
     paymentMethod === "transfer"
       ? "Total transferido"
       : paymentMethod === "cash"
-        ? "Total del pedido"
+        ? "Total en efectivo"
         : "Total";
 
   const steps = [

@@ -5,6 +5,7 @@ import { getAdminPB, getAllRecords, sanitize } from "@/lib/pocketbase";
 import { parseLocations, matchLocationIndex, StoredLocation } from "@/lib/order-stock";
 import { orderItemPrice } from "@/lib/price-margin";
 import { orderTotalCup } from "@/lib/order-total";
+import { roundCashUp } from "@/lib/cash-rounding";
 import { orderDates } from "@/lib/order-dates";
 import { notifyNewOrder } from "@/lib/push/notify";
 import { after } from "next/server";
@@ -14,6 +15,39 @@ export interface OrderActionResult {
   success: boolean;
   orderId?: string;
   error?: string;
+  /** Solo en efectivo: importe exacto a cobrar con billetes (ya redondeado). */
+  cashAmount?: number;
+}
+
+/**
+ * Importe a cobrar en efectivo, redondeado hacia arriba a la unidad pagable
+ * con billetes, y la tasa aplicada (CUP por 1 unidad de la moneda del pedido).
+ */
+async function cashPaymentAmount(
+  pb: any,
+  currencyCode: string,
+  totalCup: number
+): Promise<{ amount: number; rate: number }> {
+  if (currencyCode === 'CUP') {
+    return { amount: roundCashUp(totalCup, 'CUP'), rate: 1 };
+  }
+
+  const rows = await getAllRecords<any>(pb, 'currencies', {
+    filter: `code = "${sanitize(currencyCode)}" || code = "CUP"`,
+  });
+  const cupRate = Number(rows.find((c) => c.code === 'CUP')?.exchange_rate) || 0;
+  const targetRate =
+    Number(rows.find((c) => c.code === currencyCode)?.exchange_rate) || 0;
+
+  if (!cupRate || !targetRate) {
+    return { amount: roundCashUp(totalCup, currencyCode), rate: 1 };
+  }
+
+  const converted = Math.round((totalCup / cupRate) * targetRate * 100) / 100;
+  return {
+    amount: roundCashUp(converted, currencyCode),
+    rate: Math.round((cupRate / targetRate) * 10000) / 10000,
+  };
 }
 
 // ponytail: mutex por proceso que serializa validación→decremento de stock al
@@ -193,6 +227,12 @@ export async function createOrderAction(
       );
       const total = orderTotalCup(subtotal, deliveryFee, operationalCost);
 
+      // En efectivo se cobra redondeado a billetes; en transferencia, el total exacto.
+      const cash =
+        orderData.paymentMethod === 'cash'
+          ? await cashPaymentAmount(pb, orderData.currencyCode, total)
+          : null;
+
       const order = await pb.collection('orders').create({
         // id único: [a-z0-9] sin guiones (PB orders.id exige ^[a-z0-9]+$)
         id: randomUUID().replace(/-/g, ''),
@@ -220,6 +260,8 @@ export async function createOrderAction(
         receipt: orderData.receipt || '',
         reference: orderData.reference || '',
         transfer_amount: orderData.transferAmount || 0,
+        cash_amount: cash?.amount ?? 0,
+        exchange_rate_used: cash?.rate ?? 0,
       });
 
       const orderId = order.id;
@@ -285,7 +327,7 @@ export async function createOrderAction(
         })
       );
 
-      return { success: true, orderId };
+      return { success: true, orderId, cashAmount: cash?.amount ?? 0 };
     });
   } catch (error: any) {
     const info = {

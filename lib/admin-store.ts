@@ -99,6 +99,8 @@ export interface Order {
   bankName?: string;
   accountNumber?: string;
   transferAmount?: number;
+  cashAmount?: number;
+  exchangeRateUsed?: number;
   createdAt: string;
   updatedAt: string;
 }

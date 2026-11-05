@@ -68,6 +68,7 @@ import {
 import { getPublicTransferData } from "@/app/actions/public";
 import { isValidPhone } from "@/lib/contact-validation";
 import { useCurrencyStore } from "@/lib/currency-store";
+import { roundCashUp } from "@/lib/cash-rounding";
 import { effectiveMargin } from "@/lib/price-margin";
 import { cupSavingForItems } from "@/lib/usd-saving";
 import { planSaveAddress } from "@/lib/saved-addresses";
@@ -705,6 +706,13 @@ export default function CheckoutPage() {
   const operationalCostConverted = convertAmount(operationalCostBase);
   const totalConverted = convertAmount(totalBase);
 
+  // En efectivo el importe se redondea hacia arriba para pagar con billetes
+  // exactos: USD a dólar entero, CUP a centena (ver lib/cash-rounding.ts).
+  const cashAmount = selectedCurrency
+    ? roundCashUp(totalConverted, selectedCurrency.code)
+    : totalConverted;
+  const cashRounding = Math.round((cashAmount - totalConverted) * 100) / 100;
+
   // Ubicación global
   useEffect(() => {
     if (selectedZone && address) {
@@ -822,8 +830,14 @@ export default function CheckoutPage() {
       const result = await createOrderAction(orderData, token!);
       if (result.success) {
         clearCart();
+        // El importe en efectivo lo manda el servidor (ya redondeado con la
+        // tasa vigente); en transferencia se muestra el total exacto.
+        const confirmationAmount =
+          selectedPaymentMethod === "cash" && result.cashAmount
+            ? result.cashAmount
+            : totalConverted;
         router.push(
-          `/order-confirmation?orderId=${result.orderId}&paymentMethod=${selectedPaymentMethod}&currency=${selectedCurrency.code}&amount=${totalConverted}`,
+          `/order-confirmation?orderId=${result.orderId}&paymentMethod=${selectedPaymentMethod}&currency=${selectedCurrency.code}&amount=${confirmationAmount}`,
         );
       } else {
         toast.error(result.error || "Error al crear la orden.");
@@ -1430,11 +1444,18 @@ export default function CheckoutPage() {
                         </p>
                         <p className="mt-1 text-2xl font-bold text-primary">
                           {selectedCurrency?.symbol}{" "}
-                          {totalConverted.toFixed(2)}{" "}
+                          {cashAmount.toFixed(2)}{" "}
                           <span className="text-base font-medium">
                             {selectedCurrency?.code}
                           </span>
                         </p>
+                        {cashRounding > 0 && (
+                          <p className="mt-1 text-xs text-muted-foreground">
+                            Incluye {selectedCurrency?.symbol}
+                            {cashRounding.toFixed(2)} de redondeo para pagar
+                            con billetes exactos.
+                          </p>
+                        )}
                       </div>
                     )}
 
@@ -1817,6 +1838,18 @@ export default function CheckoutPage() {
                     </span>
                   </span>
                 </div>
+
+                {selectedMethod?.type === "cash" && cashRounding > 0 && (
+                  <div className="flex items-baseline justify-between text-xs">
+                    <span className="text-muted-foreground">
+                      Total en efectivo (billetes exactos)
+                    </span>
+                    <span className="font-semibold">
+                      {selectedCurrency?.symbol}
+                      {cashAmount.toFixed(2)} {selectedCurrency?.code}
+                    </span>
+                  </div>
+                )}
 
                 {cupCurrency && selectedCurrency?.code !== "CUP" && (
                   <div className="flex justify-between text-xs text-muted-foreground">

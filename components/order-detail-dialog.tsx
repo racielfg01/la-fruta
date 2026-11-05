@@ -671,6 +671,30 @@ export function OrderDetailDialog({
                     </div>
                   )}
 
+                  {order.paymentMethod === "cash" && !!order.cashAmount && (
+                    <div className="space-y-2.5 rounded-lg border bg-muted/30 p-3">
+                      <p className="text-xs font-medium text-muted-foreground">
+                        Cobro en efectivo
+                      </p>
+                      <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1.5 text-sm">
+                        <DetailRow
+                          label="Monto"
+                          value={`${order.cashAmount.toFixed(2)} ${order.currencyCode}`}
+                        />
+                        {order.currencyCode !== "CUP" &&
+                          !!order.exchangeRateUsed && (
+                            <DetailRow
+                              label="Tasa"
+                              value={`${order.exchangeRateUsed} CUP / ${order.currencyCode}`}
+                            />
+                          )}
+                      </dl>
+                      <p className="text-xs text-muted-foreground">
+                        Redondeado a billetes exactos al crear el pedido.
+                      </p>
+                    </div>
+                  )}
+
                   {isTransfer && (
                     <div className="space-y-2.5 rounded-lg border bg-muted/30 p-3">
                       <p className="text-xs font-medium text-muted-foreground">

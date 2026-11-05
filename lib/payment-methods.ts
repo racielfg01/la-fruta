@@ -49,3 +49,35 @@ export function usableAccountsForCurrency<T extends TransferAccountLike>(
       !(a.transferLimit > 0 && a.transferCount >= a.transferLimit)
   );
 }
+
+export const TRANSFER_ACCOUNT_UNAVAILABLE =
+  "La cuenta de pago ya no está disponible. Intenta con otra.";
+
+interface TransferAccountRecord {
+  active?: boolean;
+  currency?: string;
+  transfer_limit?: number;
+  transfer_count?: number;
+}
+
+/**
+ * Valida la cuenta de transferencia en el servidor antes de crear el pedido.
+ * El cliente ya la filtra, pero entre la carga y el envío puede desactivarse,
+ * cambiar de moneda o alcanzar su límite.
+ */
+export function validateTransferAccount(input: {
+  account: TransferAccountRecord | null;
+  bank: { active?: boolean } | null;
+  currencyCode: string;
+}): string | null {
+  const { account, bank, currencyCode } = input;
+  if (!account || account.active === false) return TRANSFER_ACCOUNT_UNAVAILABLE;
+  if (!bank || bank.active === false) return TRANSFER_ACCOUNT_UNAVAILABLE;
+  if ((account.currency || "CUP") !== currencyCode) {
+    return TRANSFER_ACCOUNT_UNAVAILABLE;
+  }
+  const limit = Number(account.transfer_limit) || 0;
+  const count = Number(account.transfer_count) || 0;
+  if (limit > 0 && count >= limit) return TRANSFER_ACCOUNT_UNAVAILABLE;
+  return null;
+}

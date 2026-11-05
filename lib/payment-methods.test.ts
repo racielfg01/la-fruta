@@ -4,6 +4,8 @@ import {
   clampSelectedPaymentMethod,
   isCashSupported,
   usableAccountsForCurrency,
+  validateTransferAccount,
+  TRANSFER_ACCOUNT_UNAVAILABLE,
 } from "./payment-methods";
 
 describe("resolveVisiblePaymentMethodIds", () => {
@@ -72,5 +74,63 @@ describe("usableAccountsForCurrency", () => {
 
   it("sin moneda elegida no devuelve ninguna", () => {
     expect(usableAccountsForCurrency([account("CUP")], undefined)).toEqual([]);
+  });
+});
+
+describe("validateTransferAccount", () => {
+  const record = (over: Record<string, unknown> = {}) => ({
+    active: true,
+    currency: "USD",
+    transfer_limit: 0,
+    transfer_count: 0,
+    ...over,
+  });
+  const bank = { active: true };
+  const valid = { account: record(), bank, currencyCode: "USD" };
+
+  it("acepta una cuenta activa, del banco activo, de la moneda y con cupo", () => {
+    expect(validateTransferAccount(valid)).toBeNull();
+  });
+
+  it("rechaza cuenta inexistente o inactiva", () => {
+    expect(validateTransferAccount({ ...valid, account: null })).toBe(
+      TRANSFER_ACCOUNT_UNAVAILABLE,
+    );
+    expect(
+      validateTransferAccount({ ...valid, account: record({ active: false }) }),
+    ).toBe(TRANSFER_ACCOUNT_UNAVAILABLE);
+  });
+
+  it("rechaza banco inexistente o inactivo", () => {
+    expect(validateTransferAccount({ ...valid, bank: null })).toBe(
+      TRANSFER_ACCOUNT_UNAVAILABLE,
+    );
+    expect(validateTransferAccount({ ...valid, bank: { active: false } })).toBe(
+      TRANSFER_ACCOUNT_UNAVAILABLE,
+    );
+  });
+
+  it("rechaza otra moneda", () => {
+    expect(validateTransferAccount({ ...valid, currencyCode: "CUP" })).toBe(
+      TRANSFER_ACCOUNT_UNAVAILABLE,
+    );
+  });
+
+  it("rechaza el límite alcanzado", () => {
+    expect(
+      validateTransferAccount({
+        ...valid,
+        account: record({ transfer_limit: 2, transfer_count: 2 }),
+      }),
+    ).toBe(TRANSFER_ACCOUNT_UNAVAILABLE);
+  });
+
+  it("acepta límite 0 (sin tope)", () => {
+    expect(
+      validateTransferAccount({
+        ...valid,
+        account: record({ transfer_limit: 0, transfer_count: 99 }),
+      }),
+    ).toBeNull();
   });
 });

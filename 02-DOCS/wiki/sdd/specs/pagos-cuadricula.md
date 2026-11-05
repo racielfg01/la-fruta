@@ -11,8 +11,7 @@ status: approved
 
 # Spec — Cuadrícula de opciones de pago
 
-> Slug: `pagos-cuadricula` · Status: draft · Created: 2026-11-05
-> Pendiente: aprobación del usuario.
+> Slug: `pagos-cuadricula` · Status: approved · Created: 2026-11-05
 
 ## Problem & why
 

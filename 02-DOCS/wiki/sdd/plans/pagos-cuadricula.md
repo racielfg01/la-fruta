@@ -145,7 +145,7 @@ Reglas de `buildPaymentOptions`:
 - Consumes: `resolveVisiblePaymentMethodIds`, `isCashSupported` de `lib/payment-methods.ts`.
 - Produces: `buildPaymentOptions`, `PaymentOption`, `OptionCurrency`, `OptionBank`, `OptionAccount` para Tasks 4.
 
-- [ ] **Step 1: Escribir los tests que fallan**
+- [x] **Step 1: Escribir los tests que fallan**
 
 Casos, con datos `USD`/`CUP`/`EUR`, bancos `Zelle` (`b1`, USD) y `USDT` (`b2`, USD):
 
@@ -159,21 +159,21 @@ Casos, con datos `USD`/`CUP`/`EUR`, bancos `Zelle` (`b1`, USD) y `USDT` (`b2`, U
 8. Banco sin moneda y sin cuentas: no genera tile.
 9. Con EUR activo no hay tile de efectivo EUR.
 
-- [ ] **Step 2: Correr y ver el fallo**
+- [x] **Step 2: Correr y ver el fallo**
 
 Run: `npx vitest run lib/payment-options.test.ts`
 Expected: FAIL por módulo `./payment-options` inexistente.
 
-- [ ] **Step 3: Implementar `buildPaymentOptions` en `lib/payment-options.ts`**
+- [x] **Step 3: Implementar `buildPaymentOptions` en `lib/payment-options.ts`**
 
 Seguir las reglas de la sección 2. Reutilizar `isCashSupported` y `resolveVisiblePaymentMethodIds`; no duplicar la lista de monedas de efectivo.
 
-- [ ] **Step 4: Correr y ver el verde**
+- [x] **Step 4: Correr y ver el verde**
 
 Run: `npx vitest run lib/payment-options.test.ts`
 Expected: PASS (9 tests).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add lib/payment-options.ts lib/payment-options.test.ts
@@ -189,7 +189,7 @@ git commit -m "feat(checkout): opciones de pago derivadas de monedas y bancos"
 **Interfaces:**
 - Produces: `TRANSFER_ACCOUNT_UNAVAILABLE` y `validateTransferAccount` para Task 5.
 
-- [ ] **Step 1: Agregar los tests que fallan**
+- [x] **Step 1: Agregar los tests que fallan**
 
 ```ts
 describe("validateTransferAccount", () => {
@@ -222,21 +222,21 @@ describe("validateTransferAccount", () => {
 });
 ```
 
-- [ ] **Step 2: Correr y ver el fallo**
+- [x] **Step 2: Correr y ver el fallo**
 
 Run: `npx vitest run lib/payment-methods.test.ts`
 Expected: FAIL por `validateTransferAccount` no exportada.
 
-- [ ] **Step 3: Implementar la función**
+- [x] **Step 3: Implementar la función**
 
 En `lib/payment-methods.ts`, exportar el mensaje y la función con las reglas: cuenta nula/inactiva, banco nulo/inactivo, `(account.currency || "CUP") !== currencyCode`, y límite `> 0` con `count >= limit`. Devolver `null` si todo pasa.
 
-- [ ] **Step 4: Correr y ver el verde**
+- [x] **Step 4: Correr y ver el verde**
 
 Run: `npx vitest run lib/payment-methods.test.ts`
 Expected: PASS (16 tests: 10 actuales + 6 nuevos).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add lib/payment-methods.ts lib/payment-methods.test.ts
@@ -251,16 +251,16 @@ git commit -m "feat(pagos): validar cuenta de transferencia"
 **Interfaces:**
 - Produces: `getPublicTransferData()` con `banks: { id, name, logo, currency }[]` y `accounts: { id, bankId, bank, accountNumber, accountType, owner, ci, currency, transferLimit, transferCount }[]`.
 
-- [ ] **Step 1: Extender el mapeo**
+- [x] **Step 1: Extender el mapeo**
 
 En `getPublicTransferData`: mapear `banks` con `{ id, name, logo: b.logo || "", currency: b.currency || "" }`; agregar `bankId: a.bank` a cada cuenta. Mantener el filtro actual (cuenta activa y banco activo) y el orden.
 
-- [ ] **Step 2: Verificar tipos**
+- [x] **Step 2: Verificar tipos**
 
 Run: `npx tsc --noEmit`
 Expected: exit 0.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add app/actions/public.ts
@@ -276,11 +276,11 @@ git commit -m "feat(pagos): exponer logo y moneda del banco en datos públicos"
 - Consumes: `buildPaymentOptions`, `PaymentOption` (Task 1); `getPublicTransferData` con `bankId` (Task 3).
 - Produces: estado de selección `selectedTileId`, `applyOption`, `handleOptionChange` y el pedido con la cuenta elegida.
 
-- [ ] **Step 1: Tipos e imports**
+- [x] **Step 1: Tipos e imports**
 
 Agregar `bankId: string` a `TransferAccount`. Importar `buildPaymentOptions` y `PaymentOption`. Quitar `clampSelectedPaymentMethod` y los helpers que queden sin uso (`isCashSupported`, `usableAccountsForCurrency`, `resolveVisiblePaymentMethodIds` si ya no se usan en la página). Borrar `PaymentMethodConfig`, `paymentMethodsConfig`, `visibleMethodIds` y `visiblePaymentMethods`.
 
-- [ ] **Step 2: Estado y derivados**
+- [x] **Step 2: Estado y derivados**
 
 - Reemplazar `transferBank` por `selectedBankId` (`useState("")`).
 - Borrar `handleCurrencyChange`, `handleBankChange`, `accountsForBank`, `transferBankNames`, `availableTransferAccounts`, `availableMethodIds` y `availableMethodKey`.
@@ -289,7 +289,7 @@ Agregar `bankId: string` a `TransferAccount`. Importar `buildPaymentOptions` y `
 - `selectedOption = paymentOptions.find(o => o.id === selectedTileId)`.
 - `selectedBankAccounts = selectedOption?.accountIds.map(id => transferData.accounts.find(a => a.id === id)).filter(Boolean) ?? []`.
 
-- [ ] **Step 3: Selección y preselección**
+- [x] **Step 3: Selección y preselección**
 
 `applyOption(option)`: buscar la moneda activa por `option.currencyCode`; si no existe, salir. Escribir `setSelectedCurrency` y `useCurrencyStore.getState().setCurrency(currency.id)`. Si es efectivo: método `cash`, banco y cuenta vacíos. Si es banco: método `transfer`, `selectedBankId = option.bankId`, `transferAccountId = option.accountIds[0] ?? ""`. Limpiar el error `bank`.
 
@@ -303,7 +303,7 @@ Preselección con `useEffect` sobre una clave estable `paymentOptions.map(o => \
 
 `switchToUsd`: elegir la primera opción disponible con `currencyCode === "USD"` (las opciones ya vienen con efectivo primero).
 
-- [ ] **Step 4: Cuadrícula**
+- [x] **Step 4: Cuadrícula**
 
 Sustituir el bloque de «Moneda de pago» y el `RadioGroup` de métodos por uno solo:
 
@@ -314,24 +314,24 @@ Sustituir el bloque de «Moneda de pago» y el `RadioGroup` de métodos por uno 
 - Debajo, la tasa (`rateHint`) y el `SavingHint` con `onAction={switchToUsd}` como hoy.
 - Mantener sin cambios el bloque «Precio en otras monedas» (informativo).
 
-- [ ] **Step 5: Paneles de pago**
+- [x] **Step 5: Paneles de pago**
 
 - Efectivo: conservar el bloque actual del total redondeado y la línea de redondeo.
 - Banco: mostrar el nombre del banco; si `selectedBankAccounts.length > 1`, un `Select` de cuenta con `transferAccountId`; si hay una, mostrar sus datos directamente (número con copiar, tipo, titular, CI). Mantener monto a transferir, comprobante y referencia. Eliminar el selector de banco.
 - Si no hay opción elegida, no renderizar panel; la confirmación queda bloqueada por validación.
 
-- [ ] **Step 6: Validación y envío**
+- [x] **Step 6: Validación y envío**
 
 - Reemplazar el chequeo de `availableMethodIds` por: si `selectedCurrency` existe y no hay `selectedOption?.available`, `errors.payment = \`No hay un método de pago disponible en ${selectedCurrency.code}\``.
 - Mantener las validaciones de `transferAccountId` y `receiptUrl` cuando el método sea `transfer`.
 - En el `orderData`, `bankName` sigue saliendo de `selectedTransferAccount?.bank`; `bankAccountId` de `transferAccountId`; `currencyCode` de `selectedCurrency.code`.
 
-- [ ] **Step 7: Verificar**
+- [x] **Step 7: Verificar**
 
 Run: `npx tsc --noEmit`, `npx vitest run`, `npm run build`, y el detector de impeccable sobre `app/checkout/page.tsx`.
 Expected: tsc 0, tests verdes, build correcto, detector `[]`.
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add app/checkout/page.tsx
@@ -344,7 +344,7 @@ git commit -m "feat(checkout): cuadrícula de monedas y bancos como opciones de 
 - Modify: `app/actions/orders.ts:130-160`
 - Consumes: `validateTransferAccount` (Task 2)
 
-- [ ] **Step 1: Insertar la validación antes de crear el pedido**
+- [x] **Step 1: Insertar la validación antes de crear el pedido**
 
 Dentro de `withOrderLock`, después de validar la zona y antes del stock:
 
@@ -365,12 +365,12 @@ if (orderData.paymentMethod === "transfer") {
 }
 ```
 
-- [ ] **Step 2: Verificar**
+- [x] **Step 2: Verificar**
 
 Run: `npx tsc --noEmit`, `npx vitest run`, `npm run build`.
 Expected: todo en verde.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add app/actions/orders.ts
@@ -383,15 +383,15 @@ git commit -m "fix(pagos): validar cuenta de transferencia al crear el pedido"
 - Modify: `app/admin/configuracion/tabs/general-tab.tsx:310-320`
 - Modify: `app/admin/configuracion/tabs/bancos-tab.tsx:353`
 
-- [ ] **Step 1: Renombrar el switch**
+- [x] **Step 1: Renombrar el switch**
 
 «Transferencia bancaria» → «Transferencias y pagos digitales»; descripción «Zelle, USDT y cuentas bancarias; sube comprobante». El switch sigue siendo `showPaymentTransfer`.
 
-- [ ] **Step 2: Mejorar el placeholder de Tipo**
+- [x] **Step 2: Mejorar el placeholder de Tipo**
 
 En el diálogo de cuenta, placeholder `Ej: BEP-20 / Cuenta Corriente`.
 
-- [ ] **Step 3: Verificar y commitear**
+- [x] **Step 3: Verificar y commitear**
 
 Run: `npx tsc --noEmit`
 Expected: exit 0.
@@ -407,15 +407,15 @@ git commit -m "chore(config): copy de pagos digitales y tipo de cuenta"
 - Modify: `02-DOCS/wiki/sdd/specs/pagos-cuadricula.md` (status `approved`)
 - Modify: `02-DOCS/wiki/sdd/decisions.md`
 
-- [ ] **Step 1: Registrar la decisión**
+- [x] **Step 1: Registrar la decisión**
 
 Entrada `## 2026-11-05 — pagos-cuadricula` con: moneda definida por el tile, sin selector; datos desde Bancos y cuentas; validación de cuenta en servidor; 4 columnas.
 
-- [ ] **Step 2: Marcar la spec como aprobada**
+- [x] **Step 2: Marcar la spec como aprobada**
 
 Cambiar `status: draft` a `status: approved` en el frontmatter.
 
-- [ ] **Step 3: Verificación completa**
+- [x] **Step 3: Verificación completa**
 
 Run: `npx tsc --noEmit && npx vitest run && npm run build`.
 Expected: tsc 0, 20+ archivos de test en verde, build correcto.
@@ -423,7 +423,7 @@ Expected: tsc 0, 20+ archivos de test en verde, build correcto.
 Run: `/home/rack/.config/opencode/skills/impeccable/scripts/impeccable detect --json app/checkout/page.tsx`.
 Expected: `[]`.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add 02-DOCS/wiki/sdd

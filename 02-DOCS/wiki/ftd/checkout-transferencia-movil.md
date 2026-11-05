@@ -90,5 +90,5 @@ aparecer desde 360 px, donde ya hay espacio.
 
 ## Next
 
-Decidir si se publica en `origin/main`; quedan 19 commits locales pendientes de
+Decidir si se publican en `origin/main` los commits locales pendientes de
 subir.

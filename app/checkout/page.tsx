@@ -44,6 +44,7 @@ import {
   UploadCloud,
   X,
   CheckCircle2,
+  FileText,
   Bookmark,
   Plus,
 } from "lucide-react";
@@ -227,6 +228,7 @@ export default function CheckoutPage() {
   const [receiptName, setReceiptName] = useState("");
   const [uploading, setUploading] = useState(false);
   const [reference, setReference] = useState("");
+  const receiptIsImage = /\.(jpe?g|png|webp|gif)$/i.test(receiptUrl);
 
   // Cuadrícula de pago: efectivo por moneda y un tile por banco. La moneda
   // la define el tile; ya no hay selector de moneda aparte.
@@ -1615,33 +1617,60 @@ export default function CheckoutPage() {
                                 <span className="text-destructive">*</span>
                               </Label>
                               {receiptUrl ? (
-                                <div className="flex items-center justify-between gap-2 rounded-lg border border-green-200 bg-green-50 p-3 dark:border-green-500/30 dark:bg-green-500/10">
-                                  <div className="flex min-w-0 items-center gap-2 text-green-700 dark:text-green-400">
-                                    <CheckCircle2 className="h-4 w-4 shrink-0" />
-                                    <span className="truncate text-sm">
-                                      {receiptName || "Comprobante subido"}
-                                    </span>
-                                  </div>
-                                  <div className="flex shrink-0 items-center gap-2">
-                                    <a
-                                      href={receiptUrl}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      className="text-xs text-primary underline"
-                                    >
-                                      Ver
-                                    </a>
-                                    <button
-                                      type="button"
-                                      onClick={() => {
-                                        setReceiptUrl("");
-                                        setReceiptName("");
-                                      }}
-                                      className="text-muted-foreground hover:text-destructive"
-                                      aria-label="Quitar comprobante"
-                                    >
-                                      <X className="h-3.5 w-3.5" />
-                                    </button>
+                                <div className="flex items-center gap-3 rounded-lg border border-green-200 bg-green-50 p-3 dark:border-green-500/30 dark:bg-green-500/10">
+                                  <a
+                                    href={receiptUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    aria-label="Abrir comprobante"
+                                    className="h-14 w-14 shrink-0 overflow-hidden rounded-md border border-green-200 bg-white dark:border-green-500/30"
+                                  >
+                                    {receiptIsImage ? (
+                                      <img
+                                        src={receiptUrl}
+                                        alt=""
+                                        className="h-full w-full object-contain"
+                                      />
+                                    ) : (
+                                      <span className="flex h-full w-full flex-col items-center justify-center gap-0.5 text-muted-foreground">
+                                        <FileText
+                                          className="h-5 w-5"
+                                          aria-hidden="true"
+                                        />
+                                        <span className="text-[10px] font-medium">
+                                          PDF
+                                        </span>
+                                      </span>
+                                    )}
+                                  </a>
+                                  <div className="flex min-w-0 flex-1 flex-col gap-1 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+                                    <div className="flex min-w-0 items-center gap-1.5 text-green-700 dark:text-green-400">
+                                      <CheckCircle2 className="h-4 w-4 shrink-0" />
+                                      <span className="truncate text-sm">
+                                        {receiptName || "Comprobante subido"}
+                                      </span>
+                                    </div>
+                                    <div className="flex shrink-0 items-center gap-3">
+                                      <a
+                                        href={receiptUrl}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="text-xs text-primary underline"
+                                      >
+                                        Ver
+                                      </a>
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          setReceiptUrl("");
+                                          setReceiptName("");
+                                        }}
+                                        className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:text-destructive"
+                                        aria-label="Quitar comprobante"
+                                      >
+                                        <X className="h-3.5 w-3.5" />
+                                      </button>
+                                    </div>
                                   </div>
                                 </div>
                               ) : (

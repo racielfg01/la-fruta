@@ -19,6 +19,11 @@ const nextConfig = {
       { protocol: "https", hostname: "*.ufs.sh" },
     ],
   },
+  async rewrites() {
+    return [
+      { source: "/uploads/:path*", destination: "/api/files/:path*" },
+    ];
+  },
 }
 
 export default withBundleAnalyzer(nextConfig)

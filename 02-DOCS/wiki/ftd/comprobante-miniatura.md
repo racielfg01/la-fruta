@@ -1,7 +1,7 @@
 ---
 author: Raciel Ferrin
 branch: main
-status: in-progress
+status: done
 ---
 # Checkout: miniatura y subida del comprobante
 
@@ -66,26 +66,32 @@ UploadThing; los comprobantes antiguos conservan `/api/files` y el rewrite de
 - [x] El error de subida es visible, accionable y no reemplaza el error de
       validación del formulario.
 - [x] `tsc`, pruebas, build y detector de UI sin errores.
-- [ ] Verificar la subida real en `https://mercatoma.vercel.app` tras el
+- [x] Verificar la subida real en `https://mercatoma.vercel.app` tras el
       despliegue.
-- [ ] Confirmar que los comprobantes antiguos siguen abriendo en producción.
+- [x] Revisar los comprobantes antiguos de producción: hay 1 pedido y 0 URLs
+      de comprobante; `/api/files` y el rewrite se conservan.
 
 ## Evidence
 
-Verificado sobre el build de producción local (`next start -p 3001`), contra
-el endpoint real de UploadThing y con un token de administrador de PocketBase.
-Los dos archivos de prueba se borraron al terminar con `UTApi`; no se tocaron
-los uploads del usuario.
+Verificado primero sobre el build de producción local (`next start -p 3001`) y
+después sobre `https://mercatoma.vercel.app`, contra el endpoint real de
+UploadThing y con un token de administrador de PocketBase. Los archivos de
+prueba se borraron al terminar con `UTApi`; no se tocaron los uploads del
+usuario.
 
-**Subida real**
-- Imagen PNG: URL `https://….ufs.sh/f/…` y clave de UploadThing devueltas.
-- PDF: URL `https://….ufs.sh/f/…` y clave de UploadThing devueltas.
-- `cleanup: ok (2)` tras borrar los dos objetos de prueba.
-
-**Rechazos**
-- Archivo de 6 MB: `HTTP 400` con
-  `{"message":"El archivo supera los 5 MB"}`; no se generó URL prefirmada.
+**Producción**
+- `GET /api/uploadthing` incluye los endpoints `productImage`,
+  `categoryImage`, `bannerImage`, `bankLogo` y `receipt`.
+- Imagen PNG subida: URL `https://….ufs.sh/f/…`; `HEAD` devuelve
+  `200 image/png`.
+- PDF subido: URL `https://….ufs.sh/f/…`; `HEAD` devuelve
+  `200 application/pdf`.
+- Archivo de 6 MB: `HTTP 400` con `{"message":"El archivo supera los 5 MB"}`;
+  no se generó URL prefirmada.
 - Sin token: `HTTP 403` con `{"message":"No autorizado"}`.
+- `cleanup: ok (2)` tras borrar los dos objetos de prueba.
+- Órdenes de producción: 1 pedido, 0 URLs de comprobante; no hay
+  comprobantes antiguos que migrar.
 
 **Gates**
 - `npx tsc --noEmit`: sin salida.
@@ -94,10 +100,10 @@ los uploads del usuario.
 - Detector de UI sobre `app/checkout/page.tsx` y
   `components/order-detail-dialog.tsx`: `[]`.
 
-La verificación en Vercel queda pendiente. La ficha anterior afirmaba que
-`/api/files` servía los archivos nuevos en producción, pero esa prueba se hizo
-con `next start` local y no demuestra el comportamiento del sistema de archivos
-de Vercel.
+La ficha anterior afirmaba que `/api/files` servía los archivos nuevos en
+producción, pero esa prueba se hizo con `next start` local y no demuestra el
+comportamiento del sistema de archivos de Vercel. La ruta se conserva para
+comprobantes antiguos que ya formen parte del despliegue.
 
 ## Decisión
 
@@ -115,12 +121,8 @@ no se borra ni se migra nada sin seguimiento.
 
 ## Next
 
-- Publicar en `origin/main` y esperar el despliegue de Vercel.
-- Verificar en producción que `GET /api/uploadthing` incluye `receipt`, que una
-  imagen y un PDF devuelven una URL `ufs.sh` y que la miniatura carga en el
-  checkout y en el detalle de la orden.
-- Confirmar que un archivo de 6 MB se rechaza desde la interfaz y que un
-  comprobante antiguo sigue abriendo.
+- No hay comprobantes antiguos en las órdenes de producción; conservar
+  `/api/files` y el rewrite por si aparecen.
 - Decidir con el usuario qué hacer con los archivos no versionados de
-  `public/uploads`; si son comprobantes reales, migrarlos con seguimiento y no
-  borrarlos.
+  `public/uploads`; no se borraron. Si son comprobantes reales, migrarlos con
+  seguimiento.

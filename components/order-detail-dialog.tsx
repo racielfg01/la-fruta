@@ -729,14 +729,19 @@ export function OrderDetailDialog({
                           href={order.receipt}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline underline-offset-4"
+                          className="group inline-flex items-center gap-2.5 text-sm font-medium text-primary"
                         >
-                          <FileText className="size-3.5" aria-hidden="true" />
-                          Ver comprobante
-                          <ExternalLink
-                            className="size-3"
-                            aria-hidden="true"
+                          <ReceiptThumbnail
+                            key={order.receipt}
+                            url={order.receipt}
                           />
+                          <span className="inline-flex items-center gap-1 underline-offset-4 group-hover:underline">
+                            Ver comprobante
+                            <ExternalLink
+                              className="size-3"
+                              aria-hidden="true"
+                            />
+                          </span>
                         </a>
                       )}
                       {!readOnly &&
@@ -887,6 +892,29 @@ export function OrderDetailDialog({
         </DialogContent>
       </Dialog>
     </Dialog>
+  );
+}
+
+function ReceiptThumbnail({ url }: { url: string }) {
+  const [failed, setFailed] = useState(false);
+
+  return (
+    <span className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-md border bg-background">
+      {failed ? (
+        <span className="flex flex-col items-center justify-center gap-0.5 text-muted-foreground">
+          <FileText className="size-5" aria-hidden="true" />
+          <span className="text-[10px] font-medium">Archivo</span>
+        </span>
+      ) : (
+        <img
+          src={url}
+          alt=""
+          loading="lazy"
+          className="h-full w-full object-contain"
+          onError={() => setFailed(true)}
+        />
+      )}
+    </span>
   );
 }
 

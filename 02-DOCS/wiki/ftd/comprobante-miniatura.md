@@ -3,7 +3,7 @@ author: Raciel Ferrin
 branch: main
 status: in-progress
 ---
-# Checkout: miniatura del comprobante
+# Checkout: miniatura y subida del comprobante
 
 ## Intent
 
@@ -11,113 +11,116 @@ Al subir un comprobante de transferencia, el checkout solo confirmaba el
 nombre del archivo. No había forma de comprobar de un vistazo que la imagen
 era la correcta. Ahora la caja de confirmación muestra una miniatura clicable
 del comprobante; si el archivo es un PDF, muestra un icono con la etiqueta
-«PDF».
+«PDF». El detalle de la orden también muestra esa miniatura.
 
-La miniatura también destapó un fallo de producción: `next start` no servía
-los archivos añadidos a `public/uploads` después del build, así que la imagen
-quedaba rota. Las subidas nuevas pasan a servirse por `/api/files` y las URLs
-antiguas `/uploads/...` se redirigen a esa ruta.
+La miniatura destapó el fallo de producción: `/api/upload` escribía en
+`public/uploads`, pero el sistema de archivos de Vercel no es persistente y la
+subida devolvía 500. Las subidas nuevas usan el endpoint `receipt` de
+UploadThing; los comprobantes antiguos conservan `/api/files` y el rewrite de
+`/uploads/:path*`.
 
 ## Scope
 
 **Dentro**
 - Miniatura de 56×56 px (`object-contain`) dentro de la caja verde de
   confirmación; enlace a una pestaña nueva para abrir el comprobante completo.
-- Imagen de 54×54 px dentro del marco, sin recortar el documento; el `alt` es
-  decorativo porque el enlace tiene `aria-label="Abrir comprobante"`.
 - PDF: icono `FileText` y la etiqueta «PDF», sin `<img>`.
-- La caja se apila en móvil (nombre arriba, «Ver» y quitar abajo) y vuelve a
-  una fila en escritorio.
-- El botón de quitar mide 32×32 px y conserva su etiqueta accesible.
-- `/api/upload` devuelve `/api/files/<uuid>` en lugar de `/uploads/<uuid>`.
-- Rewrite de `/uploads/:path*` a `/api/files/:path*` para que los comprobantes
-  ya guardados en órdenes sigan abriendo con `next start`.
+- El detalle de la orden muestra una miniatura de 56×56 px junto a «Ver
+  comprobante»; si la URL no carga como imagen (por ejemplo, un PDF), muestra
+  un icono de archivo con la etiqueta «Archivo».
+- La imagen se detecta por el MIME que devuelve UploadThing (`uploaded.type`),
+  no por la extensión de la URL: las URLs de UploadThing pueden no terminar en
+  `.png` o `.jpg`.
+- Subida con `useUploadThing("receipt")`, autenticada con el token de
+  PocketBase.
+- Tipos permitidos: JPG, PNG, WEBP, GIF y PDF. Límite efectivo: 5 MB.
+- El cliente valida tipo y tamaño antes de subir. El middleware del endpoint
+  vuelve a rechazar cualquier archivo de más de 5 MB; UploadThing se configura
+  con `8MB` porque su tipo `FileSize` solo admite potencias de dos.
+- Error de subida inline dentro del campo, con `role="alert"`, causa concreta
+  cuando se conoce y acción «Elegir otro archivo». El toast queda para el
+  éxito.
+- Se conservan `/api/upload` como endpoint local legado, `/api/files` y el
+  rewrite de `/uploads/:path*` para comprobantes antiguos.
 
 **Fuera**
 - No cambian el selector de moneda, los totales, la confirmación del pedido ni
-  el detalle de la orden.
+  el flujo de pago.
+- No se migran ni se borran los comprobantes existentes.
 - No se genera una miniatura en el servidor: el navegador escala la imagen
-  original; el archivo completo sigue siendo el que se abre.
-- No se cambian los límites de 5 MB ni los tipos permitidos (jpg, png, webp,
-  gif y PDF).
-- No se persiste la vista previa: el estado vive en el checkout hasta enviar
-  el pedido.
-- No se toca PocketBase ni la configuración de producción.
+  original.
+- No se toca PocketBase ni la configuración de producción sin confirmación.
+- No se versionan los archivos sueltos de `public/uploads` que no estén ya en
+  el repositorio.
 
 ## Checklist
 
-- [x] Un comprobante de imagen muestra miniatura, nombre, «Ver» y quitar.
-- [x] La miniatura abre el comprobante en una pestaña nueva.
-- [x] Un comprobante PDF muestra «PDF» y no renderiza un `<img>`.
-- [x] La caja no desborda a 320, 360, 390, 414 ni 1280 px.
-- [x] Quitar el comprobante devuelve al selector y permite subir otro.
-- [x] Las subidas nuevas se sirven con 200 en producción mediante
-      `/api/files/<uuid>`.
-- [x] Las URLs antiguas `/uploads/<uuid>` también responden 200 mediante el
-      rewrite.
+- [x] El endpoint `receipt` existe en `/api/uploadthing` y exige token.
+- [x] Una imagen JPG/PNG/WEBP/GIF y un PDF se suben y devuelven una URL
+      `ufsUrl`.
+- [x] Un archivo de más de 5 MB se rechaza antes de generar la URL
+      prefirmada.
+- [x] Un archivo sin token recibe 403 y el mensaje «No autorizado».
+- [x] El checkout muestra miniatura para imágenes y placeholder para PDF.
+- [x] El detalle de la orden muestra la miniatura o el icono de archivo.
+- [x] El error de subida es visible, accionable y no reemplaza el error de
+      validación del formulario.
 - [x] `tsc`, pruebas, build y detector de UI sin errores.
+- [ ] Verificar la subida real en `https://mercatoma.vercel.app` tras el
+      despliegue.
+- [ ] Confirmar que los comprobantes antiguos siguen abriendo en producción.
 
 ## Evidence
 
-Verificado sobre el build de producción (`next start -p 3001`), con un usuario
-temporal de QA, un carrito de prueba y una imagen de 240×160 px generada para
-la prueba. El usuario y los seis archivos de prueba se borraron al terminar;
-no se tocaron los uploads del usuario.
+Verificado sobre el build de producción local (`next start -p 3001`), contra
+el endpoint real de UploadThing y con un token de administrador de PocketBase.
+Los dos archivos de prueba se borraron al terminar con `UTApi`; no se tocaron
+los uploads del usuario.
 
-**Imagen a 390 px**
-- Documento 375/375, panel 274/274, caja del comprobante 274/274.
-- Miniatura 56×56; imagen 54×54; natural 240×160; `object-fit: contain`.
-- `href` y `src`: `/api/files/b63ee60c-…png`; la imagen carga con
-  `complete: true`.
+**Subida real**
+- Imagen PNG: URL `https://….ufs.sh/f/…` y clave de UploadThing devueltas.
+- PDF: URL `https://….ufs.sh/f/…` y clave de UploadThing devueltas.
+- `cleanup: ok (2)` tras borrar los dos objetos de prueba.
 
-**Anchos**
-- 320: documento 305/305, panel 204/204, caja 204/204; miniatura 56×56.
-- 360 y 414: documento, panel y caja sin diferencia entre `scrollWidth` y
-  `clientWidth`.
-- 1280: misma miniatura de 56×56 y sin desbordamiento en la caja ni en la
-  página.
-
-**PDF**
-- `href` `/api/files/93fdd…pdf`; texto de la caja «PDF receipt-test.pdf Ver»;
-  0 elementos `<img>`; miniatura de 56 px.
-
-**Quitar y volver a subir**
-- «Quitar comprobante» elimina la caja y devuelve el selector de archivo.
-- Una segunda subida vuelve a mostrar la miniatura y el nombre.
-
-**Servido en producción**
-- `GET /uploads/c4f1c419-…png` → `200 image/png` (rewrite).
-- `GET /api/files/c4f1c419-…png` → `200 image/png`.
-- `GET /uploads/437df0b2-…pdf` → `200 application/pdf`.
-- `GET /api/files/437df0b2-…pdf` → `200 application/pdf`.
-- Antes del cambio, esos mismos archivos añadidos después del build
-  respondían `404`.
+**Rechazos**
+- Archivo de 6 MB: `HTTP 400` con
+  `{"message":"El archivo supera los 5 MB"}`; no se generó URL prefirmada.
+- Sin token: `HTTP 403` con `{"message":"No autorizado"}`.
 
 **Gates**
 - `npx tsc --noEmit`: sin salida.
-- `npx vitest run`: 21 archivos, 163 pruebas aprobadas.
+- `npx vitest run`: 22 archivos, 176 pruebas aprobadas.
 - `npm run build`: compilación correcta, 28 rutas.
-- Detector de UI sobre `app/checkout/page.tsx`: `[]`.
-- Los errores de consola observados son externos: imágenes de `utfs.io` sin
-  proxy y el script de Vercel Analytics ausente en local.
+- Detector de UI sobre `app/checkout/page.tsx` y
+  `components/order-detail-dialog.tsx`: `[]`.
 
-**Capturas**
-- `.playwright-mcp/receipt-image-final-390.png`
-- `.playwright-mcp/receipt-image-final-1280.png`
+La verificación en Vercel queda pendiente. La ficha anterior afirmaba que
+`/api/files` servía los archivos nuevos en producción, pero esa prueba se hizo
+con `next start` local y no demuestra el comportamiento del sistema de archivos
+de Vercel.
 
 ## Decisión
 
-Se usa `object-contain` para que la miniatura muestre el comprobante completo
-en vez de recortarlo. La miniatura es un enlace además del texto «Ver»: el
-texto sigue siendo explícito y la miniatura da un objetivo táctil grande.
+Se usa UploadThing para las subidas nuevas porque Vercel no conserva los
+archivos escritos en `public/uploads` entre peticiones ni despliegues. El
+límite de 5 MB se valida en el cliente y en el middleware; la configuración de
+UploadThing queda en `8MB` por la restricción de su tipo `FileSize`, no porque
+se acepten 8 MB.
 
-Las subidas nuevas apuntan directamente a `/api/files`; el rewrite conserva
-las URLs `/uploads` que ya estén guardadas en órdenes y sirve los archivos
-estáticos existentes. La ruta lee de `public/uploads` en cada petición, así
-que no depende del manifiesto del build.
+La imagen se detecta por MIME porque las URLs de UploadThing pueden no tener
+extensión. El error se muestra inline porque el usuario necesita saber qué
+pasó y cómo recuperarse sin perder el contexto del formulario. `/api/upload`,
+`/api/files` y el rewrite se mantienen para no romper comprobantes antiguos;
+no se borra ni se migra nada sin seguimiento.
 
 ## Next
 
-- Decidir si se publican en `origin/main` los commits locales pendientes.
-- Si los comprobantes pasan a almacenamiento externo, sustituir la lectura
-  local de `/api/files` por la URL del proveedor.
+- Publicar en `origin/main` y esperar el despliegue de Vercel.
+- Verificar en producción que `GET /api/uploadthing` incluye `receipt`, que una
+  imagen y un PDF devuelven una URL `ufs.sh` y que la miniatura carga en el
+  checkout y en el detalle de la orden.
+- Confirmar que un archivo de 6 MB se rechaza desde la interfaz y que un
+  comprobante antiguo sigue abriendo.
+- Decidir con el usuario qué hacer con los archivos no versionados de
+  `public/uploads`; si son comprobantes reales, migrarlos con seguimiento y no
+  borrarlos.

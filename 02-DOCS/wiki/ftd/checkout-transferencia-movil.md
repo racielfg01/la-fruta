@@ -26,10 +26,12 @@ lee debajo de «Titular» y se copia con un botón, igual que el número de cuen
   notificaciones push se oculta por debajo de 360 px.
 
 **Fuera**
-- No cambian el selector de moneda, los totales, la confirmación ni el detalle
-  de la orden.
+- No cambian el selector de moneda, los totales ni la confirmación.
+- El detalle de la orden no cambia en esta ficha; la miniatura del comprobante
+  se documenta en `comprobante-miniatura.md`.
 - No se tocan los datos de las cuentas ni la configuración de producción.
-- No se cambia el backend de pagos ni la validación del comprobante.
+- No se cambia el backend de pagos; la subida y validación del comprobante se
+  documentan en `comprobante-miniatura.md`.
 
 ## Checklist
 

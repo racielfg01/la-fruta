@@ -74,6 +74,12 @@ import { planSaveAddress } from "@/lib/saved-addresses";
 import { ProductImage } from "@/components/product-image";
 import SavingHint from "@/components/saving-hint";
 import { toast } from "sonner";
+import { useUploadThing } from "@/lib/uploadthing";
+import {
+  isReceiptImage,
+  receiptFileError,
+  receiptUploadErrorMessage,
+} from "@/lib/receipt";
 
 // -------------------------------
 // Tipos de pago
@@ -226,9 +232,10 @@ export default function CheckoutPage() {
   const [transferAccountId, setTransferAccountId] = useState("");
   const [receiptUrl, setReceiptUrl] = useState("");
   const [receiptName, setReceiptName] = useState("");
+  const [receiptIsImage, setReceiptIsImage] = useState(false);
+  const [receiptUploadError, setReceiptUploadError] = useState("");
   const [uploading, setUploading] = useState(false);
   const [reference, setReference] = useState("");
-  const receiptIsImage = /\.(jpe?g|png|webp|gif)$/i.test(receiptUrl);
 
   // Cuadrícula de pago: efectivo por moneda y un tile por banco. La moneda
   // la define el tile; ya no hay selector de moneda aparte.
@@ -265,6 +272,7 @@ export default function CheckoutPage() {
   const carnetRef = useRef<HTMLInputElement>(null);
   const phoneRef = useRef<HTMLInputElement>(null);
   const receiptRef = useRef<HTMLDivElement>(null);
+  const receiptInputRef = useRef<HTMLInputElement>(null);
 
   const scrollToField = (ref: React.RefObject<HTMLElement | null>) => {
     ref.current?.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -281,6 +289,26 @@ export default function CheckoutPage() {
       delete next[field];
       return next;
     });
+
+  const { startUpload } = useUploadThing("receipt", {
+    headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+    onClientUploadComplete: (res) => {
+      const uploaded = res?.[0];
+      if (!uploaded?.ufsUrl) {
+        setReceiptUploadError(receiptUploadErrorMessage(null));
+        return;
+      }
+      setReceiptUrl(uploaded.ufsUrl);
+      setReceiptName(uploaded.name);
+      setReceiptIsImage(isReceiptImage(uploaded.type));
+      setReceiptUploadError("");
+      clearFieldError("receipt");
+      toast.success("Comprobante subido correctamente");
+    },
+    onUploadError: (error) => {
+      setReceiptUploadError(receiptUploadErrorMessage(error));
+    },
+  });
 
   const validateField = (field: string, value: string) => {
     let message = "";
@@ -363,26 +391,23 @@ export default function CheckoutPage() {
   const handleReceiptUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    setReceiptUploadError("");
+    clearFieldError("receipt");
+    const fileError = receiptFileError(file);
+    if (fileError) {
+      setReceiptUploadError(fileError);
+      e.target.value = "";
+      return;
+    }
     setUploading(true);
     try {
-      const fd = new FormData();
-      fd.append("file", file);
-      const res = await fetch("/api/upload", {
-        method: "POST",
-        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
-        body: fd,
-      });
-      const json = await res.json();
-      if (res.ok && json.success) {
-        setReceiptUrl(json.url);
-        setReceiptName(file.name);
-        clearFieldError("receipt");
-        toast.success("Comprobante subido correctamente");
-      } else {
-        toast.error(json.error || "Error al subir el comprobante");
-      }
+      await startUpload([file]);
     } catch {
-      toast.error("Error al subir el comprobante");
+      setReceiptUploadError(
+        (current) =>
+          current ||
+          "No pudimos conectar. Revisa tu conexión e inténtalo de nuevo.",
+      );
     } finally {
       setUploading(false);
       e.target.value = "";
@@ -1664,6 +1689,9 @@ export default function CheckoutPage() {
                                         onClick={() => {
                                           setReceiptUrl("");
                                           setReceiptName("");
+                                          setReceiptIsImage(false);
+                                          setReceiptUploadError("");
+                                          clearFieldError("receipt");
                                         }}
                                         className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:text-destructive"
                                         aria-label="Quitar comprobante"
@@ -1675,22 +1703,69 @@ export default function CheckoutPage() {
                                 </div>
                               ) : (
                                 <label className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed bg-background p-5 text-center transition-colors hover:border-primary/40 hover:bg-muted/30">
-                                  <UploadCloud className="h-5 w-5 text-muted-foreground" />
+                                  {uploading ? (
+                                    <Loader2
+                                      className="h-5 w-5 animate-spin text-primary"
+                                      aria-hidden="true"
+                                    />
+                                  ) : (
+                                    <UploadCloud
+                                      className="h-5 w-5 text-muted-foreground"
+                                      aria-hidden="true"
+                                    />
+                                  )}
                                   <span className="text-xs text-muted-foreground">
                                     {uploading
-                                      ? "Subiendo…"
-                                      : "Imagen o PDF · máx. 5MB"}
+                                      ? "Subiendo comprobante…"
+                                      : "Imagen o PDF · máx. 5 MB"}
                                   </span>
                                   <input
+                                    ref={receiptInputRef}
                                     type="file"
-                                    accept="image/*,application/pdf"
+                                    accept="image/jpeg,image/png,image/webp,image/gif,application/pdf"
                                     className="hidden"
                                     onChange={handleReceiptUpload}
                                     disabled={uploading}
+                                    aria-describedby={
+                                      receiptUploadError
+                                        ? "receipt-upload-error"
+                                        : undefined
+                                    }
+                                    aria-invalid={Boolean(receiptUploadError)}
                                   />
                                 </label>
                               )}
-                              {fieldErrors.receipt && (
+                              {receiptUploadError && (
+                                <div
+                                  id="receipt-upload-error"
+                                  role="alert"
+                                  className="flex items-start gap-2.5 rounded-lg border border-destructive/25 bg-destructive/5 p-3"
+                                >
+                                  <AlertCircle
+                                    className="mt-0.5 h-4 w-4 shrink-0 text-destructive"
+                                    aria-hidden="true"
+                                  />
+                                  <div className="min-w-0 flex-1">
+                                    <p className="text-sm font-medium text-destructive">
+                                      No se pudo subir el comprobante
+                                    </p>
+                                    <p className="mt-0.5 text-xs leading-relaxed text-destructive">
+                                      {receiptUploadError}
+                                    </p>
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        receiptInputRef.current?.click()
+                                      }
+                                      disabled={uploading}
+                                      className="mt-2 inline-flex min-h-8 items-center rounded-sm text-xs font-medium text-destructive underline decoration-destructive/40 underline-offset-4 transition-colors hover:decoration-destructive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-destructive/40 disabled:pointer-events-none disabled:opacity-50"
+                                    >
+                                      Elegir otro archivo
+                                    </button>
+                                  </div>
+                                </div>
+                              )}
+                              {fieldErrors.receipt && !receiptUploadError && (
                                 <p className="flex items-center gap-1 text-xs text-destructive">
                                   <AlertCircle className="h-3 w-3" />{" "}
                                   {fieldErrors.receipt}

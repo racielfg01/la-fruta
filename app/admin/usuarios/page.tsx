@@ -59,6 +59,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { FieldGroup, Field, FieldLabel } from "@/components/ui/field";
+import { deriveNumericRoleId, roleSelectionFor } from "@/lib/user-roles";
 
 // Mapeo de role_id a nombre y estilos
 const ROLE_MAP: Record<number, { name: string; label: string; style: string }> =
@@ -79,9 +80,9 @@ const STATUS_MAP = {
 };
 
 export default function UsersPage() {
-  const { users, addUser, updateUser, deleteUser } = useAdminStore();
+  const { users, addUser, updateUser, deleteUser, roles } = useAdminStore();
   const [search, setSearch] = useState("");
-  const [roleFilter, setRoleFilter] = useState<number | "all">("all");
+  const [roleFilter, setRoleFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
@@ -94,7 +95,7 @@ export default function UsersPage() {
     email: "",
     phone: "",
     address: "",
-    role_id: 1, // 1 = user, 2 = admin
+    roleId: "", // id real del rol configurado en la plataforma
     status: "active" as "active" | "inactive" | "suspended",
   });
   const [password, setPassword] = useState("");
@@ -117,7 +118,7 @@ export default function UsersPage() {
         user.name.toLowerCase().includes(search.toLowerCase()) ||
         user.email.toLowerCase().includes(search.toLowerCase()) ||
         user.phone.includes(search);
-      const matchesRole = roleFilter === "all" || user.role_id === roleFilter;
+      const matchesRole = roleFilter === "all" || user.roleId === roleFilter;
       const matchesStatus =
         statusFilter === "all" || user.status === statusFilter;
       return matchesSearch && matchesRole && matchesStatus;
@@ -154,7 +155,7 @@ export default function UsersPage() {
         email: user.email,
         phone: user.phone,
         address: user.address,
-        role_id: user.role_id,
+        roleId: roleSelectionFor(user, roles),
         status: user.status,
       });
     } else {
@@ -164,7 +165,7 @@ export default function UsersPage() {
         email: "",
         phone: "",
         address: "",
-        role_id: 1,
+        roleId: roleSelectionFor({}, roles),
         status: "active",
       });
     }
@@ -187,7 +188,11 @@ export default function UsersPage() {
     }
     setPwdError("");
     if (editingUser) {
-      updateUser(editingUser.id, { ...formData, ...(password ? { password } : {}) });
+      updateUser(editingUser.id, {
+        ...formData,
+        role_id: deriveNumericRoleId(formData.roleId, roles),
+        ...(password ? { password } : {}),
+      });
     } else {
       const newUser: User = {
         id: crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(),
@@ -195,7 +200,8 @@ export default function UsersPage() {
         email: formData.email,
         phone: formData.phone,
         address: formData.address,
-        role_id: formData.role_id,
+        role_id: deriveNumericRoleId(formData.roleId, roles),
+        roleId: formData.roleId,
         status: formData.status,
         created_at: new Date().toISOString(),
         total_orders: 0,
@@ -234,13 +240,18 @@ export default function UsersPage() {
     );
   };
 
-  const getRoleBadge = (roleId: number) => {
-    const role = ROLE_MAP[roleId] || ROLE_MAP[1];
+  const getRoleBadge = (user: User) => {
+    const role = roles.find((r) => r.id === user.roleId);
+    const label = role?.name || ROLE_MAP[user.role_id]?.label || "Sin rol";
+    const style =
+      user.role_id === 2
+        ? "bg-purple-100 text-purple-700"
+        : "bg-blue-100 text-blue-700";
     return (
       <span
-        className={cn("px-2 py-1 rounded-full text-xs font-medium", role.style)}
+        className={cn("px-2 py-1 rounded-full text-xs font-medium", style)}
       >
-        {role.label}
+        {label}
       </span>
     );
   };
@@ -322,19 +333,17 @@ export default function UsersPage() {
                 className="pl-9"
               />
             </div>
-            <Select
-              value={roleFilter === "all" ? "all" : String(roleFilter)}
-              onValueChange={(val) =>
-                setRoleFilter(val === "all" ? "all" : Number(val))
-              }
-            >
+            <Select value={roleFilter} onValueChange={setRoleFilter}>
               <SelectTrigger className="w-full sm:w-40">
                 <SelectValue placeholder="Rol" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Todos los roles</SelectItem>
-                <SelectItem value="2">Administrador</SelectItem>
-                <SelectItem value="1">Cliente</SelectItem>
+                {roles.map((role) => (
+                  <SelectItem key={role.id} value={role.id}>
+                    {role.name}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
@@ -363,7 +372,7 @@ export default function UsersPage() {
                   <p className="text-xs text-muted-foreground truncate">{user.email}</p>
                   <p className="text-xs text-muted-foreground">{user.phone}</p>
                   <div className="flex items-center gap-2 mt-2 flex-wrap">
-                    {getRoleBadge(user.role_id)}
+                    {getRoleBadge(user)}
                     {getStatusBadge(user.status)}
                   </div>
                   <p className="text-xs text-muted-foreground mt-1">
@@ -434,7 +443,7 @@ export default function UsersPage() {
                         <p className="text-muted-foreground">{user.phone}</p>
                       </div>
                     </TableCell>
-                    <TableCell>{getRoleBadge(user.role_id)}</TableCell>
+                    <TableCell>{getRoleBadge(user)}</TableCell>
                     <TableCell>{getStatusBadge(user.status)}</TableCell>
                     <TableCell className="text-right">
                       {" "}
@@ -559,17 +568,20 @@ export default function UsersPage() {
               <Field>
                 <FieldLabel>Rol</FieldLabel>
                 <Select
-                  value={String(formData.role_id)}
+                  value={formData.roleId}
                   onValueChange={(val) =>
-                    setFormData({ ...formData, role_id: Number(val) })
+                    setFormData({ ...formData, roleId: val })
                   }
                 >
                   <SelectTrigger>
-                    <SelectValue />
+                    <SelectValue placeholder="Rol" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="1">Cliente</SelectItem>
-                    <SelectItem value="2">Administrador</SelectItem>
+                    {roles.map((role) => (
+                      <SelectItem key={role.id} value={role.id}>
+                        {role.name}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </Field>
@@ -649,7 +661,7 @@ export default function UsersPage() {
                 <div>
                   <h3 className="text-xl font-semibold">{viewingUser.name}</h3>
                   <div className="flex gap-2 mt-1">
-                    {getRoleBadge(viewingUser.role_id)}
+                    {getRoleBadge(viewingUser)}
                     {getStatusBadge(viewingUser.status)}
                   </div>
                 </div>

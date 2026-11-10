@@ -28,3 +28,24 @@ Registro append-only de decisiones tomadas mientras se construye.
   el pedido: activa, banco activo, misma moneda y con cupo.
 - El switch «Transferencia bancaria» pasa a llamarse «Transferencias y pagos
   digitales».
+
+## 2026-11-10 — bug: roles no cargan al editar usuario  (ruta /admin/usuarios)
+
+- Repro — en `/admin/usuarios`, al abrir «Editar Usuario», el selector de rol
+  solo ofrece Cliente/Administrador literales; ignora los roles configurados en
+  Configuración → Roles (colección `roles` de PocketBase).
+- Causa — el sistema de roles (commit `2d78c3c`) nunca se cableó a esta página.
+  Tres capas colapsaban el rol a un binario: el diálogo con dos `SelectItem`
+  literales, `getAdminData` reduciendo el rol de cada usuario a `role_id` 1/2,
+  y `editUserAction`/`addUserAction` mapeando cualquier rol a 'admin'/'client'
+  por nombre.
+- Fix — `lib/user-roles.ts` (test en `lib/user-roles.test.ts`): el usuario
+  carga ahora su rol real (`User.roleId`, id de la relación PB) en
+  `getAdminData`; el diálogo, el filtro y los badges se alimentan de
+  `roles` del store; las actions guardan el id real (`resolveRoleForSave`),
+  con fallback al mapeo legado 1/2 para datos viejos y guard de no borrar la
+  relación cuando la resolución falla.
+- Por qué se escapó — la feature de roles se añadió como pestaña de
+  configuración sin tocar el CRUD de usuarios existente; ningún test cubría la
+  unión usuarios↔roles.
+

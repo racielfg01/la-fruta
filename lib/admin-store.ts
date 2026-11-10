@@ -65,6 +65,9 @@ export interface User {
   total_orders: number;
   total_spent: number;
   role_id: number;
+  // Id real del rol del usuario (relación de PocketBase). role_id numérico
+  // queda como espejo legado: 2 = admin, 1 = resto.
+  roleId?: string;
   gender?: string | null;
 }
 

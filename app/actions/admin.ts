@@ -2,6 +2,7 @@
 
 import { decodePocketBaseToken, getRoleIds } from '@/lib/auth';
 import { getAdminPB, getTokenPB, getAllRecords, sanitize, buildOrFilter } from '@/lib/pocketbase';
+import { resolveRoleForSave } from '@/lib/user-roles';
 import { restoreOrderStock } from '@/lib/order-stock';
 import { orderDates } from '@/lib/order-dates';
 import { notifyNewUser } from '@/lib/push/notify';
@@ -180,6 +181,9 @@ export async function getAdminData(token: string) {
       role_id: roleIds.admin
         ? (u.role_id === roleIds.admin ? 2 : 1)
         : (u.expand?.role_id?.name === 'admin' ? 2 : 1),
+      // roleId preserva el id real de la relación para que el diálogo de
+      // edición pueda preseleccionar y guardar roles personalizados.
+      roleId: u.role_id || '',
     })),
     orders: ordersFixed,
     currencies: currencies.map((c: any) => ({
@@ -405,7 +409,10 @@ function generatePassword(): string {
 export async function addUserAction(user: Omit<User, 'id'>, token: string) {
   await verifyAdminAndGetUserId(token);
   const pb = await getDataPB(token);
-  const roleId = await getRoleIdByName(user.role_id === 2 ? 'admin' : 'client', token);
+  const roleIds = await getRoleIds();
+  const roleId =
+    resolveRoleForSave(user, roleIds) ||
+    (await getRoleIdByName(user.role_id === 2 ? 'admin' : 'client', token));
   const password = generatePassword();
   const record = await pb.collection('users').create({
     name: user.name,
@@ -433,7 +440,15 @@ export async function editUserAction(id: string, data: Partial<User>, token: str
   if (data.email !== undefined) updateData.email = data.email;
   if (data.phone !== undefined) updateData.phone = data.phone;
   if (data.address !== undefined) updateData.address = data.address;
-  if (data.role_id !== undefined) updateData.role_id = await getRoleIdByName(data.role_id === 2 ? 'admin' : 'client', token);
+  if (data.roleId !== undefined || data.role_id !== undefined) {
+    const roleIds = await getRoleIds();
+    const roleId =
+      resolveRoleForSave(data, roleIds) ||
+      (await getRoleIdByName(data.role_id === 2 ? 'admin' : 'client', token));
+    // '' significaría que no se pudo resolver el rol: no enviarlo, porque
+    // PocketBase interpretaría la relación vacía y borraría el rol del usuario.
+    if (roleId) updateData.role_id = roleId;
+  }
   if (data.status !== undefined) updateData.status = data.status;
   if (Object.keys(updateData).length === 0) return;
   await pb.collection('users').update(id, updateData);

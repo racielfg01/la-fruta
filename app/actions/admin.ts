@@ -1,6 +1,8 @@
 'use server';
 
-import { decodePocketBaseToken, getRoleIds } from '@/lib/auth';
+import { getRoleIds } from '@/lib/auth';
+import { requirePermission } from '@/lib/admin-auth';
+import { PERMISSION_KEYS, sectionsForPermissions } from '@/lib/permissions';
 import { getAdminPB, getTokenPB, getAllRecords, sanitize, buildOrFilter } from '@/lib/pocketbase';
 import { resolveRoleForSave } from '@/lib/user-roles';
 import { restoreOrderStock } from '@/lib/order-stock';
@@ -21,24 +23,6 @@ async function getDataPB(token: string): Promise<PocketBase> {
   } catch {
     return getTokenPB(token);
   }
-}
-
-async function verifyAdminAndGetUserId(token: string): Promise<string> {
-  const payload = decodePocketBaseToken(token);
-  if (!payload) throw new Error('No autorizado: token inválido o expirado');
-
-  const pb = getTokenPB(token);
-  const user = await pb.collection('users').getOne(payload.userId, {
-    expand: 'role_id',
-  });
-  const roleIds = await getRoleIds();
-  const isAdmin = roleIds.admin
-    ? user.role_id === roleIds.admin
-    : user.expand?.role_id?.name === 'admin';
-  if (!isAdmin) {
-    throw new Error('Acceso denegado: se requieren privilegios de administrador');
-  }
-  return payload.userId;
 }
 
 async function getRoleIdByName(name: string, token: string): Promise<string> {
@@ -124,22 +108,25 @@ function mapOrder(o: any) {
 }
 
 export async function getAdminData(token: string) {
-  await verifyAdminAndGetUserId(token);
+  // Entra cualquier rol con al menos un permiso; las colecciones devueltas
+  // se acotan abajo con sectionsForPermissions.
+  const { permissions: perms } = await requirePermission(token, PERMISSION_KEYS);
 
   const pb = await getDataPB(token);
+  const sections = sectionsForPermissions(perms);
 
   const [products, categories, deliveryZones, users, orders, currencies, roles, offers] = await Promise.all([
-    getAllRecords(pb, 'products', { sort: 'name', expand: 'category' }),
-    getAllRecords(pb, 'categories', { sort: 'name' }),
-    getAllRecords(pb, 'delivery_zones', { sort: 'name' }),
-    getAllRecords(pb, 'users', { sort: '-created', expand: 'role_id' }),
-    getAllRecords(pb, 'orders', { sort: '-created_at' }),
-    getAllRecords(pb, 'currencies', { sort: 'code' }),
-    getAllRecords(pb, 'roles', { sort: 'name' }),
-    getAllRecords(pb, 'offers', { sort: '-created' }),
+    sections.products ? getAllRecords(pb, 'products', { sort: 'name', expand: 'category' }) : Promise.resolve([]),
+    sections.products ? getAllRecords(pb, 'categories', { sort: 'name' }) : Promise.resolve([]),
+    sections.deliveryZones ? getAllRecords(pb, 'delivery_zones', { sort: 'name' }) : Promise.resolve([]),
+    sections.users ? getAllRecords(pb, 'users', { sort: '-created', expand: 'role_id' }) : Promise.resolve([]),
+    sections.orders ? getAllRecords(pb, 'orders', { sort: '-created_at' }) : Promise.resolve([]),
+    sections.currencies ? getAllRecords(pb, 'currencies', { sort: 'code' }) : Promise.resolve([]),
+    sections.roles ? getAllRecords(pb, 'roles', { sort: 'name' }) : Promise.resolve([]),
+    sections.offers ? getAllRecords(pb, 'offers', { sort: '-created' }) : Promise.resolve([]),
   ]);
 
-  const roleIds = await getRoleIds();
+  const roleIds = sections.users ? await getRoleIds() : { admin: '', client: '' };
 
   // Los ítems van en pocas consultas: OR por lotes de orden y agrupado aquí
   // (antes: un query order_items por cada orden — N+1).
@@ -209,7 +196,7 @@ export async function getAdminData(token: string) {
 }
 
 export async function addProductAction(product: Product, token: string) {
-  await verifyAdminAndGetUserId(token);
+  await requirePermission(token, 'products');
   const pb = await getDataPB(token);
   const categoryId = await getCategoryIdByName(product.category, token);
   const record = await pb.collection('products').create({
@@ -232,7 +219,7 @@ export async function addProductAction(product: Product, token: string) {
 }
 
 export async function editProductAction(id: string, data: Partial<Product>, token: string) {
-  await verifyAdminAndGetUserId(token);
+  await requirePermission(token, 'products');
   const pb = await getDataPB(token);
   const updateData: any = {};
   if (data.name !== undefined) updateData.name = data.name;
@@ -270,7 +257,7 @@ export async function applyProductPriceImportAction(
   updates: ProductPriceUpdates,
   token: string
 ): Promise<{ updated: number }> {
-  await verifyAdminAndGetUserId(token);
+  await requirePermission(token, 'products');
   if (updates.length === 0) return { updated: 0 };
 
   const pb = await getDataPB(token);
@@ -284,13 +271,13 @@ export async function applyProductPriceImportAction(
 }
 
 export async function removeProductAction(id: string, token: string) {
-  await verifyAdminAndGetUserId(token);
+  await requirePermission(token, 'products');
   const pb = await getDataPB(token);
   await pb.collection('products').delete(id);
 }
 
 export async function addCategoryAction(category: Category, token: string) {
-  await verifyAdminAndGetUserId(token);
+  await requirePermission(token, 'products');
   const pb = await getDataPB(token);
   const record = await pb.collection('categories').create({
     id: category.id,
@@ -302,7 +289,7 @@ export async function addCategoryAction(category: Category, token: string) {
 }
 
 export async function editCategoryAction(id: string, data: Partial<Category>, token: string) {
-  await verifyAdminAndGetUserId(token);
+  await requirePermission(token, 'products');
   const pb = await getDataPB(token);
   const updateData: any = {};
   if (data.name !== undefined) updateData.name = data.name;
@@ -313,13 +300,13 @@ export async function editCategoryAction(id: string, data: Partial<Category>, to
 }
 
 export async function removeCategoryAction(id: string, token: string) {
-  await verifyAdminAndGetUserId(token);
+  await requirePermission(token, 'products');
   const pb = await getDataPB(token);
   await pb.collection('categories').delete(id);
 }
 
 export async function addDeliveryZoneAction(zone: DeliveryZone, token: string) {
-  await verifyAdminAndGetUserId(token);
+  await requirePermission(token, 'shipping');
   const pb = await getDataPB(token);
   const record = await pb.collection('delivery_zones').create({
     id: zone.id,
@@ -336,7 +323,7 @@ export async function addDeliveryZoneAction(zone: DeliveryZone, token: string) {
 }
 
 export async function editDeliveryZoneAction(id: string, data: Partial<DeliveryZone>, token: string) {
-  await verifyAdminAndGetUserId(token);
+  await requirePermission(token, 'shipping');
   const pb = await getDataPB(token);
   const updateData: any = {};
   if (data.name !== undefined) updateData.name = data.name;
@@ -352,7 +339,7 @@ export async function editDeliveryZoneAction(id: string, data: Partial<DeliveryZ
 }
 
 export async function removeDeliveryZoneAction(id: string, token: string) {
-  await verifyAdminAndGetUserId(token);
+  await requirePermission(token, 'shipping');
   const pb = await getDataPB(token);
   await pb.collection('delivery_zones').delete(id);
 }
@@ -368,7 +355,7 @@ export async function applyDeliveryZoneImportAction(
   plan: { updates: ZoneImportUpdates; creates: ZoneImportCreates },
   token: string
 ) {
-  await verifyAdminAndGetUserId(token);
+  await requirePermission(token, 'shipping');
   const pb = await getDataPB(token);
 
   let updated = 0;
@@ -411,7 +398,7 @@ function generatePassword(): string {
 }
 
 export async function addUserAction(user: Omit<User, 'id'>, token: string) {
-  await verifyAdminAndGetUserId(token);
+  await requirePermission(token, 'users');
   const pb = await getDataPB(token);
   const roleIds = await getRoleIds();
   const roleId =
@@ -437,7 +424,7 @@ export async function addUserAction(user: Omit<User, 'id'>, token: string) {
 }
 
 export async function editUserAction(id: string, data: Partial<User>, token: string) {
-  await verifyAdminAndGetUserId(token);
+  await requirePermission(token, 'users');
   const pb = await getDataPB(token);
   const updateData: any = {};
   if (data.name !== undefined) updateData.name = data.name;
@@ -459,7 +446,7 @@ export async function editUserAction(id: string, data: Partial<User>, token: str
 }
 
 export async function removeUserAction(id: string, token: string) {
-  await verifyAdminAndGetUserId(token);
+  await requirePermission(token, 'users');
   const pb = await getDataPB(token);
   await pb.collection('users').delete(id);
 }
@@ -479,7 +466,7 @@ export async function setOrderStatusAction(
   token: string,
   reason?: string
 ) {
-  await verifyAdminAndGetUserId(token);
+  await requirePermission(token, 'orders');
   const pb = await getDataPB(token);
   const order = await pb.collection('orders').getOne(orderId);
   const allowed = VALID_ORDER_TRANSITIONS[order.status] || [];
@@ -510,7 +497,7 @@ const VALID_PAYMENT_TRANSITIONS: Record<string, string[]> = {
 };
 
 export async function setPaymentStatusAction(orderId: string, paymentStatus: Order['paymentStatus'], token: string) {
-  await verifyAdminAndGetUserId(token);
+  await requirePermission(token, 'orders');
   const pb = await getDataPB(token);
   const order = await pb.collection('orders').getOne(orderId);
   const allowed = VALID_PAYMENT_TRANSITIONS[order.payment_status] || [];
@@ -521,7 +508,7 @@ export async function setPaymentStatusAction(orderId: string, paymentStatus: Ord
 }
 
 export async function addCurrencyAction(currency: Currency, token: string) {
-  await verifyAdminAndGetUserId(token);
+  await requirePermission(token, 'settings');
   const pb = await getDataPB(token);
   const record = await pb.collection('currencies').create({
     id: currency.id,
@@ -536,7 +523,7 @@ export async function addCurrencyAction(currency: Currency, token: string) {
 }
 
 export async function editCurrencyAction(id: string, data: Partial<Currency>, token: string) {
-  await verifyAdminAndGetUserId(token);
+  await requirePermission(token, 'settings');
   const pb = await getDataPB(token);
   const updateData: any = {};
   if (data.code !== undefined) updateData.code = data.code;
@@ -550,13 +537,13 @@ export async function editCurrencyAction(id: string, data: Partial<Currency>, to
 }
 
 export async function removeCurrencyAction(id: string, token: string) {
-  await verifyAdminAndGetUserId(token);
+  await requirePermission(token, 'settings');
   const pb = await getDataPB(token);
   await pb.collection('currencies').delete(id);
 }
 
 export async function setDefaultCurrencyAction(id: string, token: string) {
-  await verifyAdminAndGetUserId(token);
+  await requirePermission(token, 'settings');
   const pb = await getDataPB(token);
   await getAllRecords(pb, 'currencies', {
     filter: 'is_default = true',
@@ -573,7 +560,7 @@ export async function setDefaultCurrencyAction(id: string, token: string) {
 // el margen de ganancia (ni en portada, ni en carrito, ni en el checkout).
 
 export async function addOfferAction(data: OfferInput, token: string): Promise<AdminOffer> {
-  await verifyAdminAndGetUserId(token);
+  await requirePermission(token, 'offers');
   const pb = await getDataPB(token);
   if (data.type === 'product' && !data.productId) {
     throw new Error('Selecciona el producto de la rebaja');
@@ -593,7 +580,7 @@ export async function addOfferAction(data: OfferInput, token: string): Promise<A
 }
 
 export async function editOfferAction(id: string, data: Partial<OfferInput>, token: string): Promise<AdminOffer> {
-  await verifyAdminAndGetUserId(token);
+  await requirePermission(token, 'offers');
   const pb = await getDataPB(token);
   const updateData: any = {};
   if (data.name !== undefined) updateData.name = data.name.trim();
@@ -616,7 +603,7 @@ export async function editOfferAction(id: string, data: Partial<OfferInput>, tok
 }
 
 export async function removeOfferAction(id: string, token: string) {
-  await verifyAdminAndGetUserId(token);
+  await requirePermission(token, 'offers');
   const pb = await getDataPB(token);
   await pb.collection('offers').delete(id);
 }

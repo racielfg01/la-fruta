@@ -23,8 +23,8 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useAdminStore } from "@/lib/admin-store";
 import { useAuthStore } from "@/lib/auth-context";
-import { hasPermission } from "@/lib/use-permissions";
-import type { RolePermissions } from "@/lib/permissions";
+import { hasPermission, hasAnyPermission } from "@/lib/use-permissions";
+import { PERMISSION_KEYS, type RolePermissions } from "@/lib/permissions";
 
 function AdminStoreInitializer() {
   const initialize = useAdminStore((s) => s.initialize);
@@ -71,10 +71,27 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     if (!hydrated) return;
     if (!isLoginPage && !isAuthenticated) {
       router.push("/auth/login");
-    } else if (!isLoginPage && user && user.role_id !== 2) {
+    } else if (!isLoginPage && user && !hasAnyPermission(user, PERMISSION_KEYS)) {
       router.push("/");
     }
   }, [hydrated, isAuthenticated, user, isLoginPage, router]);
+
+  // Sección actual del menú según la ruta
+  const activeItem = navigation.find(
+    (item) =>
+      pathname === item.href ||
+      (item.href !== "/admin" && pathname.startsWith(item.href))
+  );
+
+  // Sección sin permiso → primera sección permitida del menú
+  useEffect(() => {
+    if (!hydrated || !user || isLoginPage) return;
+    if (!hasAnyPermission(user, PERMISSION_KEYS)) return; // ya redirige el efecto anterior
+    if (activeItem && !hasPermission(user, activeItem.permission)) {
+      const first = navigation.find((item) => hasPermission(user, item.permission));
+      router.replace(first ? first.href : "/");
+    }
+  }, [hydrated, user, isLoginPage, activeItem, router]);
 
   const closeSidebar = useCallback(() => setSidebarOpen(false), []);
 
@@ -84,7 +101,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     return <>{children}</>;
   }
 
-  if (!hydrated || !isAuthenticated || !user || user.role_id !== 2) {
+  if (!hydrated || !isAuthenticated || !user || !hasAnyPermission(user, PERMISSION_KEYS)) {
     return null;
   }
 

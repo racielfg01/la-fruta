@@ -1,6 +1,6 @@
 'use server';
 
-import { decodePocketBaseToken } from '@/lib/auth';
+import { requirePermission } from '@/lib/admin-auth';
 import { getAdminPB, getTokenPB, getAllRecords, sanitize } from '@/lib/pocketbase';
 import type PocketBase from 'pocketbase';
 
@@ -12,24 +12,10 @@ async function getDataPB(token: string): Promise<PocketBase> {
   }
 }
 
-async function verifyAdminAndGetUserId(token: string): Promise<string> {
-  const payload = decodePocketBaseToken(token);
-  if (!payload) throw new Error('No autorizado: token inválido o expirado');
-  const pb = getTokenPB(token);
-  const user = await pb.collection('users').getOne(payload.userId, { expand: 'role_id' });
-  const roles = await getAllRecords(pb, 'roles');
-  const adminRole = roles.find((r: any) => r.name === 'admin');
-  const isAdmin = adminRole
-    ? user.role_id === adminRole.id
-    : user.expand?.role_id?.name === 'admin';
-  if (!isAdmin) throw new Error('Acceso denegado: se requieren privilegios de administrador');
-  return payload.userId;
-}
-
 // ── Provinces ──
 
 export async function getProvincesAction(token: string) {
-  await verifyAdminAndGetUserId(token);
+  await requirePermission(token, 'settings');
   const pb = await getDataPB(token);
   const rows = await getAllRecords(pb, 'provinces', { sort: 'name' });
   return rows.map((p: any) => ({ id: p.id, name: p.name, active: p.active !== false }));
@@ -37,7 +23,7 @@ export async function getProvincesAction(token: string) {
 
 export async function createProvinceAction(name: string, token: string) {
   if (!name?.trim()) throw new Error('El nombre de la provincia es requerido');
-  await verifyAdminAndGetUserId(token);
+  await requirePermission(token, 'settings');
   const pb = await getDataPB(token);
   const rec = await pb.collection('provinces').create({ name: name.trim(), active: true });
   return { id: rec.id, name: rec.name, active: true };
@@ -46,14 +32,14 @@ export async function createProvinceAction(name: string, token: string) {
 export async function updateProvinceAction(id: string, name: string, token: string) {
   if (!id) throw new Error('ID de provincia requerido');
   if (!name?.trim()) throw new Error('El nombre de la provincia es requerido');
-  await verifyAdminAndGetUserId(token);
+  await requirePermission(token, 'settings');
   const pb = await getDataPB(token);
   return pb.collection('provinces').update(id, { name: name.trim() });
 }
 
 export async function toggleProvinceAction(id: string, active: boolean, token: string) {
   if (!id) throw new Error('ID de provincia requerido');
-  await verifyAdminAndGetUserId(token);
+  await requirePermission(token, 'settings');
   const pb = await getDataPB(token);
   await pb.collection('provinces').update(id, { active });
   const muns = await getAllRecords(pb, 'municipalities', { filter: `province = "${sanitize(id)}"` });
@@ -62,7 +48,7 @@ export async function toggleProvinceAction(id: string, active: boolean, token: s
 
 export async function deleteProvinceAction(id: string, token: string) {
   if (!id) throw new Error('ID de provincia requerido');
-  await verifyAdminAndGetUserId(token);
+  await requirePermission(token, 'settings');
   const pb = await getDataPB(token);
   return pb.collection('provinces').delete(id);
 }
@@ -70,7 +56,7 @@ export async function deleteProvinceAction(id: string, token: string) {
 // ── Municipalities ──
 
 export async function getMunicipalitiesAction(token: string) {
-  await verifyAdminAndGetUserId(token);
+  await requirePermission(token, 'settings');
   const pb = await getDataPB(token);
   const rows = await getAllRecords(pb, 'municipalities', { sort: 'name', expand: 'province' });
   return rows.map((m: any) => ({
@@ -83,7 +69,7 @@ export async function getMunicipalitiesAction(token: string) {
 
 export async function createMunicipalityAction(data: { name: string; province: string }, token: string) {
   if (!data.name?.trim()) throw new Error('El nombre del municipio es requerido');
-  await verifyAdminAndGetUserId(token);
+  await requirePermission(token, 'settings');
   const pb = await getDataPB(token);
   const rec = await pb.collection('municipalities').create({ name: data.name.trim(), province: data.province || '', active: true });
   return { id: rec.id, name: rec.name, province: data.province, active: true };
@@ -92,21 +78,21 @@ export async function createMunicipalityAction(data: { name: string; province: s
 export async function updateMunicipalityAction(id: string, data: { name: string; province: string }, token: string) {
   if (!id) throw new Error('ID de municipio requerido');
   if (!data.name?.trim()) throw new Error('El nombre del municipio es requerido');
-  await verifyAdminAndGetUserId(token);
+  await requirePermission(token, 'settings');
   const pb = await getDataPB(token);
   return pb.collection('municipalities').update(id, { name: data.name.trim(), province: data.province || '' });
 }
 
 export async function toggleMunicipalityAction(id: string, active: boolean, token: string) {
   if (!id) throw new Error('ID de municipio requerido');
-  await verifyAdminAndGetUserId(token);
+  await requirePermission(token, 'settings');
   const pb = await getDataPB(token);
   return pb.collection('municipalities').update(id, { active });
 }
 
 export async function deleteMunicipalityAction(id: string, token: string) {
   if (!id) throw new Error('ID de municipio requerido');
-  await verifyAdminAndGetUserId(token);
+  await requirePermission(token, 'settings');
   const pb = await getDataPB(token);
   return pb.collection('municipalities').delete(id);
 }
@@ -114,7 +100,7 @@ export async function deleteMunicipalityAction(id: string, token: string) {
 // ── Countries ──
 
 export async function getCountriesAction(token: string) {
-  await verifyAdminAndGetUserId(token);
+  await requirePermission(token, 'settings');
   const pb = await getDataPB(token);
   const rows = await getAllRecords(pb, 'countries', { sort: 'name' });
   return rows.map((c: any) => ({
@@ -126,7 +112,7 @@ export async function getCountriesAction(token: string) {
 }
 
 export async function createCountryAction(data: { name: string; emoji?: string; active?: boolean }, token: string) {
-  await verifyAdminAndGetUserId(token);
+  await requirePermission(token, 'settings');
   const pb = await getDataPB(token);
   const rec = await pb.collection('countries').create({
     name: data.name,
@@ -137,13 +123,13 @@ export async function createCountryAction(data: { name: string; emoji?: string; 
 }
 
 export async function updateCountryAction(id: string, data: { name?: string; emoji?: string; active?: boolean }, token: string) {
-  await verifyAdminAndGetUserId(token);
+  await requirePermission(token, 'settings');
   const pb = await getDataPB(token);
   return pb.collection('countries').update(id, data);
 }
 
 export async function deleteCountryAction(id: string, token: string) {
-  await verifyAdminAndGetUserId(token);
+  await requirePermission(token, 'settings');
   const pb = await getDataPB(token);
   return pb.collection('countries').delete(id);
 }
@@ -158,7 +144,7 @@ export interface UnitRow {
 }
 
 export async function getUnitsAction(token: string): Promise<UnitRow[]> {
-  await verifyAdminAndGetUserId(token);
+  await requirePermission(token, 'settings');
   const pb = await getDataPB(token);
   const rows = await getAllRecords(pb, 'units', { sort: 'name' });
   const products = await pb.collection('products').getFullList<{ unit?: string }>({ fields: 'unit' });
@@ -177,7 +163,7 @@ export async function getUnitsAction(token: string): Promise<UnitRow[]> {
 }
 
 export async function createUnitAction(data: { name: string; active?: boolean }, token: string) {
-  await verifyAdminAndGetUserId(token);
+  await requirePermission(token, 'settings');
   const pb = await getDataPB(token);
   const name = (data.name || '').trim();
   if (!name) throw new Error('El nombre de la unidad es obligatorio');
@@ -192,7 +178,7 @@ export async function updateUnitAction(
   data: { name?: string; active?: boolean },
   token: string
 ) {
-  await verifyAdminAndGetUserId(token);
+  await requirePermission(token, 'settings');
   const pb = await getDataPB(token);
   const before = await getAllRecords(pb, 'units', { filter: `id = "${sanitize(id)}"` });
   if (before.length === 0) throw new Error('Unidad no encontrada');
@@ -222,7 +208,7 @@ export async function updateUnitAction(
 }
 
 export async function deleteUnitAction(id: string, token: string) {
-  await verifyAdminAndGetUserId(token);
+  await requirePermission(token, 'settings');
   const pb = await getDataPB(token);
   return pb.collection('units').delete(id);
 }
@@ -230,13 +216,13 @@ export async function deleteUnitAction(id: string, token: string) {
 // ── Roles ──
 
 export async function getRolesAction(token: string) {
-  await verifyAdminAndGetUserId(token);
+  await requirePermission(token, 'settings');
   const pb = await getDataPB(token);
   return getAllRecords(pb, 'roles', { sort: 'name' });
 }
 
 export async function createRoleAction(data: { name: string; description?: string; permissions?: import("@/lib/permissions").RolePermissions }, token: string) {
-  await verifyAdminAndGetUserId(token);
+  await requirePermission(token, 'settings');
   const pb = await getDataPB(token);
   const rec = await pb.collection('roles').create({
     name: data.name,
@@ -247,7 +233,7 @@ export async function createRoleAction(data: { name: string; description?: strin
 }
 
 export async function updateRoleAction(id: string, data: { name: string; description?: string; permissions?: import("@/lib/permissions").RolePermissions }, token: string) {
-  await verifyAdminAndGetUserId(token);
+  await requirePermission(token, 'settings');
   const pb = await getDataPB(token);
   return pb.collection('roles').update(id, {
     name: data.name,
@@ -257,7 +243,7 @@ export async function updateRoleAction(id: string, data: { name: string; descrip
 }
 
 export async function deleteRoleAction(id: string, token: string) {
-  await verifyAdminAndGetUserId(token);
+  await requirePermission(token, 'settings');
   const pb = await getDataPB(token);
   return pb.collection('roles').delete(id);
 }
@@ -265,7 +251,7 @@ export async function deleteRoleAction(id: string, token: string) {
 // ── Banks ──
 
 export async function getBanksAction(token: string) {
-  await verifyAdminAndGetUserId(token);
+  await requirePermission(token, 'settings');
   const pb = await getDataPB(token);
   const rows = await getAllRecords(pb, 'banks', { sort: 'name' });
   return rows.map((b: any) => ({
@@ -279,7 +265,7 @@ export async function getBanksAction(token: string) {
 }
 
 export async function createBankAction(data: { name: string; logo?: string; country?: string; currency?: string }, token: string) {
-  await verifyAdminAndGetUserId(token);
+  await requirePermission(token, 'settings');
   const pb = await getDataPB(token);
   const rec = await pb.collection('banks').create({
     name: data.name,
@@ -292,13 +278,13 @@ export async function createBankAction(data: { name: string; logo?: string; coun
 }
 
 export async function updateBankAction(id: string, data: { name?: string; logo?: string; country?: string; currency?: string; active?: boolean }, token: string) {
-  await verifyAdminAndGetUserId(token);
+  await requirePermission(token, 'settings');
   const pb = await getDataPB(token);
   return pb.collection('banks').update(id, data);
 }
 
 export async function deleteBankAction(id: string, token: string) {
-  await verifyAdminAndGetUserId(token);
+  await requirePermission(token, 'settings');
   const pb = await getDataPB(token);
   return pb.collection('banks').delete(id);
 }
@@ -306,7 +292,7 @@ export async function deleteBankAction(id: string, token: string) {
 // ── Bank accounts ──
 
 export async function getBankAccountsAction(token: string) {
-  await verifyAdminAndGetUserId(token);
+  await requirePermission(token, 'settings');
   const pb = await getDataPB(token);
   const rows = await getAllRecords(pb, 'bank_accounts', {
     sort: '-active,owner',
@@ -327,7 +313,7 @@ export async function getBankAccountsAction(token: string) {
 }
 
 export async function createBankAccountAction(data: any, token: string) {
-  await verifyAdminAndGetUserId(token);
+  await requirePermission(token, 'settings');
   const pb = await getDataPB(token);
   const bankId = await getBankIdByName(data.bank, token);
   const rec = await pb.collection('bank_accounts').create({
@@ -345,7 +331,7 @@ export async function createBankAccountAction(data: any, token: string) {
 }
 
 export async function updateBankAccountAction(id: string, data: any, token: string) {
-  await verifyAdminAndGetUserId(token);
+  await requirePermission(token, 'settings');
   const pb = await getDataPB(token);
   const updateData: any = {};
   if (data.bank !== undefined) updateData.bank = await getBankIdByName(data.bank, token);
@@ -361,7 +347,7 @@ export async function updateBankAccountAction(id: string, data: any, token: stri
 }
 
 export async function deleteBankAccountAction(id: string, token: string) {
-  await verifyAdminAndGetUserId(token);
+  await requirePermission(token, 'settings');
   const pb = await getDataPB(token);
   return pb.collection('bank_accounts').delete(id);
 }
@@ -402,7 +388,7 @@ const EMPTY_SETTINGS = {
 };
 
 export async function getSettingsAction(token: string) {
-  await verifyAdminAndGetUserId(token);
+  await requirePermission(token, 'settings');
   const pb = await getDataPB(token);
   const recs = await getAllRecords(pb, 'settings', {});
   const s = recs[0] || {};
@@ -434,7 +420,7 @@ export async function getSettingsAction(token: string) {
 }
 
 export async function updateSettingsAction(data: Partial<typeof EMPTY_SETTINGS>, token: string) {
-  await verifyAdminAndGetUserId(token);
+  await requirePermission(token, 'settings');
   const pb = await getDataPB(token);
   const recs = await getAllRecords(pb, 'settings', {});
   const body: any = {
@@ -555,14 +541,14 @@ function bannerLinkFields(data: BannerInput) {
 }
 
 export async function getBannersAction(token: string): Promise<BannerRow[]> {
-  await verifyAdminAndGetUserId(token);
+  await requirePermission(token, 'settings');
   const pb = await getDataPB(token);
   const rows = await getAllRecords(pb, 'banners', { sort: 'sort,created' });
   return rows.map(mapBanner);
 }
 
 export async function createBannerAction(data: BannerInput, token: string) {
-  await verifyAdminAndGetUserId(token);
+  await requirePermission(token, 'settings');
   const pb = await getDataPB(token);
   const rec = await pb.collection('banners').create({
     title: (data.title || '').trim(),
@@ -577,7 +563,7 @@ export async function createBannerAction(data: BannerInput, token: string) {
 
 export async function updateBannerAction(id: string, data: BannerInput, token: string) {
   if (!id) throw new Error('ID de banner requerido');
-  await verifyAdminAndGetUserId(token);
+  await requirePermission(token, 'settings');
   const pb = await getDataPB(token);
   const body: Record<string, unknown> = {};
   if (data.title !== undefined) body.title = data.title.trim();
@@ -592,7 +578,7 @@ export async function updateBannerAction(id: string, data: BannerInput, token: s
 
 export async function deleteBannerAction(id: string, token: string) {
   if (!id) throw new Error('ID de banner requerido');
-  await verifyAdminAndGetUserId(token);
+  await requirePermission(token, 'settings');
   const pb = await getDataPB(token);
   await pb.collection('banners').delete(id);
   return true;

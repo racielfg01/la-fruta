@@ -11,6 +11,7 @@ import { useState, useEffect } from "react";
 import Image from "next/image";
 import { useTheme } from "next-themes";
 import { useSettingsStore } from "@/lib/settings-store";
+import { canAccessAdmin } from "@/lib/use-permissions";
 import { NotificationBell } from "@/components/push/notification-bell";
 
 export function Header() {
@@ -27,7 +28,10 @@ export function Header() {
 
   // Esperar a que Zustand termine de hidratar desde localStorage
   const ready = !isLoading;
-  const isAdmin = ready && Number(user?.role_id) === 2;
+  // La pestaña Admin se muestra por permisos del rol, no por el role_id
+  // numérico: en el navegador todo rol no admin llega con role_id 1, así que
+  // el rol real (p. ej. «operador cobre») solo se ve en user.permissions.
+  const showAdminTab = ready && canAccessAdmin(user);
 
   // Tema y ajustes de la tienda
   const { setTheme, resolvedTheme } = useTheme();
@@ -84,7 +88,7 @@ export function Header() {
           >
             Carrito
           </Link>
-          {isAdmin && (
+          {showAdminTab && (
             <Link
               href="/admin"
               className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
@@ -183,7 +187,7 @@ export function Header() {
             >
               Carrito
             </Link>
-            {isAdmin && (
+            {showAdminTab && (
               <Link
                 href="/admin"
                 className="rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"

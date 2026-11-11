@@ -23,8 +23,8 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useAdminStore } from "@/lib/admin-store";
 import { useAuthStore } from "@/lib/auth-context";
-import { hasPermission, hasAnyPermission } from "@/lib/use-permissions";
-import { PERMISSION_KEYS, type RolePermissions } from "@/lib/permissions";
+import { hasPermission, canAccessAdmin } from "@/lib/use-permissions";
+import { type RolePermissions } from "@/lib/permissions";
 
 function AdminStoreInitializer() {
   const initialize = useAdminStore((s) => s.initialize);
@@ -71,7 +71,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     if (!hydrated) return;
     if (!isLoginPage && !isAuthenticated) {
       router.push("/auth/login");
-    } else if (!isLoginPage && user && !hasAnyPermission(user, PERMISSION_KEYS)) {
+    } else if (!isLoginPage && user && !canAccessAdmin(user)) {
       router.push("/");
     }
   }, [hydrated, isAuthenticated, user, isLoginPage, router]);
@@ -86,7 +86,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   // Sección sin permiso → primera sección permitida del menú
   useEffect(() => {
     if (!hydrated || !user || isLoginPage) return;
-    if (!hasAnyPermission(user, PERMISSION_KEYS)) return; // ya redirige el efecto anterior
+    if (!canAccessAdmin(user)) return; // ya redirige el efecto anterior
     if (activeItem && !hasPermission(user, activeItem.permission)) {
       const first = navigation.find((item) => hasPermission(user, item.permission));
       router.replace(first ? first.href : "/");
@@ -101,7 +101,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     return <>{children}</>;
   }
 
-  if (!hydrated || !isAuthenticated || !user || !hasAnyPermission(user, PERMISSION_KEYS)) {
+  if (!hydrated || !isAuthenticated || !user || !canAccessAdmin(user)) {
     return null;
   }
 

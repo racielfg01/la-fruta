@@ -39,6 +39,9 @@ que su rol no concede. El rol `admin` conserva acceso total.
 - `app/admin/layout.tsx`: la puerta pasa de `role_id !== 2` a «tiene algún
   permiso»; si la sección actual no está permitida, redirige a la primera
   sección permitida.
+- `lib/use-permissions.ts`: `canAccessAdmin(user)` — única definición de la
+  puerta, usada por el layout del panel y por la pestaña «Admin» del header.
+- `components/header.tsx`: la pestaña «Admin» se decide por permisos.
 
 **Fuera (explícito)**
 - Sin cambios de esquema en PocketBase durante el desarrollo. Hallazgo
@@ -70,8 +73,11 @@ que su rol no concede. El rol `admin` conserva acceso total.
 - [x] La puerta de `layout.tsx` deja entrar a cualquier rol con permisos,
       redirige al resto y manda a la primera sección permitida — prueba:
       lectura del diff + build.
+- [x] La pestaña «Admin» del header aparece con los permisos del rol, no por
+      `role_id === 2` — prueba: `lib/use-permissions.test.ts` (7 tests) +
+      `npx tsc --noEmit` + `npx next build`.
 - [x] Suite completa, tipos y build en verde — prueba: `npx vitest run`
-      (26 archivos, 218 tests), `npx tsc --noEmit` (exit 0), `npx next build`
+      (27 archivos, 225 tests), `npx tsc --noEmit` (exit 0), `npx next build`
       (Compiled successfully, 29/29 páginas).
 
 ## Evidence
@@ -104,6 +110,25 @@ grep y reparado antes de seguir. La suite y tsc quedaron limpios después.
 **Límite restante:** los restos `role_id === 2` del código son espejos legados
 (badges, fallbacks de rol, `resolvePermissions` del cliente) y no bloquean el
 acceso.
+
+**Bug reportado por el usuario tras la entrega (12 nov 2026):** «no se muestra
+en la ruta / en el header la pestaña de admin para el rol operador cobre».
+Causa raíz: `components/header.tsx` seguía con `Number(user?.role_id) === 2`,
+y en el navegador el `role_id` viene colapsado a 1/2 para todo rol no admin
+(`app/actions/auth.ts`), así que «operador cobre» llegaba como `role_id: 1` y
+la pestaña quedaba oculta. El `user.permissions` sí viajaba (línea 263 de
+`app/actions/auth.ts`), o sea que el dato para decidir sí estaba: lo que
+fallaba era la condición. Arreglo: `canAccessAdmin(user)` en
+`lib/use-permissions.ts` (permisos, no role_id), usada por el header y por el
+layout del panel para que las dos puertas no puedan divergir. Regresión
+cubierta en `lib/use-permissions.test.ts` (7 tests: operador con orders entra;
+cliente no; admin sin `permissions` entra por compatibilidad; y el header y
+el layout usan la misma función). Verificación: 27 archivos / 225 tests en
+verde, `tsc --noEmit` exit 0, `next build` correcto.
+
+**Verificación con datos reales:** `expand.role_id.permissions` de «operador
+cobre» llega como objeto `{... orders: true ...}` (el campo `permissions` de
+PocketBase es tipo json), y `permissionsFrom` lo acepta tal cual.
 
 **Validación contra el PB real de producción (12 nov 2026, post-commit):**
 roles reales: `admin` (ndv8fysea2frqj6), `cliente` (994jwbdlrk0etxa) y
@@ -148,6 +173,9 @@ cacheado — jenny y josefa deben recargar o re-login para ver el panel.
 
 ## Next
 
+- `components/push/notification-bell.tsx` sigue ocultando la campana solo para
+  `role_id === 2`: «operador cobre» la ve. Decidir si el personal con permisos
+  (no solo el admin) también debe perderla.
 - Documentar la deriva de esquema como riesgo del setup legado
   (`scripts/setup-pocketbase.ts` no refleja el esquema real; el campo
   `permissions` no está definido en ninguna fuente del repo).

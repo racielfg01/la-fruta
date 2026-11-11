@@ -6,17 +6,53 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useCartStore } from "@/lib/store";
 import { useCurrency } from "@/lib/currency";
-import type { PublicOffer } from "@/lib/offers";
+import { countdownParts, isOfferActive, type PublicOffer } from "@/lib/offers";
 
-function timeRemaining(endDate: string, now: number) {
-  const end = new Date(endDate.replace(" ", "T")).getTime();
-  const diff = Math.max(0, end - now);
-  return {
-    expired: end <= now,
-    days: Math.floor(diff / (1000 * 60 * 60 * 24)),
-    hours: Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)),
-    minutes: Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60)),
-  };
+/**
+ * Contador descendente hasta el vencimiento: días, horas, minutos y segundos.
+ * Antes de hidratar (now null) muestra «…» para no destellar fechas en el
+ * HTML estático; si la oferta no tiene fecha utilizable, «Sin límite».
+ */
+function OfferCountdown({
+  endDate,
+  now,
+}: {
+  endDate: string;
+  now: number | null;
+}) {
+  const parts = now !== null ? countdownParts(endDate, now) : null;
+
+  return (
+    <div className="flex items-center gap-1" aria-label="Tiempo restante">
+      <Timer className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+      {parts === null ? (
+        <span className="text-xs text-muted-foreground">
+          {now === null ? "…" : "Sin límite"}
+        </span>
+      ) : (
+        (
+          [
+            [parts.days, "días"],
+            [parts.hours, "hrs"],
+            [parts.minutes, "min"],
+            [parts.seconds, "seg"],
+          ] as const
+        ).map(([v, l]) => (
+          <div
+            key={l}
+            className="flex flex-col items-center rounded-md bg-muted px-1.5 py-0.5"
+          >
+            <span className="text-xs font-bold tabular-nums leading-none">
+              {String(v).padStart(2, "0")}
+            </span>
+            <span className="text-[9px] leading-none text-muted-foreground">
+              {l}
+            </span>
+          </div>
+        ))
+      )}
+    </div>
+  );
 }
 
 /**
@@ -28,9 +64,10 @@ export function OffersSection({ offers }: { offers: PublicOffer[] }) {
   const [now, setNow] = useState<number | null>(null);
 
   // El contador vive solo en el cliente: el HTML inicial no destella fechas.
+  // Tick de un segundo para que los segundos del contador corran de verdad.
   useEffect(() => {
     setNow(Date.now());
-    const id = setInterval(() => setNow(Date.now()), 30_000);
+    const id = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(id);
   }, []);
 
@@ -45,10 +82,12 @@ export function OffersSection({ offers }: { offers: PublicOffer[] }) {
   };
 
   // Mientras el HTML no hidrata, se muestran las fechas estáticas del servidor.
-  const visible = offers.filter((o) => {
-    if (now === null) return o.active;
-    return o.active && !timeRemaining(o.endDate, now).expired;
-  });
+  // Vencida con la página abierta: desaparece sin recargar.
+  const visible = offers.filter((o) =>
+    now === null
+      ? o.active
+      : isOfferActive({ active: o.active, end_date: o.endDate }, now)
+  );
 
   if (visible.length === 0) return null;
 
@@ -68,8 +107,10 @@ export function OffersSection({ offers }: { offers: PublicOffer[] }) {
 
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 lg:gap-6">
           {visible.map((offer) => {
-            const remaining = timeRemaining(offer.endDate, now ?? Date.now());
             const inCart = cartItems.some((item) => item.offer?.id === offer.id);
+            const expired =
+              now !== null &&
+              !isOfferActive({ active: offer.active, end_date: offer.endDate }, now);
             return (
               <div
                 key={offer.id}
@@ -107,21 +148,12 @@ export function OffersSection({ offers }: { offers: PublicOffer[] }) {
                       <span className="text-lg font-bold text-primary">
                         {formatOfferPrice(offer.price)}
                       </span>
-                      <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                        <Timer className="h-3.5 w-3.5" />
-                        {remaining.expired
-                          ? "Vencida"
-                          : remaining.days > 0
-                            ? `Termina en ${remaining.days} d ${remaining.hours} h`
-                            : remaining.hours > 0
-                              ? `Termina en ${remaining.hours} h ${remaining.minutes} m`
-                              : `Termina en ${remaining.minutes} m`}
-                      </span>
+                      <OfferCountdown endDate={offer.endDate} now={now} />
                     </div>
 
                     <Button
                       className="w-full gap-2"
-                      disabled={remaining.expired}
+                      disabled={expired}
                       onClick={() => addOfferItem(offer)}
                     >
                       {inCart ? (

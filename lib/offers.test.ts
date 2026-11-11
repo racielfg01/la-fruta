@@ -3,6 +3,7 @@
 // lib/offers.test.ts
 import { describe, test, expect } from "vitest";
 import {
+  countdownParts,
   isOfferActive,
   offerLineTargets,
   toPublicOffer,
@@ -45,6 +46,69 @@ describe("isOfferActive", () => {
       end_date: "0000-01-01T00:00:00Z",
     } as const;
     expect(isOfferActive(offer)).toBe(true);
+  });
+});
+
+describe("isOfferActive con instante fijo", () => {
+  const NOW = Date.UTC(2026, 10, 10, 12, 0, 0); // 2026-11-10 12:00 UTC
+
+  test("vigente respecto al instante dado", () => {
+    const offer = {
+      active: true,
+      end_date: new Date(NOW + 60_000).toISOString(),
+    } as const;
+    expect(isOfferActive(offer, NOW)).toBe(true);
+  });
+
+  test("vencida respecto al instante dado", () => {
+    const offer = {
+      active: true,
+      end_date: new Date(NOW - 60_000).toISOString(),
+    } as const;
+    expect(isOfferActive(offer, NOW)).toBe(false);
+  });
+});
+
+describe("countdownParts", () => {
+  const NOW = Date.UTC(2026, 10, 10, 12, 0, 0); // 2026-11-10 12:00 UTC
+
+  function inMs(ms: number): string {
+    return new Date(NOW + ms).toISOString();
+  }
+
+  test("descompone días, horas, minutos y segundos", () => {
+    const restante =
+      2 * 86_400_000 + 3 * 3_600_000 + 4 * 60_000 + 5_000;
+    expect(countdownParts(inMs(restante), NOW)).toEqual({
+      days: 2,
+      hours: 3,
+      minutes: 4,
+      seconds: 5,
+    });
+  });
+
+  test("vencida muestra ceros", () => {
+    expect(countdownParts(inMs(-5_000), NOW)).toEqual({
+      days: 0,
+      hours: 0,
+      minutes: 0,
+      seconds: 0,
+    });
+  });
+
+  test("fecha no utilizable devuelve null (oferta sin límite)", () => {
+    expect(countdownParts("", NOW)).toBeNull();
+    expect(countdownParts("no-es-fecha", NOW)).toBeNull();
+    expect(countdownParts("0000-01-01T00:00:00Z", NOW)).toBeNull();
+  });
+
+  test("acepta el formato de fecha de PocketBase (espacio en vez de T)", () => {
+    expect(countdownParts("2026-11-10 12:01:05.000Z", NOW)).toEqual({
+      days: 0,
+      hours: 0,
+      minutes: 1,
+      seconds: 5,
+    });
   });
 });
 

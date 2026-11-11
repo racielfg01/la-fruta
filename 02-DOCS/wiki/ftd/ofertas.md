@@ -38,8 +38,9 @@ compra directa desde el carrito y el checkout. El precio de la oferta es
 - Permiso `offers` en `RolePermissions` con fila «Ofertas» en el tab de roles
   y entrada «Ofertas» en el nav del admin.
 - `components/offers-section.tsx`: sección en la portada bajo el carrusel,
-  contador en vivo («Termina en 1 d 5 h») que solo corre en el cliente, badge
-  Combo/Rebaja, botón Agregar. Sin ofertas vigentes no se renderiza nada.
+  contador descendente en vivo (cajitas días/hrs/min/seg con tick de un
+  segundo, solo en el cliente), badge Combo/Rebaja, botón Agregar. Sin
+  ofertas vigentes no se renderiza nada.
 - Carrito (`lib/store.ts`): línea propia por oferta con id sintético
   `offer_<idOferta>` y snapshot `CartOffer {id, type, productId, endDate,
   price}`; `addOfferItem` con tope `MAX_OFFER_QUANTITY = 99` (no hay stock que
@@ -70,14 +71,17 @@ compra directa desde el carrito y el checkout. El precio de la oferta es
 - [x] CRUD de ofertas operativo en `/admin/ofertas` (crear, editar, activar,
       borrar) con subida de imagen `offerImage`.
 - [x] Permiso `offers` en roles con fila «Ofertas» y nav «Ofertas» en el admin.
-- [x] Portada: sección con solo las ofertas activas y vigentes; contador por
-      oferta; sin ofertas no se renderiza la sección.
+- [x] Portada: sección con solo las ofertas activas y vigentes; contador
+      descendente en vivo (días/hrs/min/seg, tick de 1 s); sin ofertas no se
+      renderiza la sección.
 - [x] Oferta vencida o desactivada no aparece en la portada.
 - [x] Precio final sin margen en portada, carrito y checkout.
 - [x] Compra end-to-end: carrito → checkout → `order_items` con `offer_id`,
       stock del producto rebajado descontado y combo sin tocar stock.
 - [x] Cancelación: stock del producto rebajado repuesto y combo ignorado.
-- [x] `vitest run` (193/193), `tsc --noEmit` y `pnpm build` en verde.
+- [x] `vitest run` (199/199: incluye 6 pruebas nuevas del dominio del
+      contador, `isOfferActive` con instante fijo y `countdownParts`),
+      `tsc --noEmit` y `pnpm build` en verde.
 
 ## Evidence
 
@@ -89,7 +93,8 @@ y combo desactivado.
 **Portada**
 - Sección «Ofertas» bajo el carrusel con 2 tarjetas: badges «Rebaja» y
   «Combo», $0.46 USD (420 CUP) y $1.63 USD (1500 CUP) convertidos sin margen,
-  contadores «Termina en 23 h 59 m» y «Termina en 1 d 5 h».
+  contadores descendentes con cajitas días/hrs/min/seg (tick de 1 s,
+  `tabular-nums`).
 - La vencida y la desactivada no aparecen; al vencer la rebaja del Ajo
   desapareció sola de la portada (se extendió luego la fecha para seguir
   probando).
@@ -122,9 +127,20 @@ y combo desactivado.
 - Tab Roles: fila «Ofertas» entre Productos y Envíos en el diálogo de rol.
 
 **Estático**
-- `pnpm vitest run` 193/193 (8 tests nuevos de ofertas), `npx tsc --noEmit`
+- `pnpm vitest run` 199/199 (8 pruebas de ofertas + 6 de contador), `npx tsc --noEmit`
   sin errores, `pnpm build` compila con `/admin/ofertas` en la lista de
   rutas.
+
+## Contador descuenta en vivo (restaurado tras la reconstrucción)
+
+La reescritura post-reset dejó solo un tick de 30 s sin segundos. Se
+restauró el diseño original (recuperado del blob inalcanzable del `.git`):
+`countdownParts(endDate, now)` en `lib/offers.ts` (días, horas, minutos,
+segundos, `null` si la fecha no es utilizable) + `isOfferActive` con
+instante fijo (`now`), y `components/offers-section.tsx` con `OfferCountdown`
+y `setInterval(..., 1000)`. Verificado en `localhost:3000`: los segundos
+corren cada segundo en las ofertas de la portada y las vencidas desaparecen
+sin recargar.
 
 ## Next
 

@@ -68,17 +68,49 @@ export function toAdminOffer(rec: Record<string, any>): AdminOffer {
  * ¿La oferta está vigente? Debe estar activa y con fecha límite por delante.
  * Sin fecha (o fecha inútil) cuenta como vigente «infinita».
  */
-export function isOfferActive(o: {
-  active?: boolean | null;
-  end_date?: string | null;
-}): boolean {
+export function isOfferActive(
+  o: {
+    active?: boolean | null;
+    end_date?: string | null;
+  },
+  now: number = Date.now()
+): boolean {
   if (o.active === false) return false;
   const raw = String(o.end_date ?? "").trim();
   if (!raw) return true;
   const t = new Date(raw.replace(" ", "T")).getTime();
   // NaN o época negativa (p. ej. "0000-01-01…"): sin límite real.
   if (Number.isNaN(t) || t <= 0) return true;
-  return Date.now() < t;
+  return now < t;
+}
+
+export interface CountdownParts {
+  days: number;
+  hours: number;
+  minutes: number;
+  seconds: number;
+}
+
+/**
+ * Descompone el tiempo restante hasta el vencimiento para el contador
+ * descendente de la portada. Acepta ISO y el formato de PocketBase
+ * (espacio en vez de T). Devuelve null si la fecha no es utilizable
+ * (oferta sin límite: no hay nada que contar).
+ */
+export function countdownParts(
+  endDate: string,
+  now: number = Date.now()
+): CountdownParts | null {
+  const raw = String(endDate ?? "").trim();
+  const t = raw ? new Date(raw.replace(" ", "T")).getTime() : NaN;
+  if (Number.isNaN(t) || t <= 0) return null;
+  const total = Math.max(0, Math.floor((t - now) / 1000));
+  return {
+    days: Math.floor(total / 86_400),
+    hours: Math.floor((total % 86_400) / 3_600),
+    minutes: Math.floor((total % 3_600) / 60),
+    seconds: total % 60,
+  };
 }
 
 /** Filtra una lista de ofertas dejando solo las vigentes. */

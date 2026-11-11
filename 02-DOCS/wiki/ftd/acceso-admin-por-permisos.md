@@ -171,8 +171,62 @@ orders (SÍ panel, solo sección orders). Nota: los permisos se leen del
 expande en cada acción, pero el menú/puerta del cliente usa el usuario
 cacheado — jenny y josefa deben recargar o re-login para ver el panel.
 
+**Sesión en producción (11 nov 2026, tarde): «la pestaña no se ve» y «me
+desloguea».** Tres hallazgos, con evidencia:
+
+1. **La pestaña «Admin» no se veía porque el arreglo nunca llegó a producción.**
+   El commit `97bd7fb` (la pestaña se decide por permisos del rol) estaba
+   **solo en local**: `git branch -vv` mostraba `main [origin/main: adelante 1]`
+   y `git log origin/main` terminaba en `fd6d29e`. El bundle servido en
+   `mercatoma.vercel.app` todavía traía la condición vieja
+   `M = ready && 2 === Number(user?.role_id)` — el `role_id` colapsado a 1/2
+   hace que «operador cobre» nunca pase el filtro. Push a `origin/main` y
+   despliegue: el bundle desplegado ya incluye `canAccessAdmin`.
+
+2. **`/admin` → `/admin/ordenes` es el comportamiento correcto, no un fallo.**
+   El rol «operador cobre» tiene `orders: true` y `dashboard: false`, así que el
+   layout lo manda a la primera sección que su rol tiene permitida. Si el dueño
+   quiere que `/admin` abra el panel en vez de las órdenes, hay que darle
+   `dashboard` al rol (decisión de permisos, no de código).
+
+3. **El cierre de sesión sí era un fallo — y no solo del «operador cobre».**
+   `AuthProvider` cerraba la sesión ante **cualquier** fallo al revalidar
+   (red caída, 5xx, timeout), y el layout del panel decidía «no tienes
+   permisos» con el usuario **cacheado**, sin esperar a que el servidor
+   confirmara la sesión. Consecuencias reproducidas en navegador: con la
+   caché obsoleta (permisos asignados después del login) entrar a `/admin`
+   expulsaba al usuario a la portada y no lo dejaba volver al panel; con un
+   fallo de red en las Server Actions, la sesión se cerraba y el usuario
+   acababa en `/auth/login`.
+
+   Arreglo:
+   - `refreshUserAction` devuelve un `code`: `invalid_session` cuando el token
+     ya no vale (el servidor lo dice) y `error` cuando no se pudo saber.
+   - El cliente solo cierra la sesión ante `invalid_session`
+     (`lib/session-refresh.ts`); un fallo transitorio conserva la sesión.
+   - El layout del panel espera a que el servidor valide la sesión antes de
+     redirigir (`lib/admin-gate.ts`): `wait` mientras no ha confirmado,
+     `login` sin sesión, `home` sin permisos, `allow` en otro caso.
+   - El store distingue «hidratado» de «sesión validada»
+     (`sessionValidated`, que ya no se persiste): tras recargar, la sesión
+     cacheada está sin confirmar hasta que el servidor responde.
+
+   Regresión: `lib/session-refresh.test.ts` (5 tests) y `lib/admin-gate.test.ts`
+   (6 tests).
+
+**Verificación en navegador contra producción** (cuenta real de rol «operador
+cobre», 11 nov 2026): la pestaña «Admin» aparece en la portada; `/admin` abre
+`/admin/ordenes`; con la caché obsoleta ya no expulsa a la portada; con un
+fallo de red la sesión se conserva y el panel abre; con un token caducado la
+sesión sí se cierra (que es lo correcto). `npx vitest run` → 29 archivos /
+236 tests en verde, `npx tsc --noEmit` exit 0, `npx next build` correcto.
+
 ## Next
 
+- **Decidir si «operador cobre» recibe `dashboard`**: con `dashboard: false`
+  entrar a `/admin` abre siempre `/admin/ordenes` (comportamiento correcto,
+  pero puede sorprender). Es un cambio de permisos en
+  `/admin/configuracion?tab=roles`, no de código.
 - `components/push/notification-bell.tsx` sigue ocultando la campana solo para
   `role_id === 2`: «operador cobre» la ve. Decidir si el personal con permisos
   (no solo el admin) también debe perderla.

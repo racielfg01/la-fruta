@@ -18,12 +18,14 @@ import {
   Bell,
   BadgePercent,
   Settings as SettingsIcon,
+  Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useAdminStore } from "@/lib/admin-store";
 import { useAuthStore } from "@/lib/auth-context";
 import { hasPermission, canAccessAdmin } from "@/lib/use-permissions";
+import { adminGate } from "@/lib/admin-gate";
 import { type RolePermissions } from "@/lib/permissions";
 
 function AdminStoreInitializer() {
@@ -51,12 +53,22 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [hydrated, setHydrated] = useState(false);
   const isLoginPage = pathname === "/admin/login";
 
-  const { isAuthenticated, user, logout } = useAuthStore();
+  const { isAuthenticated, user, logout, sessionValidated } = useAuthStore();
   const pendingOrders = useAdminStore(
     (state) => state.orders.filter((order) => order.status === "pending").length
   );
 
-  // Esperar a que zustand persist rehidrate desde localStorage
+  // La puerta espera a que el servidor confirme la sesión: el usuario cacheado
+  // puede estar obsoleto (p. ej. a quien se le asignó un rol con permisos
+  // después de iniciar sesión) y decidir con eso lo expulsaba del panel.
+  const gate = adminGate({
+    isLoading: !sessionValidated,
+    isAuthenticated,
+    user,
+    isLoginPage,
+  });
+
+  // Esperar a que zustand termine de hidratar desde localStorage
   useEffect(() => {
     if (useAuthStore.persist.hasHydrated()) {
       setHydrated(true);
@@ -69,12 +81,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   // Redirigir solo después de saber el estado real de autenticación
   useEffect(() => {
     if (!hydrated) return;
-    if (!isLoginPage && !isAuthenticated) {
+    if (gate === "login") {
       router.push("/auth/login");
-    } else if (!isLoginPage && user && !canAccessAdmin(user)) {
+    } else if (gate === "home") {
       router.push("/");
     }
-  }, [hydrated, isAuthenticated, user, isLoginPage, router]);
+  }, [hydrated, gate, router]);
 
   // Sección actual del menú según la ruta
   const activeItem = navigation.find(
@@ -85,13 +97,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   // Sección sin permiso → primera sección permitida del menú
   useEffect(() => {
-    if (!hydrated || !user || isLoginPage) return;
+    if (!hydrated || !sessionValidated || !user || isLoginPage) return;
     if (!canAccessAdmin(user)) return; // ya redirige el efecto anterior
     if (activeItem && !hasPermission(user, activeItem.permission)) {
       const first = navigation.find((item) => hasPermission(user, item.permission));
       router.replace(first ? first.href : "/");
     }
-  }, [hydrated, user, isLoginPage, activeItem, router]);
+  }, [hydrated, sessionValidated, user, isLoginPage, activeItem, router]);
 
   const closeSidebar = useCallback(() => setSidebarOpen(false), []);
 
@@ -101,7 +113,16 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     return <>{children}</>;
   }
 
-  if (!hydrated || !isAuthenticated || !user || !canAccessAdmin(user)) {
+  if (!hydrated || gate !== "allow" || !user) {
+    // Mientras el servidor valida la sesión no se decide nada: se muestra
+    // una espera en vez de una pantalla en blanco.
+    if (!hydrated || gate === "wait") {
+      return (
+        <div className="flex min-h-screen items-center justify-center">
+          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+        </div>
+      );
+    }
     return null;
   }
 

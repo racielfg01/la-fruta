@@ -21,6 +21,12 @@ export interface AuthResponse {
   };
   token?: string;
   error?: string;
+  /**
+   * Veredicto del servidor sobre la sesión: `invalid_session` = el token
+   * expiró o fue invalidado (hay que cerrar la sesión); `error` = no se pudo
+   * saber (red, 500, timeout) y la sesión cacheada sigue siendo válida.
+   */
+  code?: 'invalid_session' | 'error';
 }
 
 function validateEmail(email: string): { valid: boolean; error?: string } {
@@ -239,7 +245,12 @@ export async function refreshUserAction(token: string): Promise<AuthResponse> {
   try {
     const payload = decodePocketBaseToken(token);
     if (!payload) {
-      return { success: false, message: '', error: 'Sesión inválida o expirada' };
+      return {
+        success: false,
+        message: '',
+        error: 'Sesión inválida o expirada',
+        code: 'invalid_session',
+      };
     }
     const pb = getTokenPB(token);
     const userWithRole = await pb.collection('users').getOne(payload.userId, {
@@ -266,6 +277,13 @@ user: {
     };
   } catch (error) {
     console.error('Refresh user error:', error);
-    return { success: false, message: '', error: 'No se pudo validar la sesión' };
+    // Fallo transitorio (red, PocketBase caído, 5xx): no dice nada sobre la
+    // validez del token, así que NO se cierra la sesión.
+    return {
+      success: false,
+      message: '',
+      error: 'No se pudo validar la sesión',
+      code: 'error',
+    };
   }
 }

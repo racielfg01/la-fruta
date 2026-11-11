@@ -98,16 +98,36 @@ de mapeo dejó duplicadas las verificaciones viejas junto a las nuevas
 (grupo de regex mal cerrado); detectado por corrimiento de números de línea en
 grep y reparado antes de seguir. La suite y tsc quedaron limpios después.
 
-**Límite de la verificación:** no se probó contra una sesión real de un rol
-«operador» en la PocketBase local (requiere crear el rol y un usuario). El
-resto de los restos `role_id === 2` del código son espejos legados (badges,
-fallbacks de rol, `resolvePermissions` del cliente) y no bloquean el acceso.
+**Límite restante:** los restos `role_id === 2` del código son espejos legados
+(badges, fallbacks de rol, `resolvePermissions` del cliente) y no bloquean el
+acceso.
+
+**Validación contra el PB real de producción (12 nov 2026, post-commit):**
+roles reales: `admin` (ndv8fysea2frqj6), `cliente` (994jwbdlrk0etxa) y
+`operador cobre` (rb69mios4vh1az3) — los tres SIN campo `permissions` en el
+registro. Test temporal contra el PB real con tokens de impersonación (sin
+contraseñas) de jenny@lafruta.com (operador cobre) y admin@lafruta.com
+(admin), fetch del SDK parcheado con curl porque el sandbox solo sale por
+proxy:
+
+- `admin` (sin campo) → compatibilidad por nombre: TODO pasa en los 7
+  permisos, `userId` correcto.
+- `cliente` (sin campo) → NO_PERMISSIONS, sin secciones, sin entrada.
+- `operador cobre` (sin campo) → NO_PERMISSIONS: rechazado en los 7 permisos,
+  uno a uno y como array («permisos insuficientes»).
+- Resultado: 7/7 tests en verde con datos y tokens reales; el test temporal se
+  borró tras correr (no forma parte de la suite).
+
+Conclusión: la puerta por permisos funciona; «operador cobre» necesita
+permisos asignados en `/admin/configuracion?tab=roles` para que sus 2 usuarios
+(josefaformigohernandez@gmail.com, jenny@lafruta.com) entren al panel.
 
 ## Next
 
-- Verificar con un rol «operador» real (permisos orders + offers) contra la
-  PocketBase local: entrada al panel, menú acotado y rechazo de acciones
-  ajenas.
+- Asignar permisos a «operador cobre» (hoy sin ninguno): decisión del dueño;
+  sugerencia para cajero `dashboard` + `orders`. Se hace en
+  `/admin/configuracion?tab=roles` o por API con el mismo formato que
+  `updateRoleAction` (permissions como JSON string).
 - Decidir si el uploader de imágenes (`app/api/uploadthing/core.ts`) exige el
   permiso de su sección; hoy acepta a cualquier usuario autenticado.
 - Revisar `app/actions/notifications.ts` con el mismo criterio.

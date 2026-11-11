@@ -10,6 +10,7 @@ import { after } from 'next/server';
 import type PocketBase from 'pocketbase';
 import { Product } from '@/lib/store';
 import { Category, DeliveryZone, User, Order, Currency } from '@/lib/admin-store';
+import { AdminOffer, OfferInput, toAdminOffer, toIsoOfferDate } from '@/lib/offers';
 import { buildZoneCreateRecord, buildZonePriceUpdate } from '@/lib/delivery-zones-excel';
 import { buildProductPriceUpdate } from '@/lib/product-prices-excel';
 import { randomBytes } from 'crypto';
@@ -127,7 +128,7 @@ export async function getAdminData(token: string) {
 
   const pb = await getDataPB(token);
 
-  const [products, categories, deliveryZones, users, orders, currencies, roles] = await Promise.all([
+  const [products, categories, deliveryZones, users, orders, currencies, roles, offers] = await Promise.all([
     getAllRecords(pb, 'products', { sort: 'name', expand: 'category' }),
     getAllRecords(pb, 'categories', { sort: 'name' }),
     getAllRecords(pb, 'delivery_zones', { sort: 'name' }),
@@ -135,6 +136,7 @@ export async function getAdminData(token: string) {
     getAllRecords(pb, 'orders', { sort: '-created_at' }),
     getAllRecords(pb, 'currencies', { sort: 'code' }),
     getAllRecords(pb, 'roles', { sort: 'name' }),
+    getAllRecords(pb, 'offers', { sort: '-created' }),
   ]);
 
   const roleIds = await getRoleIds();
@@ -165,6 +167,7 @@ export async function getAdminData(token: string) {
         .sort((a: any, b: any) => String(a.id).localeCompare(String(b.id)))
         .map((item: any) => ({
           productId: item.product_id,
+          offerId: item.offer_id || undefined,
           productName: item.product_name,
           quantity: item.quantity,
           price: Number(item.price),
@@ -201,6 +204,7 @@ export async function getAdminData(token: string) {
       description: r.description || '',
       permissions: r.permissions ? (typeof r.permissions === 'string' ? JSON.parse(r.permissions) : r.permissions) : undefined,
     })),
+    offers: offers.map((o: any) => toAdminOffer(o)),
   };
 }
 
@@ -562,4 +566,57 @@ export async function setDefaultCurrencyAction(id: string, token: string) {
     ))
   );
   await pb.collection('currencies').update(id, { is_default: true });
+}
+
+// ── Ofertas ──────────────────────────────────────────────────────────────
+// El precio de la oferta es FINAL: se guarda tal cual y nunca se le aplica
+// el margen de ganancia (ni en portada, ni en carrito, ni en el checkout).
+
+export async function addOfferAction(data: OfferInput, token: string): Promise<AdminOffer> {
+  await verifyAdminAndGetUserId(token);
+  const pb = await getDataPB(token);
+  if (data.type === 'product' && !data.productId) {
+    throw new Error('Selecciona el producto de la rebaja');
+  }
+  const record = await pb.collection('offers').create({
+    name: data.name.trim(),
+    description: data.description.trim(),
+    price: Number(data.price),
+    type: data.type,
+    // Relación solo cuando la rebaja respalda la oferta; los combos no la llevan.
+    ...(data.type === 'product' && data.productId ? { product_id: data.productId } : {}),
+    image: data.image || '',
+    end_date: toIsoOfferDate(data.endDate),
+    active: !!data.active,
+  });
+  return toAdminOffer(record as Record<string, any>);
+}
+
+export async function editOfferAction(id: string, data: Partial<OfferInput>, token: string): Promise<AdminOffer> {
+  await verifyAdminAndGetUserId(token);
+  const pb = await getDataPB(token);
+  const updateData: any = {};
+  if (data.name !== undefined) updateData.name = data.name.trim();
+  if (data.description !== undefined) updateData.description = data.description.trim();
+  if (data.price !== undefined) updateData.price = Number(data.price);
+  if (data.type !== undefined) updateData.type = data.type;
+  if (data.image !== undefined) updateData.image = data.image || '';
+  if (data.active !== undefined) updateData.active = !!data.active;
+  if (data.endDate !== undefined) updateData.end_date = toIsoOfferDate(data.endDate);
+  if (data.productId !== undefined) {
+    // Combo: relación limpia (null); rebaja: el producto elegido.
+    updateData.product_id = data.type === 'combo' || !data.productId ? null : data.productId;
+  }
+  if (Object.keys(updateData).length === 0) {
+    const current = await pb.collection('offers').getOne(id);
+    return toAdminOffer(current as Record<string, any>);
+  }
+  const record = await pb.collection('offers').update(id, updateData);
+  return toAdminOffer(record as Record<string, any>);
+}
+
+export async function removeOfferAction(id: string, token: string) {
+  await verifyAdminAndGetUserId(token);
+  const pb = await getDataPB(token);
+  await pb.collection('offers').delete(id);
 }

@@ -10,12 +10,13 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Field, FieldLabel } from "@/components/ui/field";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Switch } from "@/components/ui/switch";
-import { Plus, Pencil, Trash2, Shield, LayoutDashboard, ShoppingBag, Package, Truck, Users, Cog, Check, X } from "lucide-react";
+import { Plus, Pencil, Trash2, Shield, LayoutDashboard, ShoppingBag, Package, Truck, Users, Cog, Check, X, BadgePercent } from "lucide-react";
 
 const PERMISSION_KEYS: { key: keyof RolePermissions; label: string; icon: any }[] = [
   { key: "dashboard", label: "Panel Principal", icon: LayoutDashboard },
   { key: "orders", label: "Órdenes", icon: ShoppingBag },
   { key: "products", label: "Productos", icon: Package },
+  { key: "offers", label: "Ofertas", icon: BadgePercent },
   { key: "shipping", label: "Envíos", icon: Truck },
   { key: "users", label: "Usuarios", icon: Users },
   { key: "settings", label: "Configuración", icon: Cog },

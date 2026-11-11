@@ -31,6 +31,14 @@ export const ourFileRouter = {
     })
     .onUploadComplete(({ file }) => ({ url: file.url })),
 
+  offerImage: f({ image: { maxFileSize: "4MB" } })
+    .middleware(({ req }) => {
+      const token = req.headers.get("authorization")?.replace("Bearer ", "");
+      if (!token || !decodePocketBaseToken(token)) throw new Error("No autorizado");
+      return { userId: decodePocketBaseToken(token)!.userId };
+    })
+    .onUploadComplete(({ file }) => ({ url: file.url })),
+
   bankLogo: f({ image: { maxFileSize: "2MB" } })
     .middleware(({ req }) => {
       const token = req.headers.get("authorization")?.replace("Bearer ", "");

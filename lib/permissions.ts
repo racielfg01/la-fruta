@@ -5,6 +5,7 @@ export interface RolePermissions {
   shipping: boolean;
   users: boolean;
   settings: boolean;
+  offers: boolean;
 }
 
 export const ALL_PERMISSIONS: RolePermissions = {
@@ -14,6 +15,7 @@ export const ALL_PERMISSIONS: RolePermissions = {
   shipping: true,
   users: true,
   settings: true,
+  offers: true,
 };
 
 export const NO_PERMISSIONS: RolePermissions = {
@@ -23,4 +25,5 @@ export const NO_PERMISSIONS: RolePermissions = {
   shipping: false,
   users: false,
   settings: false,
+  offers: false,
 };

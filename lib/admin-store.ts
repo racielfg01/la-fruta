@@ -21,6 +21,9 @@ import {
   editCurrencyAction,
   removeCurrencyAction,
   setDefaultCurrencyAction,
+  addOfferAction,
+  editOfferAction,
+  removeOfferAction,
 } from "@/app/actions/admin";
 import {
   createRoleAction,
@@ -29,6 +32,7 @@ import {
 } from "@/app/actions/admin-extras";
 import { useAuthStore } from "./auth-context";
 import type { RolePermissions } from "./permissions";
+import type { AdminOffer, OfferInput } from "./offers";
 export { ALL_PERMISSIONS, NO_PERMISSIONS } from "./permissions";
 export type { RolePermissions } from "./permissions";
 
@@ -73,6 +77,7 @@ export interface User {
 
 export interface OrderItem {
   productId: string;
+  offerId?: string;
   productName: string;
   quantity: number;
   price: number;
@@ -148,6 +153,7 @@ interface AdminStore {
   orders: Order[];
   currencies: Currency[];
   roles: Role[];
+  offers: AdminOffer[];
 
   initialize: () => Promise<void>;
 
@@ -178,6 +184,10 @@ interface AdminStore {
   addRole: (role: Role) => Promise<void>;
   updateRole: (id: string, data: Partial<Role>) => Promise<void>;
   deleteRole: (id: string) => Promise<void>;
+
+  addOffer: (data: OfferInput) => Promise<void>;
+  updateOffer: (id: string, data: Partial<OfferInput>) => Promise<void>;
+  deleteOffer: (id: string) => Promise<void>;
 }
 
 // Helper para obtener el token actual (fuera del store para evitar ciclos)
@@ -205,6 +215,7 @@ export const useAdminStore = create<AdminStore>()((set, get) => ({
   orders: [],
   currencies: [],
   roles: [],
+  offers: [],
 
   initialize: async () => {
     if (get().loaded || get().loading) return;
@@ -220,6 +231,7 @@ const data = await withTimeout(getAdminData(token), 15000);
         orders: data.orders as Order[],
         currencies: data.currencies as unknown as Currency[],
         roles: data.roles as unknown as Role[],
+        offers: data.offers as AdminOffer[],
         loaded: true,
         loading: false,
       });
@@ -360,5 +372,21 @@ const data = await withTimeout(getAdminData(token), 15000);
     const token = getAuthToken();
     await deleteRoleAction(id, token);
     set({ roles: get().roles.filter((r) => r.id !== id) });
+  },
+
+  addOffer: async (data) => {
+    const token = getAuthToken();
+    const created = await addOfferAction(data, token);
+    set({ offers: [created, ...get().offers] });
+  },
+  updateOffer: async (id, data) => {
+    const token = getAuthToken();
+    const updated = await editOfferAction(id, data, token);
+    set({ offers: get().offers.map((o) => (o.id === id ? updated : o)) });
+  },
+  deleteOffer: async (id) => {
+    const token = getAuthToken();
+    await removeOfferAction(id, token);
+    set({ offers: get().offers.filter((o) => o.id !== id) });
   },
 }));

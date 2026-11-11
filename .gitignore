@@ -136,3 +136,6 @@ pnpm-lock.yaml
 .opencode/rsc/seo-geo
 .opencode/rsc/ux
 .opencode/rsc/tidy
+.opencode/rsc/security-audit
+.opencode/rsc/asdd
+.opencode/commands/security-audit.md

@@ -41,7 +41,10 @@ que su rol no concede. El rol `admin` conserva acceso total.
   sección permitida.
 
 **Fuera (explícito)**
-- Sin cambios de esquema en PocketBase ni en la UI de `/admin/configuracion`.
+- Sin cambios de esquema en PocketBase durante el desarrollo. Hallazgo
+  posterior (ver Evidence): la colección `roles` de producción NO tenía el
+  campo `permissions` — el que la propia app ya escribía — y hubo que
+  añadirlo de forma aditiva para que el feature funcione en producción.
 - El uploader (`app/api/uploadthing/core.ts`) sigue aceptando a cualquier
   usuario autenticado; no forma parte de esta pasada.
 - `app/actions/notifications.ts` no se toca en esta pasada.
@@ -122,12 +125,32 @@ Conclusión: la puerta por permisos funciona; «operador cobre» necesita
 permisos asignados en `/admin/configuracion?tab=roles` para que sus 2 usuarios
 (josefaformigohernandez@gmail.com, jenny@lafruta.com) entren al panel.
 
+**Deriva de esquema descubierta y corregida (12 nov 2026):** al asignar los
+permisos por API, el PATCH devolvía `permissions: undefined` — la colección
+`roles` de producción solo tenía id/name/description/created_at. El campo
+`permissions` (json, no requerido) se añadió con PATCH de colección sobre el
+array `fields` existente, preservando ids y `onCreate` del autodate. Sin ese
+campo, `createRoleAction`/`updateRoleAction` habrían estado descartando
+silenciosamente los permisos en producción. `scripts/setup-pocketbase.ts` es
+legado y no define el campo; ninguna instancia documentada lo define.
+
+**Asignación aplicada (decisión del dueño: solo `orders`) y re-validación:**
+rol «operador cobre» (rb69mios4vh1az3) con
+`{"dashboard":false,"orders":true,"products":false,"shipping":false,"users":false,"settings":false,"offers":false}`,
+mismo formato que `updateRoleAction`. Re-validación end-to-end con tokens de
+impersonación reales: operador + `orders` → pasa (userId correcto); operador +
+cada uno de los otros 6 permisos → rechazado; array sin orders → rechazado;
+array con orders → pasa; admin (regresión) → pasa todo. 7/7 tests en verde,
+tabla por rol: admin TODO (SÍ panel), cliente nada (NO), operador cobre solo
+orders (SÍ panel, solo sección orders). Nota: los permisos se leen del
+expande en cada acción, pero el menú/puerta del cliente usa el usuario
+cacheado — jenny y josefa deben recargar o re-login para ver el panel.
+
 ## Next
 
-- Asignar permisos a «operador cobre» (hoy sin ninguno): decisión del dueño;
-  sugerencia para cajero `dashboard` + `orders`. Se hace en
-  `/admin/configuracion?tab=roles` o por API con el mismo formato que
-  `updateRoleAction` (permissions como JSON string).
+- Documentar la deriva de esquema como riesgo del setup legado
+  (`scripts/setup-pocketbase.ts` no refleja el esquema real; el campo
+  `permissions` no está definido en ninguna fuente del repo).
 - Decidir si el uploader de imágenes (`app/api/uploadthing/core.ts`) exige el
   permiso de su sección; hoy acepta a cualquier usuario autenticado.
 - Revisar `app/actions/notifications.ts` con el mismo criterio.

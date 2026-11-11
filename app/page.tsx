@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { getPublicBanners, getPublicSettings } from '@/app/actions/public'
 import { getPublicProducts } from '@/app/actions/public-products'
+import { getPublicOffers } from '@/app/actions/public-offers'
 import { HomeExperience } from '@/components/home-experience'
 import type { Product } from '@/lib/store'
 import {
@@ -34,11 +35,13 @@ export const metadata: Metadata = {
 }
 
 export default async function HomePage() {
-  const [{ products, categories }, banners, settings] = await Promise.all([
+  const [{ products, categories }, banners, settings, offersResult] = await Promise.all([
     getPublicProducts(),
     getPublicBanners(),
     getPublicSettings(),
+    getPublicOffers(),
   ])
+  const offers = offersResult.success ? offersResult.data : []
 
   const storeName = settings.storeName || SITE_NAME
   const phone = settings.whatsappPhone || WHATSAPP_PHONE
@@ -85,6 +88,7 @@ export default async function HomePage() {
         products={products as unknown as Product[]}
         categories={categories}
         banners={banners}
+        offers={offers}
       />
     </>
   )

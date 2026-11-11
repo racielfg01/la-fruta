@@ -75,6 +75,8 @@ export interface CreateOrderInput {
   contactCarnet?: string;
   items: {
     productId: string;
+    /** Presente cuando la línea viene de una oferta. */
+    offerId?: string;
     productName: string;
     quantity: number;
     price: number;
@@ -185,6 +187,7 @@ export async function createOrderAction(
       // (evita vender a precio/stock desactualizados del carrito del cliente).
       const validatedItems: {
         productId: string;
+        offerId?: string;
         productName: string;
         quantity: number;
         price: number;
@@ -196,6 +199,95 @@ export async function createOrderAction(
             error: `Cantidad inválida para "${item.productName}".`,
           };
         }
+
+        if (item.offerId) {
+          // Línea de oferta: se revalida con datos frescos (anti-tampering)
+          // y el precio FINAL lo pone la oferta, sin margen de ganancia.
+          const offer = await pb
+            .collection('offers')
+            .getOne(item.offerId)
+            .catch(() => null);
+          if (!offer) {
+            return {
+              success: false,
+              error: `La oferta "${item.productName}" ya no está disponible.`,
+            };
+          }
+          if (offer.active === false) {
+            return {
+              success: false,
+              error: `La oferta "${offer.name}" fue desactivada. Retírala del carrito.`,
+            };
+          }
+          const endMs = new Date(
+            String(offer.end_date || '').replace(' ', 'T')
+          ).getTime();
+          if (!(Number.isNaN(endMs) || endMs <= 0) && Date.now() >= endMs) {
+            return {
+              success: false,
+              error: `La oferta "${offer.name}" ya venció. Retírala del carrito.`,
+            };
+          }
+          const offerPrice =
+            Math.round((Number(offer.price) || 0) * 100) / 100;
+
+          let offerProductId = '';
+          if (offer.type === 'product' && offer.product_id) {
+            // La rebaja vende el producto real: zona y stock se validan contra él.
+            let product: any;
+            try {
+              product = await pb
+                .collection('products')
+                .getOne(offer.product_id);
+            } catch {
+              return {
+                success: false,
+                error: `El producto de la oferta "${offer.name}" ya no está disponible.`,
+              };
+            }
+            const availableMuns = String(
+              product.available_municipalities || ''
+            )
+              .split(',')
+              .map((s: string) => s.trim())
+              .filter(Boolean);
+            if (
+              availableMuns.length > 0 &&
+              orderData.municipalityId &&
+              !availableMuns.includes(orderData.municipalityId)
+            ) {
+              return {
+                success: false,
+                error: `"${product.name}" no está disponible en tu zona de entrega.`,
+              };
+            }
+            const locs = parseLocations(product.product_locations);
+            const stock = effectiveStock(
+              locs,
+              orderData.municipalityId,
+              orderData.provinceId,
+              Math.max(0, Number(product.stock) || 0)
+            );
+            if (stock < item.quantity) {
+              return {
+                success: false,
+                error:
+                  `Stock insuficiente para "${product.name}". ` +
+                  `Solo quedan ${stock} disponible(s).`,
+              };
+            }
+            offerProductId = offer.product_id;
+          }
+          validatedItems.push({
+            productId: offerProductId,
+            offerId: item.offerId,
+            productName: offer.name || item.productName,
+            quantity: Math.floor(item.quantity),
+            price: offerPrice,
+          });
+          continue;
+        }
+
         let product: any;
         try {
           product = await pb.collection('products').getOne(item.productId);
@@ -305,6 +397,7 @@ export async function createOrderAction(
         await pb.collection('order_items').create({
           order_id: orderId,
           product_id: item.productId,
+          offer_id: item.offerId || '',
           product_name: item.productName,
           quantity: item.quantity,
           price: item.price,
@@ -313,7 +406,9 @@ export async function createOrderAction(
 
       // Decremento de stock: dentro del lock, sin doble venta entre pedidos concurrentes.
       // Baja el stock global y, si hay zonas configuradas, la del municipio/provincia.
+      // Los combos (sin productId) no tocan stock: no hay producto que descontar.
       for (const item of validatedItems) {
+        if (!item.productId) continue;
         const product = await pb.collection('products').getOne(item.productId);
         const newStock = Math.max(0, (Number(product.stock) || 0) - item.quantity);
         const update: any = { stock: newStock, in_stock: newStock > 0 };
@@ -417,6 +512,7 @@ export async function getUserOrders(token: string) {
         transferAmount: Number(order.transfer_amount) || 0,
         items: items.map((i: any) => ({
           productId: i.product_id,
+          offerId: i.offer_id || undefined,
           productName: i.product_name,
           quantity: i.quantity,
           price: Number(i.price),

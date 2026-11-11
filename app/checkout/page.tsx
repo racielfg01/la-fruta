@@ -17,7 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useCartStore, DeliveryLocation, Product } from "@/lib/store";
+import { useCartStore, DeliveryLocation, type CartItem } from "@/lib/store";
 import { displayProductCupPrice } from "@/lib/price-margin";
 import { useMarginConfig } from "@/lib/use-price-margin";
 import { useSettingsStore } from "@/lib/settings-store";
@@ -215,12 +215,16 @@ export default function CheckoutPage() {
   const showPaymentCash = useSettingsStore((s) => s.settings.showPaymentCash !== false);
   const showPaymentTransfer = useSettingsStore((s) => s.settings.showPaymentTransfer !== false);
   const freeShippingMin = useSettingsStore((s) => s.settings.freeShippingMin) || 0;
-  const itemDisplayCup = (p: Product) =>
-    displayProductCupPrice(
-      p.price,
-      { globalMargin: marginState.globalMargin, productMargin: p.priceMargin ?? null },
-      selectedCurrency?.code,
-    );
+  // Precio CUP por unidad: las líneas de oferta ya traen el precio FINAL
+  // (sin margen); al resto se le aplica el margen solo si el display es CUP.
+  const itemDisplayCup = (it: CartItem) =>
+    it.offer
+      ? it.product.price
+      : displayProductCupPrice(
+          it.product.price,
+          { globalMargin: marginState.globalMargin, productMargin: it.product.priceMargin ?? null },
+          selectedCurrency?.code,
+        );
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState("cash");
 
   // Transferencia
@@ -652,7 +656,7 @@ export default function CheckoutPage() {
   // El costo operativo (CUP) se suma a TODAS las órdenes.
   const operationalCostBase = operationalCostCup;
   const subtotalBase = items.reduce(
-    (sum, it) => sum + itemDisplayCup(it.product) * it.quantity,
+    (sum, it) => sum + itemDisplayCup(it) * it.quantity,
     0,
   );
   const isFreeShipping = freeShippingMin > 0 && subtotalBase >= freeShippingMin;
@@ -661,6 +665,7 @@ export default function CheckoutPage() {
 
   // Ahorro por pagar en USD: el margen solo se aplica a las órdenes en CUP
   // (ver orderItemPrice), así que en otra moneda la orden sale más barata.
+  // Las líneas de oferta no llevan margen: su precio ya es final.
   const usdCurrency = useMemo(
     () => currencies.find((c) => c.code === "USD") || null,
     [currencies],
@@ -671,10 +676,12 @@ export default function CheckoutPage() {
         items.map((it) => ({
           basePriceCup: it.product.price,
           quantity: it.quantity,
-          marginPct: effectiveMargin({
-            globalMargin: marginState.globalMargin,
-            productMargin: it.product.priceMargin ?? null,
-          }),
+          marginPct: it.offer
+            ? 0
+            : effectiveMargin({
+                globalMargin: marginState.globalMargin,
+                productMargin: it.product.priceMargin ?? null,
+              }),
         })),
         {
           deliveryFeeCup: deliveryFeeBase,
@@ -819,7 +826,10 @@ export default function CheckoutPage() {
 
     try {
       const orderItems = items.map((item) => ({
-        productId: item.product.id,
+        // Líneas de oferta: el producto real de la rebaja o vacío (combo).
+        // Nunca el id sintético offer_<id>: el servidor busca productos con él.
+        productId: item.offer ? item.offer.productId : item.product.id,
+        offerId: item.offer?.id,
         productName: item.product.name,
         quantity: item.quantity,
         price: item.product.price,
@@ -1862,7 +1872,7 @@ export default function CheckoutPage() {
 
               <div className="max-h-64 space-y-3 overflow-y-auto px-4 py-4 sm:px-5">
                 {items.map((item) => {
-                  const priceConv = convertAmount(itemDisplayCup(item.product));
+                  const priceConv = convertAmount(itemDisplayCup(item));
                   const totalConv = priceConv * item.quantity;
                   return (
                     <div key={item.product.id} className="flex gap-3">
@@ -1875,8 +1885,13 @@ export default function CheckoutPage() {
                         />
                       </div>
                       <div className="min-w-0 flex-1">
-                        <p className="line-clamp-1 text-sm font-medium">
+                        <p className="line-clamp-1 flex items-center gap-1.5 text-sm font-medium">
                           {item.product.name}
+                          {item.offer && (
+                            <span className="inline-flex items-center rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary">
+                              Oferta
+                            </span>
+                          )}
                         </p>
                         <p className="text-xs text-muted-foreground">
                           × {item.quantity}

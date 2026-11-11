@@ -9,7 +9,7 @@ import { displayProductCupPrice, effectiveMargin } from "@/lib/price-margin";
 import { cupSavingForItems } from "@/lib/usd-saving";
 import { useMarginConfig } from "@/lib/use-price-margin";
 import { useSettingsStore } from "@/lib/settings-store";
-import type { Product } from "@/lib/store";
+import type { CartItem } from "@/lib/store";
 import { ProductImage } from "@/components/product-image";
 import SavingHint from "@/components/saving-hint";
 import {
@@ -21,6 +21,7 @@ import {
   Truck,
   Shield,
   Loader2,
+  BadgePercent,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -31,13 +32,16 @@ export default function CartPage() {
   const marginCfg = useMarginConfig();
   const freeShippingMin = useSettingsStore((s) => s.settings.freeShippingMin) || 0;
 
-  // Precio CUP a mostrar por producto: márgened solo si el display es CUP.
-  const itemCup = (p: Product) =>
-    displayProductCupPrice(
-      p.price,
-      { globalMargin: marginCfg.globalMargin, productMargin: p.priceMargin ?? null },
-      defaultCurrency?.code
-    );
+  // Precio CUP por unidad: las líneas de oferta ya traen el precio FINAL
+  // (sin margen); al resto se le aplica el margen solo si el display es CUP.
+  const itemUnitCup = (it: CartItem) =>
+    it.offer
+      ? it.product.price
+      : displayProductCupPrice(
+          it.product.price,
+          { globalMargin: marginCfg.globalMargin, productMargin: it.product.priceMargin ?? null },
+          defaultCurrency?.code
+        );
 
   // Helper único de conversión (product.price está en CUP)
   const formatCup = (cupAmount: number) => {
@@ -49,22 +53,25 @@ export default function CartPage() {
   };
 
   const subtotal = items.reduce(
-    (sum, it) => sum + itemCup(it.product) * it.quantity,
+    (sum, it) => sum + itemUnitCup(it) * it.quantity,
     0
   );
   const isFreeShipping = freeShippingMin > 0 && subtotal >= freeShippingMin;
   const isCupDisplay = defaultCurrency?.code === "CUP";
 
   // Ahorro por pagar en USD: el margen solo se aplica a las órdenes en CUP.
+  // Las líneas de oferta no llevan margen: su precio ya es final.
   const usdCurrency = currencies.find((c) => c.code === "USD");
   const saving = cupSavingForItems(
     items.map((it) => ({
       basePriceCup: it.product.price,
       quantity: it.quantity,
-      marginPct: effectiveMargin({
-        globalMargin: marginCfg.globalMargin,
-        productMargin: it.product.priceMargin ?? null,
-      }),
+      marginPct: it.offer
+        ? 0
+        : effectiveMargin({
+            globalMargin: marginCfg.globalMargin,
+            productMargin: it.product.priceMargin ?? null,
+          }),
     }))
   );
   const itemsBaseTotal = items.reduce(
@@ -127,13 +134,20 @@ export default function CartPage() {
           <section className="overflow-hidden rounded-xl border bg-card">
             <ul className="divide-y">
               {items.map((item) => {
-                const lineTotal = itemCup(item.product) * item.quantity;
+                const lineTotal = itemUnitCup(item) * item.quantity;
+                // Las líneas de oferta no tienen ficha propia: la rebaja lleva
+                // al producto real y el combo vuelve al listado.
+                const detailHref = item.offer
+                  ? item.offer.productId
+                    ? `/product/${item.offer.productId}`
+                    : "/#products"
+                  : `/product/${item.product.id}`;
                 return (
                   <li key={item.product.id} className="group p-4 sm:p-5">
                     <div className="flex gap-4">
                       {/* Imagen */}
                       <Link
-                        href={`/product/${item.product.id}`}
+                        href={detailHref}
                         className="relative h-20 w-20 shrink-0 overflow-hidden rounded-lg bg-muted sm:h-24 sm:w-24"
                       >
                         <ProductImage
@@ -149,15 +163,22 @@ export default function CartPage() {
                         <div className="flex items-start justify-between gap-3">
                           <div className="min-w-0">
                             <Link
-                              href={`/product/${item.product.id}`}
+                              href={detailHref}
                               className="line-clamp-2 text-sm font-semibold text-foreground transition-colors hover:text-primary sm:text-base"
                             >
                               {item.product.name}
                             </Link>
-                            {item.product.origin && (
-                              <p className="mt-0.5 text-xs text-muted-foreground">
-                                {item.product.origin}
-                              </p>
+                            {item.offer ? (
+                              <span className="mt-1 inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary">
+                                <BadgePercent className="h-3 w-3" />
+                                Oferta
+                              </span>
+                            ) : (
+                              item.product.origin && (
+                                <p className="mt-0.5 text-xs text-muted-foreground">
+                                  {item.product.origin}
+                                </p>
+                              )
                             )}
                           </div>
 
@@ -173,7 +194,7 @@ export default function CartPage() {
                         </div>
 
                         <p className="mt-1 text-xs text-muted-foreground">
-                          {formatCup(itemCup(item.product))} / {item.product.unit}
+                          {formatCup(itemUnitCup(item))} / {item.product.unit}
                         </p>
 
                         {/* Cantidad + total */}

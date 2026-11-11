@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import type { OfferType, PublicOffer } from "./offers";
 
 /**
  * Unidad de venta del producto. Es texto libre porque la lista se administra
@@ -45,6 +46,27 @@ export interface UserLocation {
 export interface CartItem {
   product: Product;
   quantity: number;
+  /**
+   * Presente cuando la línea viene de una oferta. `product` es sintético
+   * (id `offer_<idOferta>`) y su `price` ya es el precio FINAL de la oferta,
+   * sin margen de ganancia.
+   */
+  offer?: CartOffer;
+}
+
+/** Tope de unidades por línea de oferta: no hay stock que la respalde. */
+export const MAX_OFFER_QUANTITY = 99;
+
+/** Snapshot de la oferta guardado en la línea del carrito. */
+export interface CartOffer {
+  id: string;
+  type: OfferType;
+  /** Producto real (rebaja) o "" (combo). */
+  productId: string;
+  /** Fecha de vencimiento ISO. */
+  endDate: string;
+  /** Precio final por unidad en CUP. */
+  price: number;
 }
 
 export interface DeliveryLocation {
@@ -80,6 +102,7 @@ interface CartStore {
   onboardingComplete: boolean;
   userLocation: UserLocation | null;
   addItem: (product: Product) => void;
+  addOfferItem: (offer: PublicOffer) => void;
   removeItem: (productId: string) => void;
   updateQuantity: (productId: string, quantity: number) => void;
   clearCart: () => void;
@@ -122,6 +145,53 @@ export const useCartStore = create<CartStore>()(
           set({ items: [...items, { product, quantity: 1 }] });
         }
       },
+      addOfferItem: (offer) => {
+        const items = get().items;
+        // Línea propia por oferta: una rebaja no se mezcla con el producto a
+        // precio normal (el precio final de la oferta manda).
+        const lineId = `offer_${offer.id}`;
+        const existing = items.find((item) => item.product.id === lineId);
+        if (existing) {
+          if (existing.quantity >= MAX_OFFER_QUANTITY) return;
+          set({
+            items: items.map((item) =>
+              item.product.id === lineId
+                ? { ...item, quantity: item.quantity + 1 }
+                : item
+            ),
+          });
+          return;
+        }
+        const synthetic: Product = {
+          id: lineId,
+          name: offer.name,
+          description: offer.description,
+          price: offer.price,
+          unit: "c/u",
+          image: offer.image,
+          category: "Ofertas",
+          origin: "",
+          stock: 0,
+          inStock: true,
+          visible: true,
+        };
+        set({
+          items: [
+            ...items,
+            {
+              product: synthetic,
+              quantity: 1,
+              offer: {
+                id: offer.id,
+                type: offer.type,
+                productId: offer.productId,
+                endDate: offer.endDate,
+                price: offer.price,
+              },
+            },
+          ],
+        });
+      },
       removeItem: (productId) => {
         set({ items: get().items.filter((item) => item.product.id !== productId) });
       },
@@ -135,6 +205,11 @@ export const useCartStore = create<CartStore>()(
           items: get()
             .items.map((item) => {
               if (item.product.id !== productId) return item;
+              // Las líneas de oferta no dependen del stock del producto
+              // sintético: el tope es MAX_OFFER_QUANTITY.
+              if (item.offer) {
+                return { ...item, quantity: Math.min(quantity, MAX_OFFER_QUANTITY) };
+              }
               const available = availableStock(userLocation, item.product);
               if (available <= 0) return null;
               return { ...item, quantity: Math.min(quantity, available) };

@@ -40,6 +40,8 @@ import { optimizedImageUrl } from "@/lib/image";
 import { effectiveCupPrice, displayProductCupPrice } from "@/lib/price-margin";
 import { useMarginConfig } from "@/lib/use-price-margin";
 import { WHATSAPP_DISPLAY } from "@/lib/seo";
+import type { PublicOffer } from "@/lib/offers";
+import { OffersSection } from "@/components/offers-section";
 import {
   Search,
   SlidersHorizontal,
@@ -62,6 +64,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { getPublicProducts } from "@/app/actions/public-products";
 import { getPublicBanners } from "@/app/actions/public";
+import { getPublicOffers } from "@/app/actions/public-offers";
 import { BannerCarousel, type Banner } from "@/components/banner-carousel";
 import { LocationSelector } from "@/components/location-selector";
 import { SiteFooter } from "@/components/site-footer";
@@ -99,6 +102,8 @@ interface StoreViewProps {
   initialProducts?: Product[];
   initialCategories?: string[];
   initialBanners?: Banner[];
+  /** Ofertas vigentes resueltas en el servidor. */
+  initialOffers?: PublicOffer[];
   /** En la primera visita manda la bienvenida: no abrir el diálogo de zona debajo. */
   locationPromptEnabled?: boolean;
 }
@@ -107,11 +112,13 @@ export function StoreView({
   initialProducts,
   initialCategories,
   initialBanners,
+  initialOffers,
   locationPromptEnabled = true,
 }: StoreViewProps = {}) {
   const hasServerProducts = (initialProducts?.length ?? 0) > 0;
   const [products, setProducts] = useState<Product[]>(initialProducts ?? []);
   const [banners, setBanners] = useState<Banner[]>(initialBanners ?? []);
+  const [offers, setOffers] = useState<PublicOffer[]>(initialOffers ?? []);
   const [categories, setCategories] = useState<string[]>(
     initialCategories ?? []
   );
@@ -164,8 +171,8 @@ export function StoreView({
       setLoading(true);
       setLoadError(null);
       try {
-        const [{ products: prods, categories: cats }, bannersData] =
-          await Promise.all([getPublicProducts(), getPublicBanners()]);
+        const [{ products: prods, categories: cats }, bannersData, offersRes] =
+          await Promise.all([getPublicProducts(), getPublicBanners(), getPublicOffers()]);
         const prodsWithNumberPrice = prods.map((p) => ({
           ...p,
           price: Number(p.price),
@@ -173,6 +180,7 @@ export function StoreView({
         setProducts(prodsWithNumberPrice);
         setBanners(bannersData);
         setCategories(cats);
+        if (offersRes.success) setOffers(offersRes.data);
         if (prods.length === 0) setLoadError("No hay productos disponibles");
       } catch (e) {
         setLoadError("Error al cargar productos");
@@ -380,6 +388,7 @@ export function StoreView({
           banners={banners}
           validProductIds={products.map((p) => p.id)}
         />
+
 
         {/* Toolbar sticky: 2 filas limpias */}
         {/* <div className="sticky top-16 z-40 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80"> */}
@@ -632,6 +641,10 @@ export function StoreView({
               </div>
           </div>
         </div>
+
+
+        {/* Ofertas vigentes, justo debajo del carrusel */}
+        <OffersSection offers={offers} />
 
         {/* Contenido */}
         <div className="container mx-auto px-4 py-6 sm:px-6 md:py-8 lg:px-8 lg:py-10">

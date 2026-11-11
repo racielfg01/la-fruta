@@ -5,11 +5,13 @@ import type { Banner } from "@/components/banner-carousel";
 import { Onboarding } from "@/components/onboarding";
 import { StoreView } from "@/components/store-view";
 import { Product, useCartStore } from "@/lib/store";
+import type { PublicOffer } from "@/lib/offers";
 
 interface HomeExperienceProps {
   products: Product[];
   categories: string[];
   banners: Banner[];
+  offers: PublicOffer[];
 }
 
 /**
@@ -20,6 +22,7 @@ export function HomeExperience({
   products,
   categories,
   banners,
+  offers,
 }: HomeExperienceProps) {
   const [mounted, setMounted] = useState(false);
   const onboardingComplete = useCartStore((state) => state.onboardingComplete);
@@ -39,6 +42,7 @@ export function HomeExperience({
         initialProducts={products}
         initialCategories={categories}
         initialBanners={banners}
+        initialOffers={offers}
         locationPromptEnabled={onboardingComplete}
       />
       {showOnboarding && (

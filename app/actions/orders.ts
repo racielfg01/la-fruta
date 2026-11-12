@@ -1,6 +1,6 @@
 "use server";
 
-import { decodePocketBaseToken } from "@/lib/auth";
+import { verifySession } from "@/lib/verify-session";
 import { getAdminPB, getAllRecords, sanitize } from "@/lib/pocketbase";
 import { parseLocations, matchLocationIndex, StoredLocation } from "@/lib/order-stock";
 import { orderItemPrice } from "@/lib/price-margin";
@@ -117,11 +117,11 @@ export async function createOrderAction(
   orderData: CreateOrderInput,
   token: string
 ): Promise<OrderActionResult> {
-  const payload = decodePocketBaseToken(token);
-  if (!payload) {
-    return { success: false, error: "No autorizado" };
-  }
-  if (payload.userId !== orderData.userId) {
+  // El titular se valida contra PocketBase: el `userId` del pedido tiene que
+  // ser el del usuario autenticado de verdad, no el que afirme el token
+  // (que tampoco comprobaba la firma) ni el que envíe el cliente.
+  const session = await verifySession(token);
+  if (session.userId !== orderData.userId) {
     return { success: false, error: "No autorizado" };
   }
 
@@ -472,12 +472,11 @@ export async function createOrderAction(
 }
 
 export async function getUserOrders(token: string) {
-  const payload = decodePocketBaseToken(token);
-  if (!payload) throw new Error("No autorizado");
+  const session = await verifySession(token);
 
   const pb = await getAdminPB();
   const orders = await getAllRecords(pb, 'orders', {
-    filter: `user_id = "${sanitize(payload.userId)}"`,
+    filter: `user_id = "${sanitize(session.userId)}"`,
     sort: '-created_at',
   });
 
@@ -526,11 +525,13 @@ export async function updateUserProfile(
   data: { name: string; email: string; phone: string; address: string; gender: string },
   token: string
 ) {
-  const payload = decodePocketBaseToken(token);
-  if (!payload) throw new Error("No autorizado");
+  // Sin validar, un token forjado con el id de otra persona permitiría
+  // reescribir su nombre, correo, teléfono y dirección (el update va con el
+  // cliente superusuario).
+  const session = await verifySession(token);
 
   const pb = await getAdminPB();
-  const updatedUser = await pb.collection('users').update(payload.userId, {
+  const updatedUser = await pb.collection('users').update(session.userId, {
     name: data.name,
     email: data.email,
     phone: data.phone,

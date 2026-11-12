@@ -2,7 +2,7 @@
 // beneficiarios (contacto de entrega) y direcciones de entrega con alias.
 "use server";
 
-import { decodePocketBaseToken } from "@/lib/auth";
+import { verifySession } from "@/lib/verify-session";
 import { getAdminPB, getAllRecords, sanitize } from "@/lib/pocketbase";
 
 export interface Beneficiary {
@@ -22,10 +22,16 @@ export interface UserAddress {
   isDefault: boolean;
 }
 
+/**
+ * Identidad del titular, validada contra PocketBase.
+ *
+ * Antes se sacaba del token sin comprobar la firma: un token inventado con
+ * el id de otra persona bastaba para leer o modificar sus direcciones y
+ * beneficiarios (las consultas van con el cliente superusuario).
+ */
 async function requireUserId(token: string): Promise<string> {
-  const payload = decodePocketBaseToken(token);
-  if (!payload) throw new Error("No autorizado");
-  return payload.userId;
+  const session = await verifySession(token);
+  return session.userId;
 }
 
 async function getOwned(pb: any, collection: string, id: string, userId: string) {

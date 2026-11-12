@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { randomUUID } from 'crypto';
 import { promises as fs } from 'fs';
 import path from 'path';
-import { decodePocketBaseToken } from '@/lib/auth';
+import { verifySession, isInvalidSession } from '@/lib/verify-session';
 
 export const dynamic = 'force-dynamic';
 
@@ -13,8 +13,21 @@ const MAX_SIZE = 5 * 1024 * 1024;
 export async function POST(req: NextRequest) {
   try {
     const token = req.headers.get('authorization')?.replace('Bearer ', '');
-    if (!token || !decodePocketBaseToken(token)) {
+    if (!token) {
       return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
+    }
+    // El token se valida contra PocketBase: decodificarlo no prueba nada,
+    // porque `decodePocketBaseToken` no comprueba la firma.
+    try {
+      await verifySession(token);
+    } catch (error) {
+      // Un fallo de PocketBase (red, 5xx) no dice que el token sea inválido:
+      // se rechaza la subida, pero no se trata como una sesión caducada.
+      const invalid = isInvalidSession(error);
+      return NextResponse.json(
+        { error: invalid ? 'No autorizado' : 'No se pudo validar la sesión' },
+        { status: invalid ? 401 : 503 },
+      );
     }
 
     const form = await req.formData();

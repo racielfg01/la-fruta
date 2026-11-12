@@ -51,6 +51,19 @@ function base64UrlDecode(str: string): string {
   return atob(str);
 }
 
+/**
+ * Deserializa el payload de un token de PocketBase.
+ *
+ * ⚠️ ESTO NO AUTENTICA A NADIE. Solo lee el JWT: no comprueba la firma, así
+ * que un token inventado (con la firma escrita a mano) pasa el filtro y
+ * devuelve el `id` que el atacante quiera. Usarlo como única comprobación
+ * permite hacerse pasar por otra persona.
+ *
+ * Para autenticar de verdad usa `verifySession` (lib/verify-session.ts), que
+ * valida el token contra PocketBase. Si necesitas solo leer el payload y
+ * después vas a llamar a PocketBase con ese mismo token (y por tanto PocketBase
+ * lo valida), entonces aquí sí es seguro.
+ */
 export function decodePocketBaseToken(token: string): { userId: string; email: string } | null {
   try {
     const parts = token.split('.');

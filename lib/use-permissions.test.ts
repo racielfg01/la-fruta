@@ -97,4 +97,17 @@ describe("cableado de la puerta (sin DOM en el repo)", () => {
     expect(bell).toContain("canAccessAdmin");
     expect(bell).not.toMatch(/role_id\s*===\s*2/);
   });
+
+  it("el dashboard oculta las secciones sin permiso en vez de enseñar ceros", () => {
+    // Los datos llegan acotados por permiso: una sección sin permiso es que no
+    // se ve, no que esté en cero.
+    const dashboard = readFileSync(
+      new URL("../app/admin/page.tsx", import.meta.url),
+      "utf8"
+    );
+    expect(dashboard).toContain("hasPermission");
+    expect(dashboard).toMatch(/\.filter\(\(stat\) => can\(stat\.permission\)\)/);
+    expect(dashboard).toContain('can("orders")');
+    expect(dashboard).toContain('can("settings")');
+  });
 });

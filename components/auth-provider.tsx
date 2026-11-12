@@ -47,5 +47,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
   }, []);
 
+  // Revalidar al volver a la pestaña: si el dueño cambió los permisos de un
+  // rol, quien lo tiene abierto se entera al volver, sin recargar a mano.
+  // Solo cuando la pestaña estuvo oculta de verdad (no en el primer render).
+  useEffect(() => {
+    let wasHidden = false;
+
+    const onVisibilityChange = () => {
+      if (document.visibilityState === "hidden") {
+        wasHidden = true;
+        return;
+      }
+      if (!wasHidden) return;
+      wasHidden = false;
+
+      const { token, setUser } = useAuthStore.getState();
+      if (!token) return;
+
+      refreshUserAction(token)
+        .then((res) => {
+          // Un fallo puntual no cierra la sesión (decideSessionRefresh).
+          if (decideSessionRefresh(res) === "accept") setUser(res!.user!);
+        })
+        .catch(() => undefined);
+    };
+
+    document.addEventListener("visibilitychange", onVisibilityChange);
+    return () =>
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+  }, []);
+
   return <>{children}</>;
 }

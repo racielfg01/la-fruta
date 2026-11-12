@@ -1,6 +1,9 @@
 "use client";
 
 import { useAdminStore } from "@/lib/admin-store";
+import { useAuthStore } from "@/lib/auth-context";
+import { hasPermission } from "@/lib/use-permissions";
+import type { RolePermissions } from "@/lib/permissions";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Package,
@@ -22,6 +25,12 @@ import { Button } from "@/components/ui/button";
 export default function AdminDashboard() {
   const { products, categories, deliveryZones, users, orders, currencies } =
     useAdminStore();
+  const { user } = useAuthStore();
+  // Los datos llegan acotados por permiso: una sección sin permiso no es que
+  // esté en cero, es que no se ve. Las tarjetas se ocultan en vez de enseñar
+  // un 0 que parece «no hay nada».
+  const can = (permission: keyof RolePermissions) =>
+    hasPermission(user, permission);
 
   const totalProducts = products.length;
   const inStockProducts = products.filter((p) => p.stock > 0).length;
@@ -58,6 +67,7 @@ export default function AdminDashboard() {
       description: `${inStockProducts} con stock`,
       href: "/admin/productos",
       color: "text-primary",
+      permission: "products" as const,
     },
     {
       title: "Categorías",
@@ -66,6 +76,7 @@ export default function AdminDashboard() {
       description: "Categorías activas",
       href: "/admin/categorias",
       color: "text-orange-500",
+      permission: "products" as const,
     },
     {
       title: "Usuarios",
@@ -74,6 +85,7 @@ export default function AdminDashboard() {
       description: `${activeUsers} activos`,
       href: "/admin/usuarios",
       color: "text-blue-500",
+      permission: "users" as const,
     },
     {
       title: "Órdenes",
@@ -82,8 +94,9 @@ export default function AdminDashboard() {
       description: `${pendingOrders} pendientes`,
       href: "/admin/ordenes",
       color: "text-purple-500",
+      permission: "orders" as const,
     },
-  ];
+  ].filter((stat) => can(stat.permission));
 
   const recentOrders = [...orders]
     .sort(
@@ -151,6 +164,7 @@ export default function AdminDashboard() {
 
       {/* Revenue & Summary Cards */}
       <div className="grid gap-4 md:grid-cols-3">
+        {can("orders") && (
         <Card>
           <CardContent className="flex items-center gap-4 p-6">
             <div className="rounded-full bg-green-500/10 p-3">
@@ -168,6 +182,8 @@ export default function AdminDashboard() {
             </div>
           </CardContent>
         </Card>
+        )}
+        {can("shipping") && (
         <Card>
           <CardContent className="flex items-center gap-4 p-6">
             <div className="rounded-full bg-primary/10 p-3">
@@ -185,6 +201,8 @@ export default function AdminDashboard() {
             </div>
           </CardContent>
         </Card>
+        )}
+        {can("settings") && (
         <Link href="/admin/configuracion?tab=monedas">
           <Card className="hover:shadow-md transition-shadow cursor-pointer h-full">
             <CardContent className="flex items-center gap-4 p-6">
@@ -208,10 +226,11 @@ export default function AdminDashboard() {
             </CardContent>
           </Card>
         </Link>
+        )}
       </div>
 
       {/* Exchange Rates */}
-      {defaultCurrency && otherActiveCurrencies.length > 0 && (
+      {can("settings") && defaultCurrency && otherActiveCurrencies.length > 0 && (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-base">
@@ -256,9 +275,10 @@ export default function AdminDashboard() {
       )}
 
       {/* Alerts */}
-      {(outOfStockProducts > 0 || pendingOrders > 0) && (
+      {((can("products") && outOfStockProducts > 0) ||
+        (can("orders") && pendingOrders > 0)) && (
         <div className="grid gap-4 md:grid-cols-2">
-          {outOfStockProducts > 0 && (
+          {can("products") && outOfStockProducts > 0 && (
             <Card className="border-destructive/50 bg-destructive/5">
               <CardHeader className="pb-2">
                 <CardTitle className="flex items-center gap-2 text-destructive text-base">
@@ -280,7 +300,7 @@ export default function AdminDashboard() {
               </CardContent>
             </Card>
           )}
-          {pendingOrders > 0 && (
+          {can("orders") && pendingOrders > 0 && (
             <Card className="border-yellow-500/50 bg-yellow-500/5">
               <CardHeader className="pb-2">
                 <CardTitle className="flex items-center gap-2 text-yellow-600 text-base">
@@ -316,40 +336,51 @@ export default function AdminDashboard() {
             </CardTitle>
           </CardHeader>
           <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <Button asChild className="justify-start w-full">
-              <Link href="/admin/productos?action=new">
-                <Package className="mr-2 h-4 w-4" />
-                Agregar Nuevo Producto
-              </Link>
-            </Button>
-            <Button variant="outline" asChild className="justify-start w-full">
-              <Link href="/admin/usuarios">
-                <Users className="mr-2 h-4 w-4" />
-                Gestionar Usuarios
-              </Link>
-            </Button>
-            <Button variant="outline" asChild className="justify-start w-full">
-              <Link href="/admin/ordenes">
-                <ShoppingBag className="mr-2 h-4 w-4" />
-                Ver Órdenes
-              </Link>
-            </Button>
-            <Button variant="outline" asChild className="justify-start w-full">
-              <Link href="/admin/configuracion?tab=monedas">
-                <Coins className="mr-2 h-4 w-4" />
-                Configurar Monedas
-              </Link>
-            </Button>
-            <Button variant="outline" asChild className="justify-start w-full">
-              <Link href="/admin/referidos">
-                <Gift className="mr-2 h-4 w-4" />
-                Sistema de Referidos
-              </Link>
-            </Button>
+            {can("products") && (
+              <Button asChild className="justify-start w-full">
+                <Link href="/admin/productos?action=new">
+                  <Package className="mr-2 h-4 w-4" />
+                  Agregar Nuevo Producto
+                </Link>
+              </Button>
+            )}
+            {can("users") && (
+              <Button variant="outline" asChild className="justify-start w-full">
+                <Link href="/admin/usuarios">
+                  <Users className="mr-2 h-4 w-4" />
+                  Gestionar Usuarios
+                </Link>
+              </Button>
+            )}
+            {can("orders") && (
+              <Button variant="outline" asChild className="justify-start w-full">
+                <Link href="/admin/ordenes">
+                  <ShoppingBag className="mr-2 h-4 w-4" />
+                  Ver Órdenes
+                </Link>
+              </Button>
+            )}
+            {can("settings") && (
+              <Button variant="outline" asChild className="justify-start w-full">
+                <Link href="/admin/configuracion?tab=monedas">
+                  <Coins className="mr-2 h-4 w-4" />
+                  Configurar Monedas
+                </Link>
+              </Button>
+            )}
+            {can("users") && (
+              <Button variant="outline" asChild className="justify-start w-full">
+                <Link href="/admin/referidos">
+                  <Gift className="mr-2 h-4 w-4" />
+                  Sistema de Referidos
+                </Link>
+              </Button>
+            )}
           </CardContent>
         </Card>
 
         {/* Recent Orders */}
+        {can("orders") && (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -402,6 +433,7 @@ export default function AdminDashboard() {
             </Button>
           </CardContent>
         </Card>
+        )}
       </div>
     </div>
   );

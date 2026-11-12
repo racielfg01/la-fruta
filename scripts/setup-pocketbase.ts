@@ -57,6 +57,11 @@ async function setup() {
   await createCollection(pb, 'roles', [
     { name: 'name', type: 'text', required: true, unique: true },
     { name: 'description', type: 'text' },
+    // Permisos por sección (dashboard, orders, products, shipping, users,
+    // settings, offers) en JSON. Sin este campo PocketBase descarta en
+    // silencio lo que escriben las server actions y todo rol acaba sin
+    // permisos: por eso existe `scripts/ensure-role-permissions.mjs`.
+    { name: 'permissions', type: 'json' },
   ])
 
   // Categories

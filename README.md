@@ -52,12 +52,18 @@ pnpm dev            # http://localhost:3000
 Preparar una instancia PocketBase vacía (idempotente, se puede repetir):
 
 ```bash
-node scripts/setup-pocketbase.js        # colecciones base + colección users
+node scripts/setup-pocketbase.ts     # colecciones base + colección users
 node scripts/setup-admin-auth.cjs       # alta del admin del .env
 node scripts/setup-collections-extra.cjs   # catálogo técnico + seed (provincias, municipios, países, bancos, cuentas, settings)
 node scripts/seed-municipalities.cjs    # municipios de Cuba
 node scripts/setup-saved-collections.cjs  # beneficiarios + direcciones guardadas del checkout
+node scripts/ensure-role-permissions.mjs # asegura el campo `permissions` (json) de la colección roles
 ```
+
+`scripts/setup-pocketbase.ts` es la fuente: no hay copia compilada en el repo,
+para que el esquema no se quede viejo sin que nadie se entere. Si tu Node es
+anterior a 22.18, compílalo (`npx tsc scripts/setup-pocketbase.ts`) o usa
+`node --experimental-strip-types scripts/setup-pocketbase.ts`.
 
 `node scripts/migrate.cjs` y `node scripts/diagnose-pb.cjs` ayudan a migrar o
 diagnosticar una instancia existente.

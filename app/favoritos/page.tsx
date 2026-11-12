@@ -24,6 +24,10 @@ export default function FavoritosPage() {
   const [mounted, setMounted] = useState(false);
   const { defaultCurrency, currencies, formatPrice, convertPrice } = useCurrency();
   const cupCurrency = currencies.find((c) => c.code === "CUP");
+  // El hook va una vez a nivel del componente. Dentro del .map() el número de
+  // hooks cambiaría con la lista y React lanzaría «Rendered fewer hooks than
+  // expected» al quitar un favorito (la página se caía).
+  const { globalMargin } = useMarginConfig();
 
   useEffect(() => {
     setMounted(true);
@@ -84,7 +88,10 @@ export default function FavoritosPage() {
           ) : (
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 lg:gap-6">
               {favorites.map((product) => {
-                const marginCfg = useMarginConfig(product);
+                const marginCfg = {
+                  globalMargin,
+                  productMargin: product.priceMargin ?? null,
+                };
                 const price = cupCurrency && defaultCurrency
                   ? defaultCurrency.code === "CUP"
                     ? effectiveCupPrice(product.price, marginCfg)

@@ -99,7 +99,10 @@ const steps = [
 export function Onboarding({ onComplete }: OnboardingProps) {
   const [currentStep, setCurrentStep] = useState(0);
   const [isAnimating, setIsAnimating] = useState(false);
-  const direction = useRef<"next" | "prev">("next");
+  // La dirección se guarda en estado, no en un ref: se lee durante el render
+  // para elegir la clase de la animación, y leer un ref ahí no es puro
+  // (con render concurrente puede verse un valor viejo).
+  const [direction, setDirection] = useState<"next" | "prev">("next");
   const touchStart = useRef<number | null>(null);
   const touchEnd = useRef<number | null>(null);
   const transitioning = useRef(false);
@@ -119,13 +122,13 @@ export function Onboarding({ onComplete }: OnboardingProps) {
 
   const handleNext = useCallback(() => {
     if (isLastStep) { onComplete(); return; }
-    direction.current = "next";
+    setDirection("next");
     goTo(currentStep + 1);
   }, [isLastStep, onComplete, goTo, currentStep]);
 
   const handlePrev = useCallback(() => {
     if (isFirstStep) return;
-    direction.current = "prev";
+    setDirection("prev");
     goTo(currentStep - 1);
   }, [isFirstStep, goTo, currentStep]);
 
@@ -133,7 +136,7 @@ export function Onboarding({ onComplete }: OnboardingProps) {
 
   const goToStep = useCallback((index: number) => {
     if (index === currentStep) return;
-    direction.current = index > currentStep ? "next" : "prev";
+    setDirection(index > currentStep ? "next" : "prev");
     goTo(index);
   }, [currentStep, goTo]);
 
@@ -155,7 +158,7 @@ export function Onboarding({ onComplete }: OnboardingProps) {
     else if (distance < -minSwipeDistance && !isFirstStep) handlePrev();
   }, [isLastStep, isFirstStep, handleNext, handlePrev]);
 
-  const isRTL = direction.current === "next"
+  const isRTL = direction === "next"
     ? "-translate-x-6 opacity-0"
     : "translate-x-6 opacity-0";
 

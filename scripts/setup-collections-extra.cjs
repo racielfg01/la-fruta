@@ -233,7 +233,6 @@ async function setup() {
   ];
   const UNITS = ["por lb", "por kg", "c/u", "por pinta", "por docena"];
 
-  const seeds = [];
   const seeded = new Set();
 
   // Reparación: añadir un campo `bool` a una colección con registros existentes

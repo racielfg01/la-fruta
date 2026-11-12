@@ -6,6 +6,7 @@ import { Bell, BellRing, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { useAuthStore } from "@/lib/auth-context";
+import { canAccessAdmin } from "@/lib/use-permissions";
 import {
   PushPermissionError,
   getPushSubscription,
@@ -32,7 +33,10 @@ export function NotificationBell() {
   const [configured, setConfigured] = useState(false);
 
   const ready = !isLoading && mounted;
-  const isAdmin = Number(user?.role_id) === 2;
+  // La campana es para los clientes (avisos de productos nuevos). Se
+  // esconde a quien tiene acceso al panel, no solo al admin por su role_id
+  // numérico: antes un rol con permisos —«operador cobre»— la veía.
+  const isStaff = canAccessAdmin(user);
 
   useEffect(() => {
     setMounted(true);
@@ -40,7 +44,7 @@ export function NotificationBell() {
   }, []);
 
   useEffect(() => {
-    if (!ready || isAdmin) return;
+    if (!ready || isStaff) return;
     // Se pide al cargar para que el clic no tenga que esperar a la red: el
     // permiso del navegador debe pedirse dentro del gesto del usuario.
     getPushConfigAction()
@@ -49,10 +53,10 @@ export function NotificationBell() {
         setPublicKey(result.publicKey);
       })
       .catch(() => undefined);
-  }, [ready, isAdmin]);
+  }, [ready, isStaff]);
 
   useEffect(() => {
-    if (!ready || !isAuthenticated || !token || isAdmin || !supported) return;
+    if (!ready || !isAuthenticated || !token || isStaff || !supported) return;
     let cancelled = false;
 
     getPushSubscription()
@@ -68,9 +72,9 @@ export function NotificationBell() {
     return () => {
       cancelled = true;
     };
-  }, [ready, isAuthenticated, token, isAdmin, supported]);
+  }, [ready, isAuthenticated, token, isStaff, supported]);
 
-  if (!mounted || !ready || isAdmin) return null;
+  if (!mounted || !ready || isStaff) return null;
 
   const handleClick = async () => {
     if (!isAuthenticated || !token) {

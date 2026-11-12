@@ -86,6 +86,20 @@ por un fallo puntual). Por eso el error va con código: `invalid_session` vs
 `unavailable`, y las dos rutas de subida contestan `401` y `503`
 respectivamente.
 
+**Re-verificación contra producción, ya desplegado (12 nov 2026).** Con la
+misma cuenta de prueba (creada y **borrada** después; 0 usuarios y 0
+direcciones de prueba restantes):
+
+| Prueba | Resultado |
+| --- | --- |
+| `POST /api/upload` con token forjado | **`401 No autorizado`** (antes `200` y escribía el fichero) |
+| `getUserAddressesAction` con token forjado | **error del servidor, sin datos** (antes devolvía la dirección de la víctima) |
+| `getUserAddressesAction` con el token real | `200` con la dirección de su titular |
+
+La llamada directa a la server action (con su `Next-Action`) devuelve
+`1:E{"digest":…}` y HTTP 500 en el caso forjado: la acción lanza y no se
+devuelve nada.
+
 ## Next
 
 - Exigir el permiso por sección en el uploader si algún día se mueve la

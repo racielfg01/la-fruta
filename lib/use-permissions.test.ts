@@ -86,4 +86,15 @@ describe("cableado de la puerta (sin DOM en el repo)", () => {
     expect(adminLayout).toContain("canAccessAdmin");
     expect(adminLayout).not.toMatch(/hasAnyPermission\(user,\s*PERMISSION_KEYS\)/);
   });
+
+  it("la campana de avisos se esconde a quien tiene acceso al panel, no solo al admin", () => {
+    // La campana es para clientes. Antes se escondía solo con role_id === 2,
+    // así que un rol con permisos («operador cobre») la veía.
+    const bell = readFileSync(
+      new URL("../components/push/notification-bell.tsx", import.meta.url),
+      "utf8"
+    );
+    expect(bell).toContain("canAccessAdmin");
+    expect(bell).not.toMatch(/role_id\s*===\s*2/);
+  });
 });

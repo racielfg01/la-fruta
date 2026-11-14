@@ -1,67 +1,31 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { BadgePercent, Plus, Timer, Check } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { BadgePercent, ChevronLeft, ChevronRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { useCartStore } from "@/lib/store";
-import { useCurrency } from "@/lib/currency";
-import { countdownParts, isOfferActive, type PublicOffer } from "@/lib/offers";
+import { Button } from "@/components/ui/button";
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  type CarouselApi,
+} from "@/components/ui/carousel";
+import { OfferCard } from "@/components/offer-card";
+import { visibleOffers } from "@/lib/offers-view";
+import type { PublicOffer } from "@/lib/offers";
+import { cn } from "@/lib/utils";
 
 /**
- * Contador descendente hasta el vencimiento: días, horas, minutos y segundos.
- * Antes de hidratar (now null) muestra «…» para no destellar fechas en el
- * HTML estático; si la oferta no tiene fecha utilizable, «Sin límite».
- */
-function OfferCountdown({
-  endDate,
-  now,
-}: {
-  endDate: string;
-  now: number | null;
-}) {
-  const parts = now !== null ? countdownParts(endDate, now) : null;
-
-  return (
-    <div className="flex items-center gap-1" aria-label="Tiempo restante">
-      <Timer className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-      {parts === null ? (
-        <span className="text-xs text-muted-foreground">
-          {now === null ? "…" : "Sin límite"}
-        </span>
-      ) : (
-        (
-          [
-            [parts.days, "días"],
-            [parts.hours, "hrs"],
-            [parts.minutes, "min"],
-            [parts.seconds, "seg"],
-          ] as const
-        ).map(([v, l]) => (
-          <div
-            key={l}
-            className="flex flex-col items-center rounded-md bg-muted px-1.5 py-0.5"
-          >
-            <span className="text-xs font-bold tabular-nums leading-none">
-              {String(v).padStart(2, "0")}
-            </span>
-            <span className="text-[9px] leading-none text-muted-foreground">
-              {l}
-            </span>
-          </div>
-        ))
-      )}
-    </div>
-  );
-}
-
-/**
- * Sección de ofertas de la portada. El precio de la oferta es FINAL: se
- * muestra tal cual (convertido a la moneda elegida) sin margen de ganancia.
- * Sin ofertas vigentes no se renderiza nada.
+ * Sección de ofertas de la portada: listado con scroll horizontal.
+ *
+ * Reutiliza el carrusel de `@/components/ui/carousel` (el mismo que mueve
+ * los banners). El precio de la oferta es FINAL: la tarjeta lo muestra tal
+ * cual, sin margen de ganancia. Sin ofertas vigentes no se renderiza nada.
  */
 export function OffersSection({ offers }: { offers: PublicOffer[] }) {
   const [now, setNow] = useState<number | null>(null);
+  const [api, setApi] = useState<CarouselApi>();
+  const [current, setCurrent] = useState(0);
 
   // El contador vive solo en el cliente: el HTML inicial no destella fechas.
   // Tick de un segundo para que los segundos del contador corran de verdad.
@@ -71,30 +35,28 @@ export function OffersSection({ offers }: { offers: PublicOffer[] }) {
     return () => clearInterval(id);
   }, []);
 
-  const addOfferItem = useCartStore((state) => state.addOfferItem);
-  const cartItems = useCartStore((state) => state.items);
-  const { currencies, defaultCurrency, formatPrice, convertPrice } = useCurrency();
-  const cupCurrency = currencies.find((c) => c.code === "CUP");
+  useEffect(() => {
+    if (!api) return;
+    const onSelect = () => setCurrent(api.selectedScrollSnap());
+    api.on("select", onSelect);
+    onSelect();
+    return () => {
+      api.off("select", onSelect);
+    };
+  }, [api]);
 
-  const formatOfferPrice = (priceCup: number) => {
-    if (!cupCurrency || !defaultCurrency) return `${priceCup.toFixed(2)} CUP`;
-    return formatPrice(convertPrice(priceCup, cupCurrency, defaultCurrency), defaultCurrency);
-  };
-
-  // Mientras el HTML no hidrata, se muestran las fechas estáticas del servidor.
-  // Vencida con la página abierta: desaparece sin recargar.
-  const visible = offers.filter((o) =>
-    now === null
-      ? o.active
-      : isOfferActive({ active: o.active, end_date: o.endDate }, now)
-  );
+  // Mientras el HTML no hidrata, se muestran las ofertas tal cual las dejó
+  // el servidor. Vencida con la página abierta: desaparece sin recargar.
+  const visible = visibleOffers(offers, now);
 
   if (visible.length === 0) return null;
+
+  const multiple = visible.length > 1;
 
   return (
     <section aria-labelledby="ofertas" className="border-t bg-muted/30 py-8">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="mb-4 flex items-center justify-between">
+        <div className="mb-4 flex items-center justify-between gap-3">
           <h2
             id="ofertas"
             className="flex items-center gap-2 font-[family-name:var(--font-playfair)] text-2xl font-bold text-foreground"
@@ -102,76 +64,72 @@ export function OffersSection({ offers }: { offers: PublicOffer[] }) {
             <BadgePercent className="h-5 w-5 text-primary" />
             Ofertas
           </h2>
-          <Badge variant="secondary">{visible.length}</Badge>
+          <div className="flex items-center gap-2">
+            <Badge variant="secondary">{visible.length}</Badge>
+            {multiple && (
+              <>
+                <Button
+                  variant="secondary"
+                  size="icon"
+                  className="size-8"
+                  onClick={() => api?.scrollPrev()}
+                  disabled={!api?.canScrollPrev()}
+                  aria-label="Oferta anterior"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="secondary"
+                  size="icon"
+                  className="size-8"
+                  onClick={() => api?.scrollNext()}
+                  disabled={!api?.canScrollNext()}
+                  aria-label="Oferta siguiente"
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </>
+            )}
+          </div>
         </div>
 
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 lg:gap-6">
-          {visible.map((offer) => {
-            const inCart = cartItems.some((item) => item.offer?.id === offer.id);
-            const expired =
-              now !== null &&
-              !isOfferActive({ active: offer.active, end_date: offer.endDate }, now);
-            return (
-              <div
+        <Carousel
+          setApi={setApi}
+          opts={{ align: "start", loop: false }}
+          aria-label="Ofertas de la tienda"
+        >
+          <CarouselContent className="-ml-4">
+            {visible.map((offer) => (
+              <CarouselItem
                 key={offer.id}
-                className="flex flex-col overflow-hidden rounded-xl border bg-card"
+                className="pl-4 basis-[85%] sm:basis-1/2 lg:basis-1/3"
+                aria-label={offer.name}
               >
-                <div className="relative aspect-[16/9] bg-muted">
-                  {offer.image ? (
-                    <img
-                      src={offer.image}
-                      alt={offer.name}
-                      className="h-full w-full object-cover"
-                    />
-                  ) : (
-                    <div className="flex h-full items-center justify-center">
-                      <BadgePercent className="h-10 w-10 text-muted-foreground" />
-                    </div>
-                  )}
-                  <div className="absolute left-2.5 top-2.5">
-                    <Badge variant={offer.type === "combo" ? "default" : "secondary"}>
-                      {offer.type === "combo" ? "Combo" : "Rebaja"}
-                    </Badge>
-                  </div>
-                </div>
+                <OfferCard offer={offer} now={now} />
+              </CarouselItem>
+            ))}
+          </CarouselContent>
+        </Carousel>
 
-                <div className="flex flex-1 flex-col gap-2 p-4">
-                  <h3 className="line-clamp-2 text-sm font-semibold text-foreground">
-                    {offer.name}
-                  </h3>
-                  <p className="line-clamp-2 text-xs text-muted-foreground">
-                    {offer.description}
-                  </p>
-
-                  <div className="mt-auto space-y-3 pt-2">
-                    <div className="flex items-end justify-between gap-2">
-                      <span className="text-lg font-bold text-primary">
-                        {formatOfferPrice(offer.price)}
-                      </span>
-                      <OfferCountdown endDate={offer.endDate} now={now} />
-                    </div>
-
-                    <Button
-                      className="w-full gap-2"
-                      disabled={expired}
-                      onClick={() => addOfferItem(offer)}
-                    >
-                      {inCart ? (
-                        <>
-                          <Check className="h-4 w-4" /> Agregado
-                        </>
-                      ) : (
-                        <>
-                          <Plus className="h-4 w-4" /> Agregar
-                        </>
-                      )}
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
+        {multiple && (
+          <div className="mt-4 flex justify-center gap-1.5">
+            {visible.map((offer, index) => (
+              <button
+                key={offer.id}
+                type="button"
+                onClick={() => api?.scrollTo(index)}
+                aria-label={`Ir a la oferta ${index + 1}`}
+                aria-current={index === current}
+                className={cn(
+                  "h-2 rounded-full transition-all",
+                  index === current
+                    ? "w-6 bg-primary"
+                    : "w-2 bg-muted-foreground/30 hover:bg-muted-foreground/50"
+                )}
+              />
+            ))}
+          </div>
+        )}
       </div>
     </section>
   );

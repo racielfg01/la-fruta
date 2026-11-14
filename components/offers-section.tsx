@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { BadgePercent, ChevronLeft, ChevronRight } from "lucide-react";
+import Link from "next/link";
+import { ArrowRight, BadgePercent, ChevronLeft, ChevronRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -111,25 +112,34 @@ export function OffersSection({ offers }: { offers: PublicOffer[] }) {
           </CarouselContent>
         </Carousel>
 
-        {multiple && (
-          <div className="mt-4 flex justify-center gap-1.5">
-            {visible.map((offer, index) => (
-              <button
-                key={offer.id}
-                type="button"
-                onClick={() => api?.scrollTo(index)}
-                aria-label={`Ir a la oferta ${index + 1}`}
-                aria-current={index === current}
-                className={cn(
-                  "h-2 rounded-full transition-all",
-                  index === current
-                    ? "w-6 bg-primary"
-                    : "w-2 bg-muted-foreground/30 hover:bg-muted-foreground/50"
-                )}
-              />
-            ))}
-          </div>
-        )}
+        <div className="mt-4 flex items-center justify-center gap-3">
+          {multiple && (
+            <div className="flex gap-1.5">
+              {visible.map((offer, index) => (
+                <button
+                  key={offer.id}
+                  type="button"
+                  onClick={() => api?.scrollTo(index)}
+                  aria-label={`Ir a la oferta ${index + 1}`}
+                  aria-current={index === current}
+                  className={cn(
+                    "h-2 rounded-full transition-all",
+                    index === current
+                      ? "w-6 bg-primary"
+                      : "w-2 bg-muted-foreground/30 hover:bg-muted-foreground/50"
+                  )}
+                />
+              ))}
+            </div>
+          )}
+          <Link
+            href="/ofertas"
+            className="inline-flex items-center gap-1 text-sm font-medium text-primary transition-colors hover:text-primary/80"
+          >
+            Ver más
+            <ArrowRight className="h-3.5 w-3.5" />
+          </Link>
+        </div>
       </div>
     </section>
   );

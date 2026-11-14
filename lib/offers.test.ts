@@ -202,11 +202,18 @@ describe("cableado de las ofertas públicas", () => {
     expect(section).not.toContain("lg:grid-cols-3");
   });
 
-  test("cada oferta tiene su enlace «Ver más» al listado completo", () => {
-    expect(card).toContain('href="/ofertas"');
-    expect(card).toContain("Ver más");
-    // La tarjeta es la que se pinta en el carrusel de la portada.
-    expect(section).toContain("<OfferCard");
+  test("el enlace «Ver más» está junto a la paginación, no en cada tarjeta", () => {
+    expect(section).toContain('href="/ofertas"');
+    expect(section).toContain("Ver más");
+    // La tarjeta ya no lleva el enlace: el detalle se abre desde la imagen.
+    expect(card).not.toContain('href="/ofertas"');
+  });
+
+  test("la imagen de la oferta abre el detalle con la descripción entera", () => {
+    expect(card).toContain("<Dialog");
+    expect(card).toContain("Ver detalles");
+    // El diálogo enseña la descripción sin recortar.
+    expect(card).not.toContain("line-clamp-2 text-xs");
   });
 
   test("la página de ofertas existe con metadatos y listado", () => {

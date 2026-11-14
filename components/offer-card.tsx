@@ -1,9 +1,15 @@
 "use client";
 
-import Link from "next/link";
 import { BadgePercent, Check, Plus, Timer } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { useCartStore } from "@/lib/store";
 import { useCurrency } from "@/lib/currency";
 import { countdownParts, type PublicOffer } from "@/lib/offers";
@@ -64,8 +70,8 @@ export function OfferCountdown({
  * El precio de la oferta es FINAL: se muestra tal cual (convertido a la
  * moneda elegida) sin margen de ganancia.
  *
- * - `carousel`: descripción recortada y enlace «Ver más» al listado completo.
- * - `list`: descripción entera, sin enlace (ya se está en el listado).
+ * Al pulsar la imagen se abre el detalle con la descripción entera, el
+ * precio, el contador y el botón de agregar.
  */
 export function OfferCard({
   offer,
@@ -90,20 +96,82 @@ export function OfferCard({
   const expired = isOfferExpired(offer, now);
   const isList = variant === "list";
 
+  const image = offer.image ? (
+    <img
+      src={offer.image}
+      alt={offer.name}
+      className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+    />
+  ) : (
+    <div className="flex h-full items-center justify-center">
+      <BadgePercent className="h-10 w-10 text-muted-foreground" />
+    </div>
+  );
+
   return (
     <div className="flex h-full flex-col overflow-hidden rounded-xl border bg-card">
       <div className="relative aspect-[16/9] bg-muted">
-        {offer.image ? (
-          <img
-            src={offer.image}
-            alt={offer.name}
-            className="h-full w-full object-cover"
-          />
-        ) : (
-          <div className="flex h-full items-center justify-center">
-            <BadgePercent className="h-10 w-10 text-muted-foreground" />
-          </div>
-        )}
+        <Dialog>
+          <DialogTrigger asChild>
+            <button
+              type="button"
+              aria-label={`Ver detalles de ${offer.name}`}
+              className="group block h-full w-full cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+            >
+              {image}
+            </button>
+          </DialogTrigger>
+
+          <DialogContent>
+            <DialogHeader>
+              <div className="relative aspect-[16/9] overflow-hidden rounded-lg bg-muted">
+                {offer.image ? (
+                  <img
+                    src={offer.image}
+                    alt={offer.name}
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  <div className="flex h-full items-center justify-center">
+                    <BadgePercent className="h-10 w-10 text-muted-foreground" />
+                  </div>
+                )}
+                <div className="absolute left-2.5 top-2.5">
+                  <Badge variant={offer.type === "combo" ? "default" : "secondary"}>
+                    {offer.type === "combo" ? "Combo" : "Rebaja"}
+                  </Badge>
+                </div>
+              </div>
+              <DialogTitle className="mt-1 text-lg">{offer.name}</DialogTitle>
+            </DialogHeader>
+
+            <p className="text-sm text-muted-foreground">{offer.description}</p>
+
+            <div className="flex items-end justify-between gap-3">
+              <span className="text-2xl font-bold text-primary">
+                {formatOfferPrice(offer.price)}
+              </span>
+              <OfferCountdown endDate={offer.endDate} now={now} />
+            </div>
+
+            <Button
+              className="w-full gap-2"
+              disabled={expired}
+              onClick={() => addOfferItem(offer)}
+            >
+              {inCart ? (
+                <>
+                  <Check className="h-4 w-4" /> Agregado
+                </>
+              ) : (
+                <>
+                  <Plus className="h-4 w-4" /> Agregar
+                </>
+              )}
+            </Button>
+          </DialogContent>
+        </Dialog>
+
         <div className="absolute left-2.5 top-2.5">
           <Badge variant={offer.type === "combo" ? "default" : "secondary"}>
             {offer.type === "combo" ? "Combo" : "Rebaja"}
@@ -137,28 +205,21 @@ export function OfferCard({
             <OfferCountdown endDate={offer.endDate} now={now} />
           </div>
 
-          <div className="flex items-center gap-2">
-            <Button
-              className="flex-1 gap-2"
-              disabled={expired}
-              onClick={() => addOfferItem(offer)}
-            >
-              {inCart ? (
-                <>
-                  <Check className="h-4 w-4" /> Agregado
-                </>
-              ) : (
-                <>
-                  <Plus className="h-4 w-4" /> Agregar
-                </>
-              )}
-            </Button>
-            {!isList && (
-              <Button variant="outline" asChild className="shrink-0">
-                <Link href="/ofertas">Ver más</Link>
-              </Button>
+          <Button
+            className="w-full gap-2"
+            disabled={expired}
+            onClick={() => addOfferItem(offer)}
+          >
+            {inCart ? (
+              <>
+                <Check className="h-4 w-4" /> Agregado
+              </>
+            ) : (
+              <>
+                <Plus className="h-4 w-4" /> Agregar
+              </>
             )}
-          </div>
+          </Button>
         </div>
       </div>
     </div>

@@ -9,7 +9,6 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Field, FieldLabel } from "@/components/ui/field";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ImageUpload } from "@/components/upload-button";
-import { Switch } from "@/components/ui/switch";
 import { getSettingsAction, updateSettingsAction } from "@/app/actions/admin-extras";
 import { Save, Palette, RotateCcw, Loader2, Moon, Sun, MessageCircle } from "lucide-react";
 import { normalizeWhatsAppPhone } from "@/lib/whatsapp";
@@ -282,45 +281,6 @@ export default function ConfiguracionPage() {
                   Si el subtotal en CUP supera o iguala este monto, el envío es gratis. Deja en 0 para desactivarlo.
                 </p>
               </Field>
-            </CardContent>
-          </Card>
-
-          {/* Métodos de pago del checkout */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Métodos de pago del checkout</CardTitle>
-              <CardDescription>
-                Elige qué métodos ve el cliente al pagar. Si desactivas todos,
-                se muestran ambos para no bloquear el checkout.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center justify-between gap-4">
-                <div>
-                  <p className="font-medium text-sm">Efectivo</p>
-                  <p className="text-xs text-muted-foreground">
-                    Paga al recibir el pedido
-                  </p>
-                </div>
-                <Switch
-                  checked={form.showPaymentCash !== false}
-                  onCheckedChange={(v) => update({ showPaymentCash: v })}
-                />
-              </div>
-              <div className="flex items-center justify-between gap-4">
-                <div>
-                  <p className="font-medium text-sm">
-                    Transferencias y pagos digitales
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    Zelle, USDT y cuentas bancarias; sube comprobante
-                  </p>
-                </div>
-                <Switch
-                  checked={form.showPaymentTransfer !== false}
-                  onCheckedChange={(v) => update({ showPaymentTransfer: v })}
-                />
-              </div>
             </CardContent>
           </Card>
 

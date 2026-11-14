@@ -66,7 +66,7 @@ const emptyAccount = {
   currency: "CUP", active: true, transferLimit: 0, transferCount: 0,
 };
 
-export default function BancosTab() {
+export default function BancosTab({ onChanged }: { onChanged?: () => void } = {}) {
   const token = useAuthStore((s) => s.token);
   const { currencies } = useAdminStore();
   const [tab, setTab] = useState("bancos");
@@ -113,11 +113,11 @@ export default function BancosTab() {
     if (!token || !bankForm.name.trim()) return;
     if (editingBank) await updateBankAction(editingBank.id, bankForm, token);
     else await createBankAction(bankForm, token);
-    setBankDialog(false); load();
+    setBankDialog(false); load(); onChanged?.();
   };
   const removeBank = async (id: string) => {
     if (!token || !confirm("¿Eliminar este banco? Las cuentas asociadas se eliminan.")) return;
-    await deleteBankAction(id, token); load();
+    await deleteBankAction(id, token); load(); onChanged?.();
   };
 
   const openNewAcc = () => { setEditingAcc(null); setAccForm(emptyAccount); setAccDialog(true); };
@@ -139,9 +139,9 @@ export default function BancosTab() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-bold">Bancos y Cuentas</h2>
+        <h3 className="text-xl font-semibold">Cuentas para transferencias</h3>
         <p className="text-muted-foreground">
-          Cuentas para transferencias: el límite desactiva la cuenta automáticamente
+          El límite desactiva la cuenta automáticamente
         </p>
       </div>
 

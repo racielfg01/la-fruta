@@ -9,7 +9,7 @@ import UbicacionesTab from "./tabs/ubicaciones-tab";
 import MonedasTab from "./tabs/monedas-tab";
 import PaisesTab from "./tabs/paises-tab";
 import UnidadesTab from "./tabs/unidades-tab";
-import BancosTab from "./tabs/bancos-tab";
+import MetodosPagoTab from "./tabs/metodos-pago-tab";
 import RolesTab from "./tabs/roles-tab";
 
 const TABS = [
@@ -19,7 +19,7 @@ const TABS = [
   { value: "monedas", label: "Monedas" },
   { value: "paises", label: "Países" },
   { value: "unidades", label: "Unidades" },
-  { value: "bancos", label: "Bancos" },
+  { value: "metodos", label: "Métodos de pago" },
   { value: "roles", label: "Roles" },
 ];
 
@@ -59,8 +59,8 @@ function ConfiguracionTabs() {
       <TabsContent value="unidades">
         <UnidadesTab />
       </TabsContent>
-      <TabsContent value="bancos">
-        <BancosTab />
+      <TabsContent value="metodos">
+        <MetodosPagoTab />
       </TabsContent>
       <TabsContent value="roles">
         <RolesTab />

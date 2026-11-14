@@ -6,6 +6,7 @@ import {
   usableAccountsForCurrency,
   validateTransferAccount,
   TRANSFER_ACCOUNT_UNAVAILABLE,
+  paymentMethodWarnings,
 } from "./payment-methods";
 
 describe("resolveVisiblePaymentMethodIds", () => {
@@ -132,5 +133,91 @@ describe("validateTransferAccount", () => {
         account: record({ transfer_limit: 0, transfer_count: 99 }),
       }),
     ).toBeNull();
+  });
+});
+
+describe("paymentMethodWarnings", () => {
+  it("no emite avisos cuando todo está bien", () => {
+    expect(
+      paymentMethodWarnings({
+        cashEnabled: true,
+        transferEnabled: true,
+        usableAccounts: 2,
+        configuredAccounts: 2,
+        cashCurrencyAvailable: true,
+      }),
+    ).toEqual([]);
+  });
+
+  it("avisa cuando la transferencia está activa pero no hay cuentas utilizables", () => {
+    expect(
+      paymentMethodWarnings({
+        cashEnabled: true,
+        transferEnabled: true,
+        usableAccounts: 0,
+        configuredAccounts: 3,
+        cashCurrencyAvailable: true,
+      }),
+    ).toEqual(["transfer_without_accounts"]);
+  });
+
+  it("avisa cuando las cuentas existen pero la transferencia está oculta", () => {
+    expect(
+      paymentMethodWarnings({
+        cashEnabled: true,
+        transferEnabled: false,
+        usableAccounts: 0,
+        configuredAccounts: 2,
+        cashCurrencyAvailable: true,
+      }),
+    ).toEqual(["accounts_hidden"]);
+  });
+
+  it("avisa cuando el efectivo está activado pero no hay moneda CUP ni USD", () => {
+    expect(
+      paymentMethodWarnings({
+        cashEnabled: true,
+        transferEnabled: true,
+        usableAccounts: 1,
+        configuredAccounts: 1,
+        cashCurrencyAvailable: false,
+      }),
+    ).toEqual(["cash_without_currency"]);
+  });
+
+  it("emite solo el aviso de efectivo si la transferencia está bien y el efectivo está activo", () => {
+    expect(
+      paymentMethodWarnings({
+        cashEnabled: true,
+        transferEnabled: true,
+        usableAccounts: 1,
+        configuredAccounts: 1,
+        cashCurrencyAvailable: false,
+      }),
+    ).toEqual(["cash_without_currency"]);
+  });
+
+  it("no emite aviso de efectivo si está desactivado", () => {
+    expect(
+      paymentMethodWarnings({
+        cashEnabled: false,
+        transferEnabled: true,
+        usableAccounts: 1,
+        configuredAccounts: 1,
+        cashCurrencyAvailable: false,
+      }),
+    ).toEqual([]);
+  });
+
+  it("no emite aviso cuando la transferencia está desactivada y no hay cuentas", () => {
+    expect(
+      paymentMethodWarnings({
+        cashEnabled: true,
+        transferEnabled: false,
+        usableAccounts: 0,
+        configuredAccounts: 0,
+        cashCurrencyAvailable: true,
+      }),
+    ).toEqual([]);
   });
 });

@@ -27,6 +27,11 @@ export function OffersSection({ offers }: { offers: PublicOffer[] }) {
   const [now, setNow] = useState<number | null>(null);
   const [api, setApi] = useState<CarouselApi>();
   const [current, setCurrent] = useState(0);
+  // Si se puede desplazar. Se guarda en estado (como hace el propio
+  // carrusel) porque leer `api.canScrollNext()` al pintar deja la flecha
+  // desfasada: solo se recalcularía al volver a pintar.
+  const [canPrev, setCanPrev] = useState(false);
+  const [canNext, setCanNext] = useState(false);
 
   // El contador vive solo en el cliente: el HTML inicial no destella fechas.
   // Tick de un segundo para que los segundos del contador corran de verdad.
@@ -38,7 +43,11 @@ export function OffersSection({ offers }: { offers: PublicOffer[] }) {
 
   useEffect(() => {
     if (!api) return;
-    const onSelect = () => setCurrent(api.selectedScrollSnap());
+    const onSelect = () => {
+      setCurrent(api.selectedScrollSnap());
+      setCanPrev(api.canScrollPrev());
+      setCanNext(api.canScrollNext());
+    };
     api.on("select", onSelect);
     // 'reInit' salta cuando cambia el número de diapositivas (una oferta
     // vence con la página abierta): sin esto el punto resaltado se queda
@@ -79,7 +88,7 @@ export function OffersSection({ offers }: { offers: PublicOffer[] }) {
                   size="icon"
                   className="size-8"
                   onClick={() => api?.scrollPrev()}
-                  disabled={!api?.canScrollPrev()}
+                  disabled={!canPrev}
                   aria-label="Oferta anterior"
                 >
                   <ChevronLeft className="h-4 w-4" />
@@ -89,7 +98,7 @@ export function OffersSection({ offers }: { offers: PublicOffer[] }) {
                   size="icon"
                   className="size-8"
                   onClick={() => api?.scrollNext()}
-                  disabled={!api?.canScrollNext()}
+                  disabled={!canNext}
                   aria-label="Oferta siguiente"
                 >
                   <ChevronRight className="h-4 w-4" />

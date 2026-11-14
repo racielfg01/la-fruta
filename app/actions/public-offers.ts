@@ -21,7 +21,10 @@ export async function getPublicOffers(): Promise<
     const list = await getAllRecords(pb, "offers", { sort: "-created" });
     const data = list
       .map((r) => toAdminOffer(r as Record<string, any>))
-      .filter(isOfferActive)
+      // Ojo: `filter(isOfferActive)` pasaría el ÍNDICE del array como `now`
+      // (segundo parámetro) y el filtro de fecha no filtraría nunca: salían
+      // ofertas vencidas con el botón de agregar activo.
+      .filter((o) => isOfferActive(o))
       .map(toPublicOffer);
     return { success: true, data };
   } catch (error) {

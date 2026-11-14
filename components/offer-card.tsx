@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -145,7 +146,7 @@ export function OfferCard({
               <DialogTitle className="mt-1 text-lg">{offer.name}</DialogTitle>
             </DialogHeader>
 
-            <p className="text-sm text-muted-foreground">{offer.description}</p>
+            <DialogDescription>{offer.description}</DialogDescription>
 
             <div className="flex items-end justify-between gap-3">
               <span className="text-2xl font-bold text-primary">
@@ -172,7 +173,7 @@ export function OfferCard({
           </DialogContent>
         </Dialog>
 
-        <div className="absolute left-2.5 top-2.5">
+        <div className="pointer-events-none absolute left-2.5 top-2.5">
           <Badge variant={offer.type === "combo" ? "default" : "secondary"}>
             {offer.type === "combo" ? "Combo" : "Rebaja"}
           </Badge>

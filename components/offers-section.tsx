@@ -40,9 +40,14 @@ export function OffersSection({ offers }: { offers: PublicOffer[] }) {
     if (!api) return;
     const onSelect = () => setCurrent(api.selectedScrollSnap());
     api.on("select", onSelect);
+    // 'reInit' salta cuando cambia el número de diapositivas (una oferta
+    // vence con la página abierta): sin esto el punto resaltado se queda
+    // apuntando a una diapositiva que ya no existe.
+    api.on("reInit", onSelect);
     onSelect();
     return () => {
       api.off("select", onSelect);
+      api.off("reInit", onSelect);
     };
   }, [api]);
 
@@ -122,13 +127,19 @@ export function OffersSection({ offers }: { offers: PublicOffer[] }) {
                   onClick={() => api?.scrollTo(index)}
                   aria-label={`Ir a la oferta ${index + 1}`}
                   aria-current={index === current}
-                  className={cn(
-                    "h-2 rounded-full transition-all",
-                    index === current
-                      ? "w-6 bg-primary"
-                      : "w-2 bg-muted-foreground/30 hover:bg-muted-foreground/50"
-                  )}
-                />
+                  // El punto es pequeño pero el objetivo es de 24 px: el
+                  // relleno se compensa para no separar la fila.
+                  className="-m-2 rounded-full p-2"
+                >
+                  <span
+                    className={cn(
+                      "block h-2 rounded-full transition-all",
+                      index === current
+                        ? "w-6 bg-primary"
+                        : "w-2 bg-muted-foreground/30 hover:bg-muted-foreground/50"
+                    )}
+                  />
+                </button>
               ))}
             </div>
           )}

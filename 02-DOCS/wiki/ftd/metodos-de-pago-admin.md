@@ -94,7 +94,7 @@ si pide comprobante.
       `paymentMethodLogo` como endpoint de imagen.
 - [x] Gates en verde: `npx vitest run`, `npx tsc --noEmit`,
       `npx eslint app lib components`, `npx next build`.
-- [ ] Ejecutar `node scripts/setup-payment-methods.cjs` en producción
+- [x] Ejecutar `node scripts/setup-payment-methods.cjs` en producción
       **antes** de desplegar el código nuevo.
 - [ ] Recorrido en navegador (producción): crear/editar/desactivar un
       método; pagar en efectivo; pagar por transferencia con comprobante;
@@ -102,18 +102,23 @@ si pide comprobante.
 
 ## Evidence
 
+- Migración ejecutada en producción: la colección `payment_methods` existe
+  con los cuatro métodos sembrados (Zelle con su logo, teléfono y titular;
+  USDT con su wallet y titular).
 - `npx vitest run`: 254 tests en 32 archivos, en verde.
 - `npx tsc --noEmit`: sin errores (`next.config.mjs` ignora los tipos en
   el build; este comando es la puerta real).
 - `npx eslint app lib components`: 0 errores.
 - `npx next build`: compila; `/checkout`, `/order-confirmation` y
   `/admin/configuracion` presentes.
+- Desplegado en `https://mercatoma.vercel.app` (commit `2441c4e`): el
+  checkout servido ya trae el código nuevo y la API pública devuelve los
+  cuatro métodos.
 - La migración siembra la colección solo si está vacía; el script es
   idempotente y no borra nada.
 
 ## Next
 
-1. Ejecutar la migración en producción y revisar los cuatro métodos
-   sembrados (imágenes de Zelle y USDT, titular y cuenta).
-2. Desplegar y recorrer el admin y el checkout en producción.
-3. Cuando el recorrido esté verde, marcar este documento como `done`.
+1. Recorrer el admin y el checkout en producción con una sesión real.
+2. Cuando el recorrido esté verde, marcar este documento como `done`.
+

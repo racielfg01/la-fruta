@@ -1,21 +1,19 @@
 /**
- * Build a URL for our own sharp-based optimizer (app/api/img).
- * Returns the src untouched for values we should not proxy:
- * empty, inline data, blobs, SVG or already-optimized URLs.
+ * URL de imagen lista para `next/image`.
+ *
+ * Antes construía una URL de nuestro optimizador (`/api/img`), pero ese
+ * servicio dependía de `sharp` y en producción acababa redirigiendo al archivo
+ * original: las fotos viajaban a tamaño completo. Ahora la optimización la hace
+ * Next (`/_next/image`), que sí está disponible en todos los despliegues y
+ * además genera `srcset` responsive.
+ *
+ * Se mantiene la función (y su firma) para no tocar todas las llamadas; el
+ * ancho y la calidad ya no se usan aquí: los decide el `sizes` de cada imagen.
  */
 export function optimizedImageUrl(
   src: string | null | undefined,
-  width: number,
-  quality = 72
+  _width?: number,
+  _quality?: number
 ): string {
-  if (!src) return "";
-  if (
-    src.startsWith("data:") ||
-    src.startsWith("blob:") ||
-    src.startsWith("/api/img?") ||
-    src.split("?")[0].toLowerCase().endsWith(".svg")
-  ) {
-    return src;
-  }
-  return `/api/img?src=${encodeURIComponent(src)}&w=${width}&q=${quality}`;
+  return src || "";
 }

@@ -79,6 +79,14 @@ export default function RootLayout({
   return (
     <html lang="es" className="bg-background" suppressHydrationWarning>
       <body className={` font-sans antialiased`}>
+        {/* La bienvenida de primera visita se monta tras la hidratación; sin
+            este preload su imagen se descubría ~2 s tarde y era el LCP. */}
+        <link
+          rel="preload"
+          as="image"
+          href="/onboarding/bienvenida.webp"
+          fetchPriority="high"
+        />
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
           <SettingsApplicator />
           <AuthProvider>

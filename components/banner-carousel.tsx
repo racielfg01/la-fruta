@@ -40,7 +40,13 @@ function resolveHref(banner: Banner, validProductIds: string[]): string | null {
   return null;
 }
 
-function SlideContent({ banner }: { banner: Banner }) {
+function SlideContent({
+  banner,
+  priority,
+}: {
+  banner: Banner;
+  priority?: boolean;
+}) {
   return (
     <>
       {banner.image ? (
@@ -49,6 +55,7 @@ function SlideContent({ banner }: { banner: Banner }) {
           alt={banner.title || banner.subtitle || "Banner de la tienda"}
           fill
           sizes="(max-width: 1024px) 100vw, 1200px"
+          priority={priority}
           className="object-cover transition-transform duration-500 group-hover:scale-[1.03]"
         />
       ) : (
@@ -111,7 +118,9 @@ export function BannerCarousel({
               "group relative block aspect-[16/10] w-full overflow-hidden rounded-2xl border bg-muted sm:aspect-[7/2]",
               href && "cursor-pointer"
             );
-            const content = <SlideContent banner={banner} />;
+            // El primer banner es el candidato a LCP en visitas recurrentes:
+            // se carga con prioridad; el resto espera su turno.
+            const content = <SlideContent banner={banner} priority={index === 0} />;
 
             return (
               <CarouselItem

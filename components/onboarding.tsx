@@ -38,7 +38,7 @@ const steps = [
       "Descubre la mejor selección de frutas y productos agrícoles frescos, directamente del campo a tu mesa. Calidad garantizada en cada entrega.",
     icon: Leaf,
     color: "bg-emerald-500",
-    image: "https://images.unsplash.com/photo-1610832958506-aa56368176cf?w=800&h=600&fit=crop",
+    image: "/onboarding/bienvenida.webp",
     features: [
       { icon: Sparkles, text: "Productos 100% orgánicos y certificados", color: "text-emerald-600" },
       { icon: Heart, text: "Seleccionados con amor por expertos", color: "text-rose-500" },
@@ -54,7 +54,7 @@ const steps = [
       "Navega por nuestra amplia variedad de frutas, cítricos, bayas, productos tropicales y mucho más. Encuentra exactamente lo que necesitas con nuestras herramientas de búsqueda.",
     icon: Search,
     color: "bg-blue-500",
-    image: "https://images.unsplash.com/photo-1488459716781-31db52582fe9?w=800&h=600&fit=crop",
+    image: "/onboarding/explora.webp",
     features: [
       { icon: Search, text: "Búsqueda inteligente por nombre u origen", color: "text-blue-600" },
       { icon: Filter, text: "Filtros por categoría, precio y disponibilidad", color: "text-purple-500" },
@@ -70,7 +70,7 @@ const steps = [
       "Añade productos a tu carrito con un solo clic. Ajusta cantidades, revisa tu selección y procede al pago cuando estés listo.",
     icon: Package,
     color: "bg-purple-500",
-    image: "https://images.unsplash.com/photo-1542838132-92c53300491e?w=800&h=600&fit=crop",
+    image: "/onboarding/carrito.webp",
     features: [
       { icon: Plus, text: "Agrega productos con un solo toque", color: "text-purple-600" },
       { icon: ShieldCheck, text: "Revisa tu pedido antes de pagar", color: "text-green-500" },
@@ -86,7 +86,7 @@ const steps = [
       "Selecciona tu ubicación en el mapa interactivo y recibe tus productos frescos directamente en tu hogar. Seguimiento en tiempo real de tu pedido.",
     icon: Truck,
     color: "bg-orange-500",
-    image: "https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=800&h=600&fit=crop",
+    image: "/onboarding/entrega.webp",
     features: [
       { icon: MapPin, text: "Mapa interactivo para tu ubicación exacta", color: "text-orange-600" },
       { icon: Clock, text: "Entrega el mismo día disponible", color: "text-cyan-500" },
@@ -199,6 +199,7 @@ export function Onboarding({ onComplete }: OnboardingProps) {
                   src={step.image}
                   alt={step.title}
                   fill
+                  unoptimized
                   className="object-cover"
                   sizes="50vw"
                   priority
@@ -231,6 +232,7 @@ export function Onboarding({ onComplete }: OnboardingProps) {
                     src={step.image}
                     alt={step.title}
                     fill
+                    unoptimized
                     className="object-cover"
                     sizes="100vw"
                     priority

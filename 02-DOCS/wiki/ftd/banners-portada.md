@@ -91,7 +91,8 @@ con datos reales de PocketBase.
 - Móvil 390: franja 343×215 (16:10), flechas ocultas, puntos de 8 px, sin
   desbordamiento horizontal (`scrollWidth == innerWidth`).
 - El hero no aparece; el `<h1>` «Nuestra Tienda» queda `sr-only`.
-- Imágenes servidas por el proxy `/api/img` (`optimizedImageUrl`).
+- Imágenes redimensionadas por el optimizador de Next (`/_next/image`, vía
+  `optimizedImageUrl`): se piden al ancho real, en WebP/AVIF.
 
 **Portada sin banners activos**
 - Sin carrusel, el hero vuelve tal cual: «Nuestra Tienda», «Frutas frescas y

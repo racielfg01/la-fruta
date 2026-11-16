@@ -120,6 +120,9 @@ si pide comprobante.
 - Desplegado en `https://mercatoma.vercel.app` (commit `2441c4e`): el
   checkout servido ya trae el código nuevo y la API pública devuelve los
   cuatro métodos.
+- Desplegado el buscador y la paginación (commit `2a3cc4d`): el chunk de la
+  pestaña publicado en producción incluye «Buscar por nombre, cuenta,
+  titular, moneda o tipo…».
 - La migración siembra la colección solo si está vacía; el script es
   idempotente y no borra nada.
 

@@ -25,6 +25,28 @@ export interface OrderActionResult {
 }
 
 /**
+ * Convierte un total en CUP a la moneda del pedido. Es la instantánea que se
+ * guarda como monto transferido; no redondea, el cliente debe transferir el
+ * monto exacto que se le muestra.
+ */
+async function cupAmountInCurrency(
+  pb: any,
+  currencyCode: string,
+  totalCup: number
+): Promise<number> {
+  if (currencyCode === 'CUP') return totalCup;
+
+  const rows = await getAllRecords<any>(pb, 'currencies', {
+    filter: `code = "${sanitize(currencyCode)}" || code = "CUP"`,
+  });
+  const cupRate = Number(rows.find((c) => c.code === 'CUP')?.exchange_rate) || 0;
+  const targetRate =
+    Number(rows.find((c) => c.code === currencyCode)?.exchange_rate) || 0;
+  if (!cupRate || !targetRate) return totalCup;
+  return Math.round((totalCup / cupRate) * targetRate * 100) / 100;
+}
+
+/**
  * Importe a cobrar en efectivo, redondeado hacia arriba a la unidad pagable
  * con billetes, y la tasa aplicada (CUP por 1 unidad de la moneda del pedido).
  */
@@ -358,6 +380,10 @@ export async function createOrderAction(
         paymentType === 'cash'
           ? await cashPaymentAmount(pb, orderData.currencyCode, total)
           : null;
+      const transferAmount =
+        paymentType === 'transfer'
+          ? await cupAmountInCurrency(pb, orderData.currencyCode, total)
+          : 0;
 
       const order = await pb.collection('orders').create({
         // id único: [a-z0-9] sin guiones (PB orders.id exige ^[a-z0-9]+$)
@@ -387,7 +413,7 @@ export async function createOrderAction(
         account_number: method?.account_number || '',
         receipt: orderData.receipt || '',
         reference: orderData.reference || '',
-        transfer_amount: paymentType === 'transfer' ? total : 0,
+        transfer_amount: transferAmount,
         cash_amount: cash?.amount ?? 0,
         exchange_rate_used: cash?.rate ?? 0,
       });

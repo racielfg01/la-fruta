@@ -24,6 +24,7 @@ import {
   Plus,
 } from "lucide-react";
 import Image from "next/image";
+import { useSettingsStore } from "@/lib/settings-store";
 
 interface OnboardingProps {
   onComplete: () => void;
@@ -97,6 +98,7 @@ const steps = [
 ];
 
 export function Onboarding({ onComplete }: OnboardingProps) {
+  const settings = useSettingsStore((s) => s.settings);
   const [currentStep, setCurrentStep] = useState(0);
   const [isAnimating, setIsAnimating] = useState(false);
   // La dirección se guarda en estado, no en un ref: se lee durante el render
@@ -250,8 +252,15 @@ export function Onboarding({ onComplete }: OnboardingProps) {
               {/* Scrollable content */}
               <div className="flex-1 overflow-y-auto px-5 pt-6 pb-4 sm:px-6 md:px-8 lg:px-10">
                 <div className="mb-6 flex items-center gap-2.5">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary shadow-lg shadow-primary/20">
-                    <Leaf className="h-5 w-5 text-primary-foreground" />
+                  <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-xl shadow-lg shadow-primary/20">
+                    <Image
+                      src={settings.logo || "/icon-512x512.png"}
+                      alt={settings.storeName || "MercaToma"}
+                      width={40}
+                      height={40}
+                      priority
+                      className="h-full w-full object-cover"
+                    />
                   </div>
                   <div>
                     <span className="font-[family-name:var(--font-playfair)] text-lg font-bold text-foreground">

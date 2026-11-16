@@ -18,7 +18,7 @@ import type { StoreSettings } from "@/lib/settings-store";
 const DEFAULTS: StoreSettings = {
   storeName: "MercaToma",
   storeDescription: "Productos frescos de la granja entregados en la puerta de su casa.",
-  logo: "/android/launchericon-96x96.png",
+  logo: "/icon-512x512.png",
   theme: "system",
   font: "poppins",
   background_color: "#0D1b2a",

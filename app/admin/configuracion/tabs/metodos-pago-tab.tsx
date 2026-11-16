@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useAuthStore } from "@/lib/auth-context";
 import { useAdminStore } from "@/lib/admin-store";
 import {
@@ -40,7 +40,9 @@ import {
 } from "@/components/ui/select";
 import { Field, FieldLabel } from "@/components/ui/field";
 import { ImageUpload } from "@/components/upload-button";
-import { Plus, Pencil, Trash2, Loader2, Image as ImageIcon } from "lucide-react";
+import { usePagination } from "@/lib/use-pagination";
+import { PaginationBar } from "@/components/pagination-bar";
+import { Plus, Pencil, Trash2, Loader2, Image as ImageIcon, Search } from "lucide-react";
 import { toast } from "sonner";
 
 const emptyForm = {
@@ -68,6 +70,29 @@ export default function MetodosPagoTab() {
   const [editing, setEditing] = useState<PaymentMethodRow | null>(null);
   const [form, setForm] = useState<any>(emptyForm);
   const [saving, setSaving] = useState(false);
+  const [search, setSearch] = useState("");
+
+  const filteredMethods = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return methods;
+    return methods.filter((m) =>
+      m.name.toLowerCase().includes(q) ||
+      m.currency.toLowerCase().includes(q) ||
+      m.accountNumber.toLowerCase().includes(q) ||
+      m.owner.toLowerCase().includes(q) ||
+      m.type.includes(q) ||
+      (m.type === "cash" ? "efectivo" : "transferencia").includes(q)
+    );
+  }, [methods, search]);
+
+  const {
+    currentPage,
+    totalPages,
+    perPage,
+    paginatedData: paginatedMethods,
+    goToPage,
+    changePerPage,
+  } = usePagination(filteredMethods);
 
   const load = useCallback(async () => {
     if (!token) return;
@@ -153,8 +178,22 @@ export default function MetodosPagoTab() {
       </div>
 
       <Card>
+        <CardContent className="p-4">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              placeholder="Buscar por nombre, cuenta, titular, moneda o tipo..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="pl-9"
+            />
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
         <CardHeader>
-          <CardTitle>Listado ({methods.length})</CardTitle>
+          <CardTitle>Listado ({filteredMethods.length})</CardTitle>
         </CardHeader>
         <CardContent>
           {loading ? (
@@ -173,7 +212,7 @@ export default function MetodosPagoTab() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {methods.map((m) => (
+                {paginatedMethods.map((m) => (
                   <TableRow key={m.id} className={m.active ? "" : "opacity-60"}>
                     <TableCell>
                       {m.image ? (
@@ -206,15 +245,27 @@ export default function MetodosPagoTab() {
                     </TableCell>
                   </TableRow>
                 ))}
-                {methods.length === 0 && (
+                {paginatedMethods.length === 0 && (
                   <TableRow>
                     <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
-                      No hay métodos de pago. Crea uno para que el cliente pueda pagar.
+                      {search.trim()
+                        ? "No se encontraron métodos con esa búsqueda."
+                        : "No hay métodos de pago. Crea uno para que el cliente pueda pagar."}
                     </TableCell>
                   </TableRow>
                 )}
               </TableBody>
             </Table>
+          )}
+          {filteredMethods.length > 0 && (
+            <PaginationBar
+              currentPage={currentPage}
+              totalPages={totalPages}
+              totalItems={filteredMethods.length}
+              perPage={perPage}
+              onPageChange={goToPage}
+              onPerPageChange={changePerPage}
+            />
           )}
           {methods.filter(m => m.active).length === 0 && methods.length > 0 && (
             <p className="mt-3 text-sm text-amber-700">Todos los métodos están desactivados: el cliente no podrá pagar.</p>

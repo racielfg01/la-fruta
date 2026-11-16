@@ -40,6 +40,9 @@ si pide comprobante.
 - `app/admin/configuracion/tabs/metodos-pago-tab.tsx`: listado con imagen,
   nombre, tipo, moneda, comprobante y activo; interruptor que guarda solo;
   diálogo de crear/editar con los campos del tipo elegido; eliminar.
+- `app/admin/configuracion/tabs/metodos-pago-tab.tsx`: buscador por nombre,
+  cuenta, titular, moneda y tipo, y paginación inferior con `PaginationBar`
+  (10 por página, ajustable a 5/10/20/50).
 - `lib/payment-options.ts`: un tile por método activo y con moneda activa;
   una transferencia sin cupo se muestra deshabilitada con su motivo.
 - `lib/payment-methods.ts`: `validatePaymentMethod` (activo, tipo, moneda,
@@ -88,6 +91,8 @@ si pide comprobante.
 - [x] Contador y límite viven en el método y se actualizan al transferir.
 - [x] Pestaña «Métodos de pago» con listado, interruptor, crear, editar y
       eliminar — `app/admin/configuracion/tabs/metodos-pago-tab.tsx`.
+- [x] Buscador y paginación inferior en el listado — mismo archivo; gates en
+      verde (`tsc`, `vitest`, `eslint`, `next build`).
 - [x] El checkout arma los tiles desde los métodos y pide comprobante solo
       cuando corresponde — `app/checkout/page.tsx`.
 - [x] Se elimina la pestaña Bancos y sus acciones; queda
@@ -97,8 +102,9 @@ si pide comprobante.
 - [x] Ejecutar `node scripts/setup-payment-methods.cjs` en producción
       **antes** de desplegar el código nuevo.
 - [ ] Recorrido en navegador (producción): crear/editar/desactivar un
-      método; pagar en efectivo; pagar por transferencia con comprobante;
-      comprobar que el pedido muestra el nombre y la cuenta usados.
+      método; probar el buscador y la paginación; pagar en efectivo; pagar
+      por transferencia con comprobante; comprobar que el pedido muestra el
+      nombre y la cuenta usados.
 
 ## Evidence
 

@@ -799,7 +799,7 @@ export function StoreView({
                 ) : (
                   <>
                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 lg:gap-6">
-                      {paginatedData.map((product, productIndex) => (
+                      {paginatedData.map((product) => (
                         <ProductCard
                           key={product.id}
                           product={product}
@@ -808,7 +808,6 @@ export function StoreView({
                           cartQuantity={getCartQuantity(product.id)}
                           isHovered={hoveredProduct === product.id}
                           onHover={setHoveredProduct}
-                          priority={productIndex < 3}
                         />
                       ))}
                     </div>
@@ -1133,7 +1132,6 @@ function MasonryGrid({
                 heightVariant={heightVariant}
                 isHovered={hoveredProduct === product.id}
                 onHover={setHoveredProduct}
-                priority={columnIndex === 0 && productIndex < 2}
               />
             );
           })}

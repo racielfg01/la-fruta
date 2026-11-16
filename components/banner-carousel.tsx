@@ -54,7 +54,7 @@ function SlideContent({
           src={optimizedImageUrl(banner.image, 1600)}
           alt={banner.title || banner.subtitle || "Banner de la tienda"}
           fill
-          sizes="(max-width: 1024px) 100vw, 1200px"
+          sizes="(max-width: 640px) 640px, (max-width: 1024px) 828px, 1200px"
           priority={priority}
           className="object-cover transition-transform duration-500 group-hover:scale-[1.03]"
         />

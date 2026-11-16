@@ -36,10 +36,12 @@ export const metadata: Metadata = {
   },
   manifest: '/manifest.json',
   icons: {
+    // El navegador descargaba el PNG de 192 px (33 KB) solo para la pestaña.
+    // Los iconos grandes siguen en el manifest, que es quien los necesita.
     icon: [
       { url: '/favicon.ico', sizes: 'any' },
-      { url: '/icon-192x192.png', type: 'image/png', sizes: '192x192' },
-      { url: '/icon-512x512.png', type: 'image/png', sizes: '512x512' },
+      { url: '/icon-48x48.png', type: 'image/png', sizes: '48x48' },
+      { url: '/icon-96x96.png', type: 'image/png', sizes: '96x96' },
     ],
     apple: '/apple-icon.png',
     shortcut: '/favicon.ico',

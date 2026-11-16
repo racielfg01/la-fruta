@@ -6,7 +6,11 @@ import { parseLocations, matchLocationIndex, StoredLocation } from "@/lib/order-
 import { orderItemPrice } from "@/lib/price-margin";
 import { orderTotalCup } from "@/lib/order-total";
 import { roundCashUp } from "@/lib/cash-rounding";
-import { validateTransferAccount } from "@/lib/payment-methods";
+import {
+  requiresReceiptError,
+  validatePaymentMethod,
+  type PaymentMethodRecord,
+} from "@/lib/payment-methods";
 import { orderDates } from "@/lib/order-dates";
 import { notifyNewOrder } from "@/lib/push/notify";
 import { after } from "next/server";
@@ -84,19 +88,18 @@ export interface CreateOrderInput {
   subtotal: number;
   deliveryFee: number;
   total: number;
-  paymentMethod: string;
+  /** Método de pago elegido en el checkout. El servidor deriva el tipo. */
+  paymentMethodId: string;
+  /** Tipo que muestra el cliente; se comprueba contra el método guardado. */
+  paymentMethod?: string;
   deliveryAddress: string;
   deliveryNotes?: string;
   currencyCode: string;
   zoneId: string;
   municipalityId?: string;
   provinceId?: string;
-  bankAccountId?: string;
-  bankName?: string;
-  accountNumber?: string;
   receipt?: string;
   reference?: string;
-  transferAmount?: number;
 }
 
 // Stock efectivo para la zona del cliente. Sin zonas configuradas cae al stock
@@ -140,39 +143,35 @@ export async function createOrderAction(
       }
       const deliveryFee = Math.max(0, Number(zone.price) || 0);
 
-      // La cuenta de transferencia pudo desactivarse, cambiar de moneda o
-      // alcanzar su límite entre la carga del checkout y el envío. Los datos
-      // del banco y la cuenta se guardan desde el registro validado, no desde
-      // lo que envíe el cliente.
-      let transferAccount: any = null;
-      let transferBank: any = null;
-      if (orderData.paymentMethod === 'transfer') {
-        transferAccount = orderData.bankAccountId
-          ? await pb
-              .collection('bank_accounts')
-              .getOne(orderData.bankAccountId)
-              .catch(() => null)
-          : null;
-        transferBank = transferAccount?.bank
-          ? await pb
-              .collection('banks')
-              .getOne(transferAccount.bank)
-              .catch(() => null)
-          : null;
-        const accountError = validateTransferAccount({
-          account: transferAccount
-            ? {
-                active: transferAccount.active,
-                currency: transferAccount.currency,
-                transfer_limit: transferAccount.transfer_limit,
-                transfer_count: transferAccount.transfer_count,
-              }
-            : null,
-          bank: transferBank ? { active: transferBank.active } : null,
-          currencyCode: orderData.currencyCode,
-        });
-        if (accountError) return { success: false, error: accountError };
-      }
+      // El método de pago pudo desactivarse, cambiar de moneda o agotar su
+      // cupo entre la carga del checkout y el envío. El tipo del pedido y los
+      // datos de la transferencia salen del registro validado, no del cliente.
+      const method = (orderData.paymentMethodId
+        ? await pb
+            .collection('payment_methods')
+            .getOne(orderData.paymentMethodId)
+            .catch(() => null)
+        : null) as (PaymentMethodRecord & {
+        id: string;
+        name?: string;
+        account_number?: string;
+      }) | null;
+      const paymentType = method?.type === 'transfer' ? 'transfer' : 'cash';
+      const methodError = validatePaymentMethod({
+        method,
+        currencyCode: orderData.currencyCode,
+        expectedType:
+          orderData.paymentMethod === 'cash' ||
+          orderData.paymentMethod === 'transfer'
+            ? orderData.paymentMethod
+            : undefined,
+      });
+      if (methodError) return { success: false, error: methodError };
+      const receiptError = requiresReceiptError({
+        method,
+        receiptUrl: orderData.receipt,
+      });
+      if (receiptError) return { success: false, error: receiptError };
 
       // Margen de ganancia global (%) de la configuración de la tienda.
       // Solo se aplica a órdenes pagadas en CUP (orderItemPrice).
@@ -356,7 +355,7 @@ export async function createOrderAction(
 
       // En efectivo se cobra redondeado a billetes; en transferencia, el total exacto.
       const cash =
-        orderData.paymentMethod === 'cash'
+        paymentType === 'cash'
           ? await cashPaymentAmount(pb, orderData.currencyCode, total)
           : null;
 
@@ -373,7 +372,7 @@ export async function createOrderAction(
         operational_cost: operationalCost,
         total,
         status: 'pending',
-        payment_method: orderData.paymentMethod,
+        payment_method: paymentType,
         payment_status: 'pending',
         delivery_address: orderData.deliveryAddress,
         delivery_notes: orderData.deliveryNotes || '',
@@ -381,12 +380,14 @@ export async function createOrderAction(
         zone_id: orderData.zoneId,
         delivery_municipality: orderData.municipalityId || '',
         delivery_province: orderData.provinceId || '',
-        bank_account_id: orderData.bankAccountId || '',
-        bank_name: transferBank?.name || '',
-        account_number: transferAccount?.account_number || '',
+        // Instantánea del método: aunque el admin lo edite o lo borre, el
+        // pedido conserva el nombre y la cuenta con los que se pagó.
+        bank_account_id: '',
+        bank_name: method?.name || '',
+        account_number: method?.account_number || '',
         receipt: orderData.receipt || '',
         reference: orderData.reference || '',
-        transfer_amount: orderData.transferAmount || 0,
+        transfer_amount: paymentType === 'transfer' ? total : 0,
         cash_amount: cash?.amount ?? 0,
         exchange_rate_used: cash?.rate ?? 0,
       });
@@ -431,19 +432,20 @@ export async function createOrderAction(
         total_spent: Number((user as any).total_spent || 0) + total,
       });
 
-      // Contabilidad de cuentas bancarias en transferencias (best-effort)
-      if (orderData.paymentMethod === 'transfer' && orderData.bankAccountId) {
+      // Contabilidad del método de transferencia (best-effort): el contador y
+      // el cupo viven ahora en el propio método.
+      if (paymentType === 'transfer' && method) {
         try {
-          const account = await pb.collection('bank_accounts').getOne(orderData.bankAccountId);
-          const newCount = (Number(account.transfer_count) || 0) + 1;
-          const limit = Number(account.transfer_limit) || 0;
+          const fresh = await pb.collection('payment_methods').getOne(method.id);
+          const newCount = (Number(fresh.transfer_count) || 0) + 1;
+          const limit = Number(fresh.transfer_limit) || 0;
           const updateData: any = { transfer_count: newCount };
           if (limit > 0 && newCount >= limit) {
             updateData.active = false;
           }
-          await pb.collection('bank_accounts').update(orderData.bankAccountId, updateData);
+          await pb.collection('payment_methods').update(method.id, updateData);
         } catch {
-          console.warn(`No se pudo actualizar la cuenta bancaria ${orderData.bankAccountId}`);
+          console.warn(`No se pudo actualizar el método de pago ${method.id}`);
         }
       }
 

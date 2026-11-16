@@ -8,93 +8,112 @@ status: in-progress
 
 ## Intent
 
-Hoy los métodos de pago del checkout están repartidos en dos pestañas de
-`/admin/configuracion`:
+Antes el pago se configuraba en dos sitios y con dos modelos mentales:
 
-- **General**: los interruptores de «Efectivo» y «Transferencias y pagos
-  digitales», escondidos entre la marca, los colores y la tipografía.
-- **Bancos**: los bancos y las **cuentas** a las que se transfiere (moneda,
-  límite, veces usadas, activa).
+- **General**: dos interruptores («Efectivo» y «Transferencias y pagos
+  digitales») dentro del mismo formulario que la marca y los colores.
+- **Bancos**: bancos y **cuentas** por separado, cada una con su moneda,
+  su límite y su contador.
 
-Para gestionarlos hay que saltar entre pestañas y, lo peor, los interruptores
-forman parte del mismo formulario que se guarda con el botón «Guardar
-cambios» de General: moverlos y luego ir a otra pestaña sin guardar los
-deja sin aplicar. Y nada avisa cuando la configuración está mal (por
-ejemplo, transferencia activa sin ninguna cuenta utilizable).
+El admin no podía crear «un método de pago»: podía encender dos categorías
+fijas y añadir cuentas sueltas colgadas de un banco. El cliente veía un tile
+por moneda en efectivo y un tile por banco con un selector de cuenta cuando
+había varias.
 
-La solución reúne todo en una pestaña **«Métodos de pago»**, con los
-interruptores solos (que guardan al instante) y avisos que se recalculan con
-los datos reales.
+La solución simplifica el modelo: **el método de pago es la única entidad**.
+Se crea, se edita y se activa desde `/admin/configuracion?tab=metodos`. Cada
+método es un tile del checkout y lleva dentro todo lo que el cliente
+necesita: nombre, imagen, tipo (efectivo o transferencia), moneda y —si es
+transferencia— número de cuenta, titular, instrucciones, límite, contador y
+si pide comprobante.
 
 ## Scope
 
 **Dentro**
-- `app/admin/configuracion/tabs/metodos-pago-tab.tsx` (nuevo): la pestaña.
-  Tres partes:
-  1. Card «Métodos de pago del checkout»: los dos interruptores, cada uno
-     con su nombre y una línea de contexto. Cada interruptor guarda solo
-     (`updateSettingsAction`) y muestra un aviso de éxito.
-  2. Avisos, calculados con `lib/payment-methods.ts::paymentMethodWarnings`
-     a partir de los interruptores, las cuentas y las monedas:
-     - transferencia activa sin ninguna cuenta utilizable → el cliente no
-       pagará por ese método.
-     - cuentas configuradas con la transferencia oculta → están ocultas
-       para el cliente.
-     - efectivo activo sin CUP ni USD activadas → el checkout no mostrará
-       efectivo.
-  3. Sección «Cuentas para transferencias»: los bancos y las cuentas, con
-     su sub-pestaña (Bancos | Cuentas bancarias) — lo que ya existía en la
-     pestaña «Bancos».
-- `lib/payment-methods.ts`: `paymentMethodWarnings` (pura) +
-  `PaymentMethodWarningCode`, junto con `usableAccounts` (cuentas activas
-  y sin límite alcanzado, sin importar la moneda).
-- `app/admin/configuracion/tabs/general-tab.tsx`: se quita la card de
-  «Métodos de pago del checkout».
-- `app/admin/configuracion/tabs/bancos-tab.tsx`: recibe un prop
-  `onChanged` que se llama después de cualquier modificación (banco o
-  cuenta, al crear, editar o eliminar), para que los avisos de la pestaña
-  padre se recalculen sin recargar la página. Su título se convierte en el
-  de la sección.
-- `app/admin/configuracion/page.tsx`: la pestaña «Bancos» se reemplaza por
-  «Métodos de pago» (valor `metodos`), en el mismo lugar del listado.
+- Colección nueva `payment_methods` (una sola). Campos: `name`, `type`
+  (`cash` | `transfer`), `image`, `currency`, `account_number`,
+  `account_type`, `owner`, `requires_receipt`, `instructions`,
+  `transfer_limit`, `transfer_count`, `active`, `sort`.
+- Migración `scripts/setup-payment-methods.cjs`: crea la colección (lectura
+  pública, escritura solo admin) y, si está vacía, siembra cuatro métodos
+  con los datos actuales: Efectivo CUP, Efectivo USD, Zelle y USDT.
+- `app/admin/configuracion/tabs/metodos-pago-tab.tsx`: listado con imagen,
+  nombre, tipo, moneda, comprobante y activo; interruptor que guarda solo;
+  diálogo de crear/editar con los campos del tipo elegido; eliminar.
+- `lib/payment-options.ts`: un tile por método activo y con moneda activa;
+  una transferencia sin cupo se muestra deshabilitada con su motivo.
+- `lib/payment-methods.ts`: `validatePaymentMethod` (activo, tipo, moneda,
+  cupo) y `requiresReceiptError`; el servidor los usa al crear el pedido.
+- `app/actions/orders.ts`: el pedido se valida contra el método guardado y
+  se deriva `payment_method` (`cash`/`transfer`). Se guarda la instantánea
+  en `bank_name` (nombre del método) y `account_number`. El contador y el
+  cupo se mueven en `payment_methods`.
+- `app/checkout/page.tsx`: pago construido desde los métodos; los datos de
+  la cuenta se muestran en el tile elegido; el comprobante solo se pide si
+  el método lo exige.
+- `app/api/uploadthing/core.ts`: endpoint `paymentMethodLogo` para la
+  imagen del método.
+- `components/order-detail-dialog.tsx`: la fila del pago dice «Método» en
+  vez de «Banco».
 
 **Fuera (explícito)**
-- No se toca el checkout, ni los precios, ni el carrito, ni el modelo de
-  datos: los mismos campos (`payment_cash_enabled` /
-  `payment_transfer_enabled`) y las mismas cuentas.
-- No se añade ningún método de pago nuevo (siguen siendo `cash` y
-  `transfer`).
-- No se cambia la lógica de límites de las cuentas ni cómo se
-  desactivan.
+- Precios, carrito, margen, costo operativo, stock y flujo de estados del
+  pedido no cambian.
+- `orders.payment_method` sigue siendo `cash` | `transfer`: así el
+  redondeo de efectivo, el contador y el resto de la lógica no se tocan.
+- Las colecciones `banks` y `bank_accounts` quedan dormidas: no se leen ni
+  se borran. `showPaymentCash` / `showPaymentTransfer` dejan de mandar,
+  pero sus campos siguen en la base.
+- No hay fallback automático si el admin desactiva todos los métodos: el
+  checkout muestra «Contacta con la tienda» y el listado avisa en ámbar.
+
+## Decisión de datos
+
+- **Una cuenta por método.** El caso de un banco con varias cuentas se
+  resuelve creando dos métodos (p. ej. «Zelle — Orlando» y «Zelle —
+  Mercatoma»). Es el precio de tener una sola entidad.
+- **Instantánea en el pedido.** `bank_name` guarda el nombre del método y
+  `account_number` la cuenta usada. Si el admin edita o borra el método,
+  el pedido conserva lo que se pagó. No se añaden campos nuevos a `orders`.
+- **El tipo lo pone el servidor.** El cliente manda `paymentMethodId`; el
+  servidor lee el método y decide si es efectivo o transferencia. Lo que
+  afirme el cliente sobre el tipo solo se usa como comprobación cruzada.
 
 ## Checklist
 
-- [x] `paymentMethodWarnings` decide los tres avisos y recheca los casos
-      trampa — prueba: `lib/payment-methods.test.ts` (9 tests nuevos).
-- [x] Suite, tipos, lint y build en verde — prueba: `npx vitest run`,
-      `npx tsc --noEmit`, `npx eslint .`, `npx next build`.
-- [x] La pestaña «Bancos» sustituida por «Métodos de pago» (valor
-      `metodos`) con el mismo formato de URL — prueba: lista de pestañas.
-- [ ] Interruptores guardan solos y el aviso de éxito aparece —
-      pendiente: recorrido en navegador (producción).
-- [ ] Los avisos aparecen y desaparecen cuando cambian las cuentas /
-      los interruptores — pendiente: recorrido en navegador (producción).
-- [ ] Los bancos y las cuentas siguen gestionables desde la nueva
-      pestaña — pendiente: recorrido en navegador (producción).
-- [ ] La pestaña «General» ya no tiene los interruptores de pago —
-      pendiente: revisión en navegador (producción).
+- [x] Lógica pura de validación y comprobante con pruebas —
+      `lib/payment-methods.test.ts`, `lib/payment-options.test.ts`.
+- [x] Servidor valida el método y guarda la instantánea del pedido —
+      `app/actions/orders.ts`.
+- [x] Contador y límite viven en el método y se actualizan al transferir.
+- [x] Pestaña «Métodos de pago» con listado, interruptor, crear, editar y
+      eliminar — `app/admin/configuracion/tabs/metodos-pago-tab.tsx`.
+- [x] El checkout arma los tiles desde los métodos y pide comprobante solo
+      cuando corresponde — `app/checkout/page.tsx`.
+- [x] Se elimina la pestaña Bancos y sus acciones; queda
+      `paymentMethodLogo` como endpoint de imagen.
+- [x] Gates en verde: `npx vitest run`, `npx tsc --noEmit`,
+      `npx eslint app lib components`, `npx next build`.
+- [ ] Ejecutar `node scripts/setup-payment-methods.cjs` en producción
+      **antes** de desplegar el código nuevo.
+- [ ] Recorrido en navegador (producción): crear/editar/desactivar un
+      método; pagar en efectivo; pagar por transferencia con comprobante;
+      comprobar que el pedido muestra el nombre y la cuenta usados.
 
 ## Evidence
 
-- 268 tests verdes (32 archivos), incluidos 9 nuevos de `paymentMethodWarnings`.
-- `npx tsc --noEmit` sin errores.
-- `npx eslint .` sin errores.
-- `npx next build` compilado (ruta `/ofertas` intacta).
-- Interruptores implementados en `metodos-pago-tab.tsx` (guardan solos vía
-  `updateSettingsAction`).
-- Tab «metodos» registrado en `app/admin/configuracion/page.tsx`; card de
-  pago eliminada de `general-tab.tsx`; cuentas viven dentro del nuevo tab.
+- `npx vitest run`: 254 tests en 32 archivos, en verde.
+- `npx tsc --noEmit`: sin errores (`next.config.mjs` ignora los tipos en
+  el build; este comando es la puerta real).
+- `npx eslint app lib components`: 0 errores.
+- `npx next build`: compila; `/checkout`, `/order-confirmation` y
+  `/admin/configuracion` presentes.
+- La migración siembra la colección solo si está vacía; el script es
+  idempotente y no borra nada.
 
 ## Next
 
-- Revisión en navegador de los interruptores y avisos (producción).
+1. Ejecutar la migración en producción y revisar los cuatro métodos
+   sembrados (imágenes de Zelle y USDT, titular y cuenta).
+2. Desplegar y recorrer el admin y el checkout en producción.
+3. Cuando el recorrido esté verde, marcar este documento como `done`.

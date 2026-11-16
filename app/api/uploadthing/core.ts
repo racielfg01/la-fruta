@@ -69,7 +69,7 @@ export const ourFileRouter = {
     })
     .onUploadComplete(({ file }) => ({ url: file.url })),
 
-  bankLogo: f({ image: { maxFileSize: "2MB" } })
+  paymentMethodLogo: f({ image: { maxFileSize: "2MB" } })
     .middleware(async ({ req }) => {
       const session = await authedUser(req);
       return { userId: session.userId };

@@ -26,42 +26,48 @@ export async function getPublicLocations() {
   }
 }
 
-// ── Bank transfer data (public) ──
+// ── Payment methods (public) ──
 
-export async function getPublicTransferData() {
+export interface PublicPaymentMethod {
+  id: string;
+  name: string;
+  type: 'cash' | 'transfer';
+  image: string;
+  currency: string;
+  accountNumber: string;
+  accountType: string;
+  owner: string;
+  requiresReceipt: boolean;
+  instructions: string;
+  transferLimit: number;
+  transferCount: number;
+  active: boolean;
+  sort: number;
+}
+
+export async function getPublicPaymentMethods(): Promise<PublicPaymentMethod[]> {
   try {
     const pb = getPB();
-    const [banks, accounts] = await Promise.all([
-      getAllRecords(pb, 'banks', { filter: 'active = true', sort: 'name' }),
-      getAllRecords(pb, 'bank_accounts', { expand: 'bank' }),
-    ]);
-    const activeBankIds = new Set(banks.map((b: any) => b.id));
-    const usable = accounts
-      .filter((a: any) => a.active !== false && activeBankIds.has(a.bank))
-      .map((a: any) => ({
-        id: a.id,
-        bankId: a.bank || '',
-        bank: a.expand?.bank?.name || '',
-        accountNumber: a.account_number || '',
-        accountType: a.account_type || '',
-        owner: a.owner || '',
-        ci: a.ci || '',
-        currency: a.currency || 'CUP',
-        transferLimit: Number(a.transfer_limit) || 0,
-        transferCount: Number(a.transfer_count) || 0,
-      }));
-    return {
-      banks: banks.map((b: any) => ({
-        id: b.id,
-        name: b.name,
-        logo: b.logo || '',
-        currency: b.currency || '',
-      })),
-      accounts: usable,
-    };
+    const rows = await getAllRecords(pb, 'payment_methods', { sort: 'sort,name' });
+    return rows.map((m: any) => ({
+      id: m.id,
+      name: m.name || '',
+      type: m.type === 'transfer' ? 'transfer' : 'cash',
+      image: m.image || '',
+      currency: m.currency || 'USD',
+      accountNumber: m.account_number || '',
+      accountType: m.account_type || '',
+      owner: m.owner || '',
+      requiresReceipt: m.requires_receipt === true,
+      instructions: m.instructions || '',
+      transferLimit: Number(m.transfer_limit) || 0,
+      transferCount: Number(m.transfer_count) || 0,
+      active: m.active !== false,
+      sort: Number(m.sort) || 0,
+    }));
   } catch (error) {
-    console.error('Error fetching transfer data:', error);
-    return { banks: [], accounts: [] };
+    console.error('Error fetching payment methods:', error);
+    return [];
   }
 }
 

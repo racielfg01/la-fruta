@@ -702,7 +702,7 @@ export function OrderDetailDialog({
                       </p>
                       <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1.5 text-sm">
                         {order.bankName && (
-                          <DetailRow label="Banco" value={order.bankName} />
+                          <DetailRow label="Método" value={order.bankName} />
                         )}
                         {order.accountNumber && (
                           <DetailRow

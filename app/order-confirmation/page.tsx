@@ -76,8 +76,9 @@ function OrderConfirmationContent() {
 
       {paymentMethod === "transfer" && (
         <div className="mb-8 w-full max-w-md rounded-lg bg-muted/50 p-4 text-center text-sm text-muted-foreground">
-          Recibimos tu comprobante de transferencia. Tu pedido será confirmado
-          en cuanto validemos el pago.
+          {searchParams.get("receipt") === "0"
+            ? "Tu pedido quedó registrado. Será confirmado en cuanto validemos la transferencia."
+            : "Recibimos tu comprobante de transferencia. Tu pedido será confirmado en cuanto validemos el pago."}
         </div>
       )}
 

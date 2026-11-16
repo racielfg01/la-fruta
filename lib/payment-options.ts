@@ -1,144 +1,94 @@
 /**
- * Opciones de pago del checkout: efectivo por moneda y un tile por banco
- * activo, armados desde Configuración → Bancos y cuentas. Sin React ni
- * PocketBase para poder probarlo con vitest.
+ * Opciones de pago del checkout construidas desde los métodos de pago
+ * configurados en /admin/configuracion?tab=metodos: un tile por método.
  */
-import {
-  isCashSupported,
-  resolveVisiblePaymentMethodIds,
-} from "./payment-methods";
+import { isCashSupported, methodHasCapacity } from "./payment-methods";
 
-export interface OptionCurrency {
-  id: string;
-  code: string;
-  symbol: string;
-}
-
-export interface OptionBank {
+export interface PaymentMethodOption {
   id: string;
   name: string;
-  logo?: string;
-  currency?: string;
-}
-
-export interface OptionAccount {
-  id: string;
-  bankId: string;
+  type: "cash" | "transfer";
+  image?: string;
   currency: string;
+  accountNumber?: string;
   accountType?: string;
+  owner?: string;
+  requiresReceipt: boolean;
+  instructions?: string;
   transferLimit: number;
   transferCount: number;
+  active: boolean;
+  sort: number;
 }
 
 export interface PaymentOption {
   id: string;
-  kind: "cash" | "bank";
+  methodId: string;
+  kind: "cash" | "transfer";
   currencyCode: string;
   label: string;
   subtitle: string;
   logo?: string;
-  bankId?: string;
-  accountIds: string[];
+  accountNumber?: string;
+  accountType?: string;
+  owner?: string;
+  instructions?: string;
+  requiresReceipt: boolean;
   available: boolean;
   reason?: string;
 }
 
-const CASH_ORDER: Record<string, number> = { USD: 0, CUP: 1 };
-
-function cashRank(code: string): number {
-  return CASH_ORDER[code] ?? 2;
-}
-
-function hasCapacity(account: OptionAccount): boolean {
-  return !(
-    account.transferLimit > 0 &&
-    account.transferCount >= account.transferLimit
-  );
-}
-
 export function buildPaymentOptions(input: {
-  currencies: OptionCurrency[];
-  banks: OptionBank[];
-  accounts: OptionAccount[];
-  showCash: boolean;
-  showBanks: boolean;
+  methods: PaymentMethodOption[];
+  activeCurrencyCodes: string[];
 }): PaymentOption[] {
-  const visible = resolveVisiblePaymentMethodIds({
-    showCash: input.showCash,
-    showTransfer: input.showBanks,
-  });
+  const activeCurrencies = new Set(input.activeCurrencyCodes);
 
-  const cashOptions: PaymentOption[] = visible.includes("cash")
-    ? input.currencies
-        .filter((currency) => isCashSupported(currency.code))
-        .sort(
-          (a, b) =>
-            cashRank(a.code) - cashRank(b.code) ||
-            a.code.localeCompare(b.code),
-        )
-        .map((currency) => ({
-          id: `cash:${currency.code}`,
-          kind: "cash",
-          currencyCode: currency.code,
-          label: currency.code,
-          subtitle: "Efectivo",
-          accountIds: [],
-          available: true,
-        }))
-    : [];
+  return [...input.methods]
+    .filter((m) => m.active)
+    .sort((a, b) => a.sort - b.sort || a.name.localeCompare(b.name, "es"))
+    .flatMap((method): PaymentOption[] => {
+      const currencyCode = method.currency;
+      // Sin moneda activa no hay tasa con la que cobrar: el tile no se muestra.
+      if (!activeCurrencies.has(currencyCode)) return [];
 
-  const bankOptions: PaymentOption[] = visible.includes("transfer")
-    ? [...input.banks]
-        .sort((a, b) => a.name.localeCompare(b.name, "es"))
-        .flatMap((bank) => {
-          const bankAccounts = input.accounts.filter(
-            (account) => account.bankId === bank.id,
-          );
-          const isActiveCurrency = (code: string) =>
-            input.currencies.some((c) => c.code === code);
-          // La moneda del banco manda. Si falta, se usa la primera cuenta
-          // usable, luego una de moneda activa y, por último, la primera.
-          // Así un banco sin moneda pero con el cupo agotado sigue visible
-          // y deshabilitado en vez de desaparecer.
-          const currencyCode =
-            bank.currency?.trim() ||
-            bankAccounts.find(
-              (a) => hasCapacity(a) && isActiveCurrency(a.currency),
-            )?.currency ||
-            bankAccounts.find((a) => isActiveCurrency(a.currency))?.currency ||
-            bankAccounts[0]?.currency ||
-            "";
+      if (method.type === "cash") {
+        if (!isCashSupported(currencyCode)) return [];
+        return [
+          {
+            id: method.id,
+            methodId: method.id,
+            kind: "cash",
+            currencyCode,
+            label: method.name,
+            subtitle: "Efectivo",
+            logo: method.image || undefined,
+            requiresReceipt: false,
+            available: true,
+          },
+        ];
+      }
 
-          // Sin moneda no hay tasa con la que cobrar; sin moneda activa
-          // tampoco: el tile no se muestra.
-          if (!currencyCode || !isActiveCurrency(currencyCode)) {
-            return [];
-          }
-
-          const accounts = bankAccounts.filter(
-            (account) =>
-              account.currency === currencyCode && hasCapacity(account),
-          );
-          const available = accounts.length > 0;
-
-          return [
-            {
-              id: `bank:${bank.id}`,
-              kind: "bank" as const,
-              currencyCode,
-              label: bank.name,
-              subtitle: accounts[0]?.accountType?.trim() || currencyCode,
-              logo: bank.logo || undefined,
-              bankId: bank.id,
-              accountIds: accounts.map((account) => account.id),
-              available,
-              reason: available
-                ? undefined
-                : `No hay cuentas activas en ${currencyCode}.`,
-            },
-          ];
-        })
-    : [];
-
-  return [...cashOptions, ...bankOptions];
+      const available = methodHasCapacity(method);
+      return [
+        {
+          id: method.id,
+          methodId: method.id,
+          kind: "transfer",
+          currencyCode,
+          label: method.name,
+          subtitle: method.accountType?.trim() || "Transferencia",
+          logo: method.image || undefined,
+          accountNumber: method.accountNumber,
+          accountType: method.accountType,
+          owner: method.owner,
+          instructions: method.instructions,
+          requiresReceipt: method.requiresReceipt,
+          available,
+          reason: available
+            ? undefined
+            : "No hay cupo disponible para este método.",
+        },
+      ];
+    });
 }

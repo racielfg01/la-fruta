@@ -63,7 +63,10 @@ import {
   type Beneficiary,
   type UserAddress,
 } from "@/app/actions/saved";
-import { getPublicTransferData } from "@/app/actions/public";
+import {
+  getPublicPaymentMethods,
+  type PublicPaymentMethod,
+} from "@/app/actions/public";
 import { isValidPhone } from "@/lib/contact-validation";
 import { useCurrencyStore } from "@/lib/currency-store";
 import { chooseCurrency } from "@/lib/currency-selection";
@@ -84,19 +87,6 @@ import {
 // -------------------------------
 // Tipos de pago
 // -------------------------------
-interface TransferAccount {
-  id: string;
-  bankId: string;
-  bank: string;
-  accountNumber: string;
-  accountType: string;
-  owner: string;
-  ci: string;
-  currency: string;
-  transferLimit: number;
-  transferCount: number;
-}
-
 interface Currency {
   id: string;
   code: string;
@@ -212,8 +202,6 @@ export default function CheckoutPage() {
   );
   const marginState = useMarginConfig();
   const operationalCostCup = useSettingsStore((s) => s.settings.operationalCost) || 0;
-  const showPaymentCash = useSettingsStore((s) => s.settings.showPaymentCash !== false);
-  const showPaymentTransfer = useSettingsStore((s) => s.settings.showPaymentTransfer !== false);
   const freeShippingMin = useSettingsStore((s) => s.settings.freeShippingMin) || 0;
   // Precio CUP por unidad: las líneas de oferta ya traen el precio FINAL
   // (sin margen); al resto se le aplica el margen solo si el display es CUP.
@@ -225,15 +213,11 @@ export default function CheckoutPage() {
           { globalMargin: marginState.globalMargin, productMargin: it.product.priceMargin ?? null },
           selectedCurrency?.code,
         );
-  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState("cash");
-
   // Transferencia
-  const [transferData, setTransferData] = useState<{
-    banks: { id: string; name: string; logo: string; currency: string }[];
-    accounts: TransferAccount[];
-  }>({ banks: [], accounts: [] });
-  const [selectedBankId, setSelectedBankId] = useState("");
-  const [transferAccountId, setTransferAccountId] = useState("");
+  const [paymentMethods, setPaymentMethods] = useState<PublicPaymentMethod[]>(
+    [],
+  );
+  const [selectedMethodId, setSelectedMethodId] = useState("");
   const [receiptUrl, setReceiptUrl] = useState("");
   const [receiptName, setReceiptName] = useState("");
   const [receiptIsImage, setReceiptIsImage] = useState(false);
@@ -241,29 +225,19 @@ export default function CheckoutPage() {
   const [uploading, setUploading] = useState(false);
   const [reference, setReference] = useState("");
 
-  // Cuadrícula de pago: efectivo por moneda y un tile por banco. La moneda
-  // la define el tile; ya no hay selector de moneda aparte.
+  // Cuadrícula de pago: un tile por método activo. La moneda la define el
+  // método; ya no hay selector de moneda aparte.
   const paymentOptions = useMemo(
     () =>
       buildPaymentOptions({
-        currencies,
-        banks: transferData.banks,
-        accounts: transferData.accounts,
-        showCash: showPaymentCash,
-        showBanks: showPaymentTransfer,
+        methods: paymentMethods,
+        activeCurrencyCodes: currencies.map((c) => c.code),
       }),
-    [currencies, transferData, showPaymentCash, showPaymentTransfer],
+    [paymentMethods, currencies],
   );
-  const selectedTileId =
-    selectedPaymentMethod === "cash" && selectedCurrency
-      ? `cash:${selectedCurrency.code}`
-      : selectedPaymentMethod === "transfer" && selectedBankId
-        ? `bank:${selectedBankId}`
-        : "";
-  const selectedOption = paymentOptions.find((o) => o.id === selectedTileId);
-  const selectedBankAccounts = (selectedOption?.accountIds ?? [])
-    .map((id) => transferData.accounts.find((a) => a.id === id))
-    .filter((a): a is TransferAccount => Boolean(a));
+  const selectedOption = paymentOptions.find(
+    (o) => o.id === selectedMethodId,
+  );
 
   // Validación
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
@@ -339,29 +313,23 @@ export default function CheckoutPage() {
   };
 
   useEffect(() => {
-    getPublicTransferData().then(setTransferData).catch(() => {});
+    getPublicPaymentMethods().then(setPaymentMethods).catch(() => {});
   }, []);
-
-  const selectedTransferAccount = transferData.accounts.find(
-    (a) => a.id === transferAccountId,
-  );
 
   const applyOption = (option: PaymentOption) => {
     const currency = currencies.find((c) => c.code === option.currencyCode);
     if (!currency) return;
     setSelectedCurrency(currency);
     useCurrencyStore.getState().setCurrency(currency.id);
-    if (option.kind === "cash") {
-      setSelectedPaymentMethod("cash");
-      setSelectedBankId("");
-      setTransferAccountId("");
-    } else {
-      setSelectedPaymentMethod("transfer");
-      setSelectedBankId(option.bankId ?? "");
-      setTransferAccountId(option.accountIds[0] ?? "");
+    setSelectedMethodId(option.id);
+    if (!option.requiresReceipt) {
+      setReceiptUrl("");
+      setReceiptName("");
+      setReceiptIsImage(false);
+      setReceiptUploadError("");
     }
     clearFieldError("payment");
-    clearFieldError("bank");
+    clearFieldError("receipt");
   };
 
   const handleOptionChange = (id: string) => {
@@ -370,15 +338,15 @@ export default function CheckoutPage() {
   };
 
   // Preselección: efectivo de la moneda global; si no, el primer tile
-  // disponible. Si la opción elegida deja de estar disponible (cuenta
-  // desactivada o límite alcanzado), se reubica.
+  // disponible. Si el método elegido deja de estar disponible (desactivado o
+  // sin cupo), se reubica.
   const optionsKey = paymentOptions
-    .map((o) => `${o.id}:${o.available ? 1 : 0}:${o.accountIds.join(",")}`)
+    .map((o) => `${o.id}:${o.available ? 1 : 0}`)
     .join("|");
 
   useEffect(() => {
     if (isLoadingCurrencies) return;
-    const current = paymentOptions.find((o) => o.id === selectedTileId);
+    const current = paymentOptions.find((o) => o.id === selectedMethodId);
     if (current?.available) return;
     const globalId = useCurrencyStore.getState().currencyId;
     const globalCode = currencies.find((c) => c.id === globalId)?.code;
@@ -388,9 +356,9 @@ export default function CheckoutPage() {
           o.available && o.kind === "cash" && o.currencyCode === globalCode,
       ) || paymentOptions.find((o) => o.available);
     if (preferred) applyOption(preferred);
-    else setSelectedPaymentMethod("");
+    else setSelectedMethodId("");
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [optionsKey, selectedTileId, isLoadingCurrencies]);
+  }, [optionsKey, selectedMethodId, isLoadingCurrencies]);
 
   const handleReceiptUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -790,9 +758,7 @@ export default function CheckoutPage() {
         "No pudimos cargar las monedas de pago. Recarga la página.";
     if (selectedCurrency && !selectedOption?.available)
       errors.payment = `No hay un método de pago disponible en ${selectedCurrency.code}`;
-    if (selectedPaymentMethod === "transfer" && !transferAccountId)
-      errors.bank = "Selecciona la cuenta a la que harás la transferencia";
-    if (selectedPaymentMethod === "transfer" && !receiptUrl)
+    if (selectedOption?.requiresReceipt && !receiptUrl)
       errors.receipt = "Adjunta el comprobante de la transferencia";
 
     if (Object.keys(errors).length > 0) {
@@ -820,7 +786,7 @@ export default function CheckoutPage() {
     }
 
     setFieldErrors({});
-    if (!selectedCurrency || !selectedZone) return;
+    if (!selectedCurrency || !selectedZone || !selectedOption) return;
     processingRef.current = true;
     setIsProcessing(true);
 
@@ -850,21 +816,18 @@ export default function CheckoutPage() {
         subtotal: subtotalBase,
         deliveryFee: deliveryFeeBase,
         total: totalBase,
-        paymentMethod: selectedPaymentMethod,
+        paymentMethodId: selectedOption.methodId,
+        paymentMethod: selectedOption.kind,
         deliveryAddress,
         deliveryNotes: deliveryNotes.trim(),
         currencyCode: selectedCurrency.code,
         zoneId: selectedZone.id,
         municipalityId: userLocation?.municipality,
         provinceId: userLocation?.province,
-        ...(selectedPaymentMethod === "transfer"
+        ...(selectedOption.kind === "transfer"
           ? {
-              bankAccountId: transferAccountId,
-              bankName: selectedTransferAccount?.bank || "",
-              accountNumber: selectedTransferAccount?.accountNumber || "",
               receipt: receiptUrl,
               reference: reference.trim() || `Pedido ${Date.now()}`,
-              transferAmount: totalConverted,
             }
           : {}),
       };
@@ -875,11 +838,11 @@ export default function CheckoutPage() {
         // El importe en efectivo lo manda el servidor (ya redondeado con la
         // tasa vigente); en transferencia se muestra el total exacto.
         const confirmationAmount =
-          selectedPaymentMethod === "cash" && result.cashAmount
+          selectedOption.kind === "cash" && result.cashAmount
             ? result.cashAmount
             : totalConverted;
         router.push(
-          `/order-confirmation?orderId=${result.orderId}&paymentMethod=${selectedPaymentMethod}&currency=${selectedCurrency.code}&amount=${confirmationAmount}`,
+          `/order-confirmation?orderId=${result.orderId}&paymentMethod=${selectedOption.kind}&currency=${selectedCurrency.code}&amount=${confirmationAmount}&receipt=${selectedOption.requiresReceipt ? 1 : 0}`,
         );
       } else {
         toast.error(result.error || "Error al crear la orden.");
@@ -1389,7 +1352,7 @@ export default function CheckoutPage() {
                   )}
                   <RadioGroup
                     aria-labelledby="payment-method-label"
-                    value={selectedTileId}
+                    value={selectedMethodId}
                     onValueChange={handleOptionChange}
                     className={`grid grid-cols-2 gap-2.5 sm:grid-cols-4 ${
                       paymentOptions.length === 0 ? "hidden" : ""
@@ -1398,7 +1361,7 @@ export default function CheckoutPage() {
                     {paymentOptions.map((option) => {
                       const inputId = `payment-${option.id.replace(":", "-")}`;
                       const isSelected =
-                        selectedTileId === option.id && option.available;
+                        selectedMethodId === option.id && option.available;
                       return (
                         <label
                           key={option.id}
@@ -1511,56 +1474,17 @@ export default function CheckoutPage() {
                       </div>
                     )}
 
-                    {selectedOption.kind === "bank" && (
+                    {selectedOption.kind === "transfer" && (
                       <div className="space-y-4">
-                        {selectedBankAccounts.length > 1 && (
-                          <div className="space-y-2">
-                            <Label className="text-xs">Cuenta</Label>
-                            <Select
-                              value={transferAccountId}
-                              onValueChange={(v) => {
-                                setTransferAccountId(v);
-                                clearFieldError("bank");
-                              }}
-                            >
-                              <SelectTrigger
-                                className={`h-10 min-w-0 ${
-                                  fieldErrors.bank
-                                    ? "border-destructive focus:ring-destructive"
-                                    : ""
-                                }`}
-                              >
-                                <SelectValue
-                                  placeholder="Selecciona la cuenta"
-                                  className="truncate"
-                                />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {selectedBankAccounts.map((a) => (
-                                  <SelectItem key={a.id} value={a.id}>
-                                    {a.accountNumber} ({a.currency})
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                            {fieldErrors.bank && (
-                              <p className="flex items-center gap-1 text-xs text-destructive">
-                                <AlertCircle className="h-3 w-3" />{" "}
-                                {fieldErrors.bank}
-                              </p>
-                            )}
-                          </div>
-                        )}
-
-                        {selectedTransferAccount && (
-                          <div className="min-w-0 rounded-lg border bg-background p-3.5 text-sm">
+                        <div className="min-w-0 rounded-lg border bg-background p-3.5 text-sm">
+                          {selectedOption.accountNumber && (
                             <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between sm:gap-2">
                               <span className="shrink-0 text-muted-foreground">
                                 Nº de cuenta
                               </span>
                               <div className="flex min-w-0 items-start gap-1.5 sm:justify-end">
                                 <span className="min-w-0 break-all font-mono text-xs leading-5 sm:text-right sm:text-sm">
-                                  {selectedTransferAccount.accountNumber}
+                                  {selectedOption.accountNumber}
                                 </span>
                                 <Button
                                   type="button"
@@ -1571,7 +1495,7 @@ export default function CheckoutPage() {
                                   title="Copiar número de cuenta"
                                   onClick={() =>
                                     copyToClipboard(
-                                      selectedTransferAccount.accountNumber,
+                                      selectedOption.accountNumber!,
                                       "Número de cuenta",
                                     )
                                   }
@@ -1580,23 +1504,25 @@ export default function CheckoutPage() {
                                 </Button>
                               </div>
                             </div>
-                            {selectedTransferAccount.accountType && (
-                              <div className="mt-1.5 flex items-start justify-between gap-3">
-                                <span className="shrink-0 text-muted-foreground">
-                                  Tipo
-                                </span>
-                                <span className="min-w-0 break-words text-right">
-                                  {selectedTransferAccount.accountType}
-                                </span>
-                              </div>
-                            )}
+                          )}
+                          {selectedOption.accountType && (
+                            <div className="mt-1.5 flex items-start justify-between gap-3">
+                              <span className="shrink-0 text-muted-foreground">
+                                Tipo
+                              </span>
+                              <span className="min-w-0 break-words text-right">
+                                {selectedOption.accountType}
+                              </span>
+                            </div>
+                          )}
+                          {selectedOption.owner && (
                             <div className="mt-1.5">
                               <span className="text-muted-foreground">
                                 Titular
                               </span>
                               <div className="mt-0.5 flex min-w-0 items-start justify-between gap-2">
                                 <span className="min-w-0 break-words">
-                                  {selectedTransferAccount.owner}
+                                  {selectedOption.owner}
                                 </span>
                                 <Button
                                   type="button"
@@ -1607,7 +1533,7 @@ export default function CheckoutPage() {
                                   title="Copiar nombre del titular"
                                   onClick={() =>
                                     copyToClipboard(
-                                      selectedTransferAccount.owner,
+                                      selectedOption.owner!,
                                       "Nombre del titular",
                                     )
                                   }
@@ -1616,18 +1542,13 @@ export default function CheckoutPage() {
                                 </Button>
                               </div>
                             </div>
-                            {selectedTransferAccount.ci && (
-                              <div className="mt-1.5 flex items-start justify-between gap-3">
-                                <span className="shrink-0 text-muted-foreground">
-                                  CI / RUC
-                                </span>
-                                <span className="min-w-0 break-all text-right font-mono text-xs">
-                                  {selectedTransferAccount.ci}
-                                </span>
-                              </div>
-                            )}
-                          </div>
-                        )}
+                          )}
+                          {selectedOption.instructions && (
+                            <p className="mt-2.5 border-t pt-2.5 text-xs leading-relaxed text-muted-foreground">
+                              {selectedOption.instructions}
+                            </p>
+                          )}
+                        </div>
 
                             <div className="rounded-lg border border-primary/20 bg-primary/5 p-3">
                               <p className="text-xs text-muted-foreground">
@@ -1642,6 +1563,7 @@ export default function CheckoutPage() {
                               </p>
                             </div>
 
+                            {selectedOption.requiresReceipt && (
                             <div
                               ref={receiptRef}
                               tabIndex={-1}
@@ -1782,6 +1704,7 @@ export default function CheckoutPage() {
                                 </p>
                               )}
                             </div>
+                            )}
 
                             <div className="space-y-2">
                               <Label className="text-xs">
@@ -1797,8 +1720,9 @@ export default function CheckoutPage() {
 
                             <p className="flex items-start gap-1.5 text-xs text-muted-foreground">
                               <BadgeCheck className="mt-0.5 h-3 w-3 shrink-0 text-green-600" />
-                              Transfiere el monto exacto. Tu pedido se confirma
-                              al validar el comprobante.
+                              {selectedOption.requiresReceipt
+                                ? "Transfiere el monto exacto. Tu pedido se confirma al validar el comprobante."
+                                : "Transfiere el monto exacto. Tu pedido se confirma al validar el pago."}
                             </p>
                       </div>
                     )}

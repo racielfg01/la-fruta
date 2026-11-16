@@ -248,115 +248,107 @@ export async function deleteRoleAction(id: string, token: string) {
   return pb.collection('roles').delete(id);
 }
 
-// ── Banks ──
+// ── Payment methods ──
 
-export async function getBanksAction(token: string) {
-  await requirePermission(token, 'settings');
-  const pb = await getDataPB(token);
-  const rows = await getAllRecords(pb, 'banks', { sort: 'name' });
-  return rows.map((b: any) => ({
-    id: b.id,
-    name: b.name,
-    logo: b.logo || '',
-    country: b.country || '',
-    currency: b.currency || '',
-    active: b.active !== false,
-  }));
+export interface PaymentMethodRow {
+  id: string;
+  name: string;
+  type: 'cash' | 'transfer';
+  image: string;
+  currency: string;
+  accountNumber: string;
+  accountType: string;
+  owner: string;
+  requiresReceipt: boolean;
+  instructions: string;
+  transferLimit: number;
+  transferCount: number;
+  active: boolean;
+  sort: number;
 }
 
-export async function createBankAction(data: { name: string; logo?: string; country?: string; currency?: string }, token: string) {
-  await requirePermission(token, 'settings');
-  const pb = await getDataPB(token);
-  const rec = await pb.collection('banks').create({
-    name: data.name,
-    logo: data.logo || '',
-    country: data.country || '',
-    currency: data.currency || '',
-    active: true,
-  });
-  return { id: rec.id, name: rec.name, logo: rec.logo || '', country: rec.country || '', currency: rec.currency || '', active: true };
+function mapPaymentMethod(m: any): PaymentMethodRow {
+  return {
+    id: m.id,
+    name: m.name || '',
+    type: m.type === 'transfer' ? 'transfer' : 'cash',
+    image: m.image || '',
+    currency: m.currency || 'USD',
+    accountNumber: m.account_number || '',
+    accountType: m.account_type || '',
+    owner: m.owner || '',
+    requiresReceipt: m.requires_receipt === true,
+    instructions: m.instructions || '',
+    transferLimit: Number(m.transfer_limit) || 0,
+    transferCount: Number(m.transfer_count) || 0,
+    active: m.active !== false,
+    sort: Number(m.sort) || 0,
+  };
 }
 
-export async function updateBankAction(id: string, data: { name?: string; logo?: string; country?: string; currency?: string; active?: boolean }, token: string) {
+export async function getPaymentMethodsAction(token: string): Promise<PaymentMethodRow[]> {
   await requirePermission(token, 'settings');
   const pb = await getDataPB(token);
-  return pb.collection('banks').update(id, data);
+  const rows = await getAllRecords(pb, 'payment_methods', { sort: 'sort,name' });
+  return rows.map(mapPaymentMethod);
 }
 
-export async function deleteBankAction(id: string, token: string) {
+export async function createPaymentMethodAction(data: Partial<PaymentMethodRow>, token: string) {
   await requirePermission(token, 'settings');
+  const name = (data.name || '').trim();
+  if (!name) throw new Error('El nombre del método es requerido');
+  const currency = (data.currency || '').trim() || 'USD';
   const pb = await getDataPB(token);
-  return pb.collection('banks').delete(id);
-}
-
-// ── Bank accounts ──
-
-export async function getBankAccountsAction(token: string) {
-  await requirePermission(token, 'settings');
-  const pb = await getDataPB(token);
-  const rows = await getAllRecords(pb, 'bank_accounts', {
-    sort: '-active,owner',
-    expand: 'bank',
-  });
-  return rows.map((a: any) => ({
-    id: a.id,
-    bank: a.expand?.bank?.name || a.bank || '',
-    accountNumber: a.account_number || '',
-    accountType: a.account_type || '',
-    owner: a.owner || '',
-    ci: a.ci || '',
-    currency: a.currency || 'CUP',
-    active: a.active !== false,
-    transferLimit: Number(a.transfer_limit) || 0,
-    transferCount: Number(a.transfer_count) || 0,
-  }));
-}
-
-export async function createBankAccountAction(data: any, token: string) {
-  await requirePermission(token, 'settings');
-  const pb = await getDataPB(token);
-  const bankId = await getBankIdByName(data.bank, token);
-  const rec = await pb.collection('bank_accounts').create({
-    bank: bankId,
-    account_number: data.accountNumber,
-    account_type: data.accountType,
-    owner: data.owner,
-    ci: data.ci,
-    currency: data.currency,
+  const rec = await pb.collection('payment_methods').create({
+    name,
+    type: data.type === 'transfer' ? 'transfer' : 'cash',
+    image: (data.image || '').trim(),
+    currency,
+    account_number: (data.accountNumber || '').trim(),
+    account_type: (data.accountType || '').trim(),
+    owner: (data.owner || '').trim(),
+    requires_receipt: data.requiresReceipt === true,
+    instructions: (data.instructions || '').trim(),
+    transfer_limit: Math.max(0, Number(data.transferLimit) || 0),
+    transfer_count: Math.max(0, Number(data.transferCount) || 0),
     active: data.active !== false,
-    transfer_limit: data.transferLimit || 0,
-    transfer_count: data.transferCount || 0,
+    sort: Number(data.sort) || 0,
   });
-  return { id: rec.id, ...data };
+  return mapPaymentMethod(rec);
 }
 
-export async function updateBankAccountAction(id: string, data: any, token: string) {
+export async function updatePaymentMethodAction(id: string, data: Partial<PaymentMethodRow>, token: string) {
+  if (!id) throw new Error('ID de método requerido');
   await requirePermission(token, 'settings');
   const pb = await getDataPB(token);
-  const updateData: any = {};
-  if (data.bank !== undefined) updateData.bank = await getBankIdByName(data.bank, token);
-  if (data.accountNumber !== undefined) updateData.account_number = data.accountNumber;
-  if (data.accountType !== undefined) updateData.account_type = data.accountType;
-  if (data.owner !== undefined) updateData.owner = data.owner;
-  if (data.ci !== undefined) updateData.ci = data.ci;
-  if (data.currency !== undefined) updateData.currency = data.currency;
-  if (data.active !== undefined) updateData.active = data.active;
-  if (data.transferLimit !== undefined) updateData.transfer_limit = data.transferLimit;
-  if (data.transferCount !== undefined) updateData.transfer_count = data.transferCount;
-  await pb.collection('bank_accounts').update(id, updateData);
+  const body: Record<string, unknown> = {};
+  if (data.name !== undefined) {
+    const name = data.name.trim();
+    if (!name) throw new Error('El nombre del método es requerido');
+    body.name = name;
+  }
+  if (data.type !== undefined) body.type = data.type === 'transfer' ? 'transfer' : 'cash';
+  if (data.image !== undefined) body.image = data.image.trim();
+  if (data.currency !== undefined) body.currency = data.currency.trim() || 'USD';
+  if (data.accountNumber !== undefined) body.account_number = data.accountNumber.trim();
+  if (data.accountType !== undefined) body.account_type = data.accountType.trim();
+  if (data.owner !== undefined) body.owner = data.owner.trim();
+  if (data.requiresReceipt !== undefined) body.requires_receipt = data.requiresReceipt === true;
+  if (data.instructions !== undefined) body.instructions = data.instructions.trim();
+  if (data.transferLimit !== undefined) body.transfer_limit = Math.max(0, Number(data.transferLimit) || 0);
+  if (data.transferCount !== undefined) body.transfer_count = Math.max(0, Number(data.transferCount) || 0);
+  if (data.active !== undefined) body.active = data.active === true;
+  if (data.sort !== undefined) body.sort = Number(data.sort) || 0;
+  const rec = await pb.collection('payment_methods').update(id, body);
+  return mapPaymentMethod(rec);
 }
 
-export async function deleteBankAccountAction(id: string, token: string) {
+export async function deletePaymentMethodAction(id: string, token: string) {
+  if (!id) throw new Error('ID de método requerido');
   await requirePermission(token, 'settings');
   const pb = await getDataPB(token);
-  return pb.collection('bank_accounts').delete(id);
-}
-
-async function getBankIdByName(bankName: string, token: string): Promise<string> {
-  if (!bankName) return '';
-  const pb = await getDataPB(token);
-  const banks = await getAllRecords(pb, 'banks', { filter: `name = "${sanitize(bankName)}"` });
-  return banks[0]?.id || '';
+  await pb.collection('payment_methods').delete(id);
+  return true;
 }
 
 // ── Settings ──

@@ -141,18 +141,18 @@ export default function AdminDashboard() {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
         {stats.map((stat) => (
           <Link key={stat.title} href={stat.href}>
             <Card className="hover:shadow-md transition-shadow cursor-pointer h-full">
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
+              <CardHeader className="flex flex-row items-center justify-between pb-0 sm:pb-2">
+                <CardTitle className="text-xs font-medium text-muted-foreground sm:text-sm">
                   {stat.title}
                 </CardTitle>
-                <stat.icon className={`h-5 w-5 ${stat.color}`} />
+                <stat.icon className={`h-4 w-4 shrink-0 sm:h-5 sm:w-5 ${stat.color}`} />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{stat.value}</div>
+                <div className="text-xl font-bold sm:text-2xl">{stat.value}</div>
                 <p className="text-xs text-muted-foreground mt-1">
                   {stat.description}
                 </p>
@@ -163,12 +163,12 @@ export default function AdminDashboard() {
       </div>
 
       {/* Revenue & Summary Cards */}
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3">
         {can("orders") && (
         <Card>
-          <CardContent className="flex items-center gap-4 p-6">
-            <div className="rounded-full bg-green-500/10 p-3">
-              <DollarSign className="h-6 w-6 text-green-500" />
+          <CardContent className="flex items-center gap-3 p-4 sm:gap-4 sm:p-6">
+            <div className="rounded-full bg-green-500/10 p-2 sm:p-3">
+              <DollarSign className="h-5 w-5 text-green-500 sm:h-6 sm:w-6" />
             </div>
             <div>
               <p className="text-sm text-muted-foreground">Ingresos Totales</p>
@@ -185,9 +185,9 @@ export default function AdminDashboard() {
         )}
         {can("shipping") && (
         <Card>
-          <CardContent className="flex items-center gap-4 p-6">
-            <div className="rounded-full bg-primary/10 p-3">
-              <Truck className="h-6 w-6 text-primary" />
+          <CardContent className="flex items-center gap-3 p-4 sm:gap-4 sm:p-6">
+            <div className="rounded-full bg-primary/10 p-2 sm:p-3">
+              <Truck className="h-5 w-5 text-primary sm:h-6 sm:w-6" />
             </div>
             <div>
               <p className="text-sm text-muted-foreground">Envío Promedio</p>
@@ -205,9 +205,9 @@ export default function AdminDashboard() {
         {can("settings") && (
         <Link href="/admin/configuracion?tab=monedas">
           <Card className="hover:shadow-md transition-shadow cursor-pointer h-full">
-            <CardContent className="flex items-center gap-4 p-6">
-              <div className="rounded-full bg-blue-500/10 p-3">
-                <Coins className="h-6 w-6 text-blue-500" />
+            <CardContent className="flex items-center gap-3 p-4 sm:gap-4 sm:p-6">
+              <div className="rounded-full bg-blue-500/10 p-2 sm:p-3">
+                <Coins className="h-5 w-5 text-blue-500 sm:h-6 sm:w-6" />
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Monedas</p>
@@ -239,7 +239,7 @@ export default function AdminDashboard() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-2 sm:gap-3 lg:grid-cols-4">
               {otherActiveCurrencies.slice(0, 4).map((currency) => (
                 <div
                   key={currency.id}
@@ -326,7 +326,7 @@ export default function AdminDashboard() {
       )}
 
       {/* Quick Actions & Recent Orders */}
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid gap-4 sm:gap-6 lg:grid-cols-2">
         {/* Quick Actions */}
         <Card>
           <CardHeader>
@@ -335,7 +335,7 @@ export default function AdminDashboard() {
               Acciones Rápidas
             </CardTitle>
           </CardHeader>
-          <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <CardContent className="grid grid-cols-2 gap-2 p-4 sm:gap-3 sm:p-6">
             {can("products") && (
               <Button asChild className="justify-start w-full">
                 <Link href="/admin/productos?action=new">

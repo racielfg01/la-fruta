@@ -184,6 +184,23 @@
   }
 }
 
+/* El panel comparte las tarjetas con la tienda, donde px-6/py-6 está bien.
+   En un teléfono ese relleno se come el ancho: se compacta solo dentro del
+   main del admin, sin tocar diálogos (se renderizan fuera de este árbol). */
+@media (max-width: 639px) {
+  .admin-main [data-slot='card'] {
+    gap: 0.75rem;
+    padding-top: 1rem;
+    padding-bottom: 1rem;
+  }
+  .admin-main [data-slot='card-header'],
+  .admin-main [data-slot='card-content']:not([class*='p-0']),
+  .admin-main [data-slot='card-footer'] {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+}
+
 /* Fuentes locales (WOFF2, subconjunto latino) */
 @font-face {
   font-family: 'Playfair Display';

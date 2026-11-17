@@ -11,6 +11,7 @@
 | Ficha | Qué cubre |
 | --- | --- |
 | [seo-aeo-local.md](ftd/seo-aeo-local.md) | Visibilidad local en Google y agentes de IA |
+| [admin-movil.md](ftd/admin-movil.md) | Densidad y navegación del panel en móvil |
 | [rendimiento-redes-lentas.md](ftd/rendimiento-redes-lentas.md) | LCP, service worker y peso de la portada |
 
 ## SDD

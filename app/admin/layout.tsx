@@ -4,20 +4,11 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
-  Package,
-  Tags,
-  Truck,
-  LayoutDashboard,
   Leaf,
   ChevronRight,
   Menu,
   X,
-  Users,
-  ShoppingBag,
   LogOut,
-  Bell,
-  BadgePercent,
-  Settings as SettingsIcon,
   Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -26,7 +17,7 @@ import { useAdminStore } from "@/lib/admin-store";
 import { useAuthStore } from "@/lib/auth-context";
 import { hasPermission, canAccessAdmin } from "@/lib/use-permissions";
 import { adminGate } from "@/lib/admin-gate";
-import { type RolePermissions } from "@/lib/permissions";
+import { adminNavigation, adminSectionLabel } from "@/lib/admin-navigation";
 
 function AdminStoreInitializer() {
   const initialize = useAdminStore((s) => s.initialize);
@@ -34,17 +25,7 @@ function AdminStoreInitializer() {
   return null;
 }
 
-const navigation: { name: string; href: string; icon: any; permission: keyof RolePermissions }[] = [
-  { name: "Panel Principal", href: "/admin", icon: LayoutDashboard, permission: "dashboard" },
-  { name: "Órdenes", href: "/admin/ordenes", icon: ShoppingBag, permission: "orders" },
-  { name: "Productos", href: "/admin/productos", icon: Package, permission: "products" },
-  { name: "Categorías", href: "/admin/categorias", icon: Tags, permission: "products" },
-  { name: "Envíos", href: "/admin/envios", icon: Truck, permission: "shipping" },
-  { name: "Usuarios", href: "/admin/usuarios", icon: Users, permission: "users" },
-  { name: "Ofertas", href: "/admin/ofertas", icon: BadgePercent, permission: "offers" },
-  { name: "Notificaciones", href: "/admin/notificaciones", icon: Bell, permission: "settings" },
-  { name: "Configuración", href: "/admin/configuracion", icon: SettingsIcon, permission: "settings" },
-];
+const navigation = adminNavigation;
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -145,25 +126,25 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       {/* Sidebar */}
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-50 w-64 transform bg-card border-r border-border transition-transform duration-300 lg:translate-x-0 overflow-y-auto",
+          "fixed inset-y-0 left-0 z-50 flex w-[min(18rem,85vw)] flex-col overflow-hidden border-r border-border bg-card transition-transform duration-200 lg:w-64 lg:translate-x-0",
           sidebarOpen ? "translate-x-0" : "-translate-x-full invisible lg:visible"
         )}
       >
-        <div className="flex h-16 items-center gap-2 border-b border-border px-6">
+        <div className="flex h-14 shrink-0 items-center gap-2 border-b border-border px-4 sm:h-16 sm:px-6">
           <Leaf className="h-6 w-6 text-primary" />
           <span className="font-serif text-xl font-bold"><span className="text-primary">Merca</span><span className="text-destructive">Toma</span></span>
           <span className="ml-1 text-xs text-muted-foreground">Admin</span>
           <Button
             variant="ghost"
             size="icon"
-            className="ml-auto lg:hidden"
+            className="ml-auto h-11 w-11 lg:hidden"
             onClick={(e) => { e.stopPropagation(); closeSidebar(); }}
           >
             <X className="h-5 w-5" />
           </Button>
         </div>
 
-        <nav className="flex flex-col gap-1 p-4">
+        <nav className="flex flex-1 flex-col gap-1 overflow-y-auto p-3 sm:p-4">
           {navigation
             .filter((item) => hasPermission(user, item.permission))
             .map((item) => {
@@ -176,7 +157,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 href={item.href}
                 onClick={closeSidebar}
                 className={cn(
-                  "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
+                  "flex items-center gap-3 rounded-lg px-3 py-3 text-sm font-medium transition-colors",
                   isActive
                     ? "bg-primary text-primary-foreground"
                     : "text-muted-foreground hover:bg-muted hover:text-foreground"
@@ -205,7 +186,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           })}
         </nav>
 
-        <div className="absolute bottom-0 left-0 right-0 border-t border-border p-4 space-y-2">
+        <div className="shrink-0 space-y-1 border-t border-border p-3 sm:p-4">
           <div className="flex items-center gap-2 px-2 py-1 text-sm text-muted-foreground">
             <span className="truncate">{user.name}</span>
             <span className="text-xs bg-primary/10 px-1.5 py-0.5 rounded">Admin</span>
@@ -230,20 +211,31 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
       {/* Main content */}
       <div className="lg:pl-64">
-        <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b border-border bg-card px-4 lg:px-6">
+        <header className="sticky top-0 z-30 flex h-14 items-center gap-2 border-b border-border bg-card px-3 sm:h-16 sm:gap-4 sm:px-6">
           <Button
             variant="ghost"
             size="icon"
-            className="lg:hidden"
+            className="h-11 w-11 lg:hidden"
             onClick={() => setSidebarOpen(true)}
           >
             <Menu className="h-5 w-5" />
           </Button>
-          <div className="flex-1">
-            <h1 className="text-lg font-semibold">Panel de Administración</h1>
+          <div className="min-w-0 flex-1">
+            <h1 className="truncate text-base font-semibold sm:text-lg">
+              {adminSectionLabel(pathname)}
+            </h1>
           </div>
+          {pendingOrders > 0 && (
+            <Link
+              href="/admin/ordenes"
+              aria-label={`${pendingOrders} pedidos pendientes`}
+              className="shrink-0 rounded-full bg-primary/10 px-2.5 py-1 text-xs font-semibold text-primary lg:hidden"
+            >
+              {pendingOrders > 99 ? "99+" : pendingOrders} pendientes
+            </Link>
+          )}
         </header>
-        <main className="p-4 lg:p-6">{children}</main>
+        <main className="admin-main p-3 sm:p-4 lg:p-6">{children}</main>
       </div>
     </div>
   );

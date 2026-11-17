@@ -2,6 +2,7 @@
 // Dominio de ofertas: tipos y helpers puros (sin E/S). Las acciones de
 // servidor viven en app/actions/admin.ts (CRUD admin) y
 // app/actions/public-offers.ts (portada).
+import { offerCurrencyCode } from "./offer-currency";
 
 export type OfferType = "combo" | "product";
 
@@ -11,6 +12,8 @@ export interface AdminOffer {
   name: string;
   description: string;
   price: number;
+  /** Moneda en que se guardó el precio (CUP si es una oferta antigua). */
+  currencyCode?: string;
   type: OfferType;
   product_id: string;
   image: string;
@@ -27,6 +30,7 @@ export interface PublicOffer {
   name: string;
   description: string;
   price: number;
+  currencyCode?: string;
   type: OfferType;
   /** Producto subyacente (rebaja) o "" (combo). */
   productId: string;
@@ -40,6 +44,8 @@ export interface OfferInput {
   name: string;
   description: string;
   price: number;
+  /** Moneda predeterminada al guardar; opcional para ofertas antiguas. */
+  currencyCode?: string;
   type: OfferType;
   productId: string;
   image: string;
@@ -54,6 +60,7 @@ export function toAdminOffer(rec: Record<string, any>): AdminOffer {
     name: rec.name ?? "",
     description: rec.description ?? "",
     price: Number(rec.price ?? 0),
+    currencyCode: offerCurrencyCode(rec),
     type: rec.type === "product" ? "product" : "combo",
     product_id: String(rec.product_id ?? ""),
     image: rec.image ?? "",
@@ -125,6 +132,7 @@ export function toPublicOffer(o: AdminOffer): PublicOffer {
     name: o.name,
     description: o.description,
     price: o.price,
+    currencyCode: o.currencyCode,
     type: o.type,
     productId: o.product_id,
     image: o.image,

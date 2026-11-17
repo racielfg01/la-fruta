@@ -64,6 +64,7 @@ interface OfferForm {
   name: string;
   description: string;
   price: string;
+  currencyCode: string;
   type: OfferType;
   productId: string;
   image: string;
@@ -75,6 +76,7 @@ const emptyForm: OfferForm = {
   name: "",
   description: "",
   price: "",
+  currencyCode: "CUP",
   type: "combo",
   productId: "",
   image: "",
@@ -99,7 +101,9 @@ function formatEndDate(endDate: string): string {
 }
 
 export default function OffersAdminPage() {
-  const { offers, products, addOffer, updateOffer, deleteOffer } = useAdminStore();
+  const { offers, products, currencies, addOffer, updateOffer, deleteOffer } = useAdminStore();
+  const defaultCurrencyCode =
+    currencies.find((c) => c.isDefault)?.code || "CUP";
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -114,7 +118,7 @@ export default function OffersAdminPage() {
 
   const openNew = () => {
     setEditing(null);
-    setForm(emptyForm);
+    setForm({ ...emptyForm, currencyCode: defaultCurrencyCode });
     setImageUploaded(false);
     setDialogOpen(true);
   };
@@ -125,6 +129,7 @@ export default function OffersAdminPage() {
       name: offer.name,
       description: offer.description,
       price: offer.price.toString(),
+      currencyCode: offer.currencyCode || "CUP",
       type: offer.type,
       productId: offer.product_id,
       image: offer.image,
@@ -161,6 +166,7 @@ export default function OffersAdminPage() {
         name: form.name.trim(),
         description: form.description.trim(),
         price: Number(form.price),
+        currencyCode: form.currencyCode,
         type: form.type,
         // Combo: sin producto subyacente.
         productId: form.type === "product" ? form.productId : "",
@@ -258,7 +264,7 @@ export default function OffersAdminPage() {
                     {offer.description || "Sin descripción"}
                   </p>
                   <p className="text-sm font-semibold">
-                    {offer.price.toFixed(2)} CUP
+                    {offer.price.toFixed(2)} {offer.currencyCode}
                     {offer.type === "product" && (
                       <span className="ml-1 text-xs font-normal text-muted-foreground">
                         · {productName(offer.product_id)}
@@ -477,7 +483,7 @@ export default function OffersAdminPage() {
               </Field>
 
               <Field>
-                <FieldLabel htmlFor="offerPrice">Precio (CUP)</FieldLabel>
+                <FieldLabel htmlFor="offerPrice">Precio ({form.currencyCode})</FieldLabel>
                 <Input
                   id="offerPrice"
                   type="number"

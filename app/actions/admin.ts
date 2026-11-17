@@ -576,6 +576,7 @@ export async function addOfferAction(data: OfferInput, token: string): Promise<A
     name: data.name.trim(),
     description: data.description.trim(),
     price: Number(data.price),
+    currency_code: (data.currencyCode || 'CUP').toUpperCase(),
     type: data.type,
     // Relación solo cuando la rebaja respalda la oferta; los combos no la llevan.
     ...(data.type === 'product' && data.productId ? { product_id: data.productId } : {}),
@@ -593,6 +594,7 @@ export async function editOfferAction(id: string, data: Partial<OfferInput>, tok
   if (data.name !== undefined) updateData.name = data.name.trim();
   if (data.description !== undefined) updateData.description = data.description.trim();
   if (data.price !== undefined) updateData.price = Number(data.price);
+  if (data.currencyCode !== undefined) updateData.currency_code = data.currencyCode.toUpperCase();
   if (data.type !== undefined) updateData.type = data.type;
   if (data.image !== undefined) updateData.image = data.image || '';
   if (data.active !== undefined) updateData.active = !!data.active;

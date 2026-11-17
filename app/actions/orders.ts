@@ -12,6 +12,7 @@ import {
   type PaymentMethodRecord,
 } from "@/lib/payment-methods";
 import { orderDates } from "@/lib/order-dates";
+import { convertOfferPrice, offerCurrencyCode } from "@/lib/offer-currency";
 import {
   canRateDelivery,
   deliveryRatingFromRecord,
@@ -208,6 +209,14 @@ export async function createOrderAction(
       const globalMargin = settingsRec?.price_margin ?? null;
       // Costo operativo de la tienda (CUP) que se suma a TODAS las órdenes.
       const operationalCost = Math.max(0, Math.round(Number(settingsRec?.operational_cost) || 0));
+      const currencyRows = await getAllRecords<any>(pb, 'currencies', {
+        filter: 'is_active = true',
+      }).catch(() => [] as any[]);
+      const offerCurrencies = currencyRows.map((c: any) => ({
+        code: String(c.code || '').toUpperCase(),
+        exchangeRate: Number(c.exchange_rate) || 1,
+        isDefault: c.is_default === true,
+      }));
 
       // Validación de stock server-side con datos frescos + precio real del producto
       // (evita vender a precio/stock desactualizados del carrito del cliente).
@@ -254,8 +263,12 @@ export async function createOrderAction(
               error: `La oferta "${offer.name}" ya venció. Retírala del carrito.`,
             };
           }
-          const offerPrice =
-            Math.round((Number(offer.price) || 0) * 100) / 100;
+          const offerPrice = convertOfferPrice(
+            Math.round((Number(offer.price) || 0) * 100) / 100,
+            offerCurrencies,
+            offerCurrencyCode(offer as Record<string, any>),
+            'CUP'
+          );
 
           let offerProductId = '';
           if (offer.type === 'product' && offer.product_id) {

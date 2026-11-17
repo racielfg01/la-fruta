@@ -15,6 +15,7 @@ import { useCartStore } from "@/lib/store";
 import { useCurrency } from "@/lib/currency";
 import { countdownParts, type PublicOffer } from "@/lib/offers";
 import { isOfferExpired } from "@/lib/offers-view";
+import { convertOfferPrice, offerCurrencyCode } from "@/lib/offer-currency";
 import { cn } from "@/lib/utils";
 
 /**
@@ -85,12 +86,20 @@ export function OfferCard({
 }) {
   const addOfferItem = useCartStore((state) => state.addOfferItem);
   const cartItems = useCartStore((state) => state.items);
-  const { currencies, defaultCurrency, formatPrice, convertPrice } = useCurrency();
-  const cupCurrency = currencies.find((c) => c.code === "CUP");
+  const { currencies, defaultCurrency, formatPrice } = useCurrency();
 
-  const formatOfferPrice = (priceCup: number) => {
-    if (!cupCurrency || !defaultCurrency) return `${priceCup.toFixed(2)} CUP`;
-    return formatPrice(convertPrice(priceCup, cupCurrency, defaultCurrency), defaultCurrency);
+  const sourceCode = offerCurrencyCode(offer);
+  const formatOfferPrice = (price: number) => {
+    if (!defaultCurrency || currencies.length === 0) {
+      return `${price.toFixed(2)} ${sourceCode}`;
+    }
+    const converted = convertOfferPrice(
+      price,
+      currencies,
+      sourceCode,
+      defaultCurrency.code
+    );
+    return formatPrice(converted, defaultCurrency);
   };
 
   const inCart = cartItems.some((item) => item.offer?.id === offer.id);

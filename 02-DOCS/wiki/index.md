@@ -6,6 +6,13 @@
 | sdd/ | 02-DOCS/wiki/sdd/ | Constitución, specs, planes y decisiones |
 | harness/ | 02-DOCS/wiki/harness/ | Perfil de usuario y decisiones del harness |
 
+## FTD recientes
+
+| Ficha | Qué cubre |
+| --- | --- |
+| [seo-aeo-local.md](ftd/seo-aeo-local.md) | Visibilidad local en Google y agentes de IA |
+| [rendimiento-redes-lentas.md](ftd/rendimiento-redes-lentas.md) | LCP, service worker y peso de la portada |
+
 ## SDD
 
 | Artifact | Where |

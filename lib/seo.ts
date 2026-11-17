@@ -11,10 +11,10 @@ export const SITE_URL = (
 export const SITE_NAME = "MercaToma";
 
 export const HOME_TITLE =
-  "Verduras y viandas a domicilio en Santiago de Cuba";
+  "Productos agrícolas y viandas a domicilio en Santiago de Cuba";
 
 export const SITE_DESCRIPTION =
-  "Compra verduras, viandas y frutas frescas del campo y recíbelas en tu casa en Santiago de Cuba. Pago en efectivo y pedidos por WhatsApp.";
+  "Frutas, viandas y alimentos frescos en MercaToma: productos agrícolas de calidad, bien pesados y llevados a tu casa en Santiago de Cuba. Pide por WhatsApp.";
 
 export const WHATSAPP_PHONE = "5352013998";
 export const WHATSAPP_DISPLAY = "+53 5201 3998";

@@ -1,6 +1,7 @@
 import type { MetadataRoute } from 'next'
 import { getAllRecords, getPB } from '@/lib/pocketbase'
 import { SITE_URL } from '@/lib/seo'
+import { categorySlug } from '@/lib/seo-content'
 
 /** El catálogo cambia poco: una hora de caché evita golpear PocketBase en cada visita. */
 export const revalidate = 3600
@@ -40,11 +41,15 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   ]
 
   let products: SitemapProduct[] = []
+  let categories: string[] = []
   try {
     products = (await getAllRecords(getPB(), 'products', {
       filter: 'is_visible = true',
       sort: 'name',
     })) as SitemapProduct[]
+    categories = (
+      (await getAllRecords(getPB(), 'categories', { sort: 'name' })) as { name: string }[]
+    ).map((category) => category.name)
   } catch (error) {
     // Si PocketBase no responde, el sitemap conserva las páginas fijas.
     console.error('Sitemap: no se pudo leer el catálogo', error)
@@ -52,6 +57,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   return [
     ...pages,
+    ...categories.map((category) => ({
+      url: `${SITE_URL}/categoria/${categorySlug(category)}`,
+      changeFrequency: 'daily' as const,
+      priority: 0.7,
+    })),
     ...products.map((product) => ({
       url: `${SITE_URL}/product/${product.id}`,
       lastModified: product.updated ? new Date(product.updated) : undefined,

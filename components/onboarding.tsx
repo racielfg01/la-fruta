@@ -177,6 +177,7 @@ export function Onboarding({ onComplete }: OnboardingProps) {
 
   return (
     <div
+      data-onboarding
       className="fixed inset-0 z-50 flex items-center justify-center bg-gradient-to-br from-primary/5 via-background to-accent/5 p-0 sm:p-4 md:p-6"
       onTouchStart={onTouchStart}
       onTouchMove={onTouchMove}

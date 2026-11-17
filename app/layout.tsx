@@ -7,6 +7,7 @@ import { ThemeProvider } from '@/components/theme-provider'
 import { SettingsApplicator } from '@/components/settings-applicator'
 import { Toaster } from '@/components/ui/sonner'
 import { HOME_TITLE, SITE_DESCRIPTION, SITE_NAME, SITE_URL } from '@/lib/seo'
+import { onboardingVisibilityScript } from '@/lib/onboarding-visibility'
 import './globals.css'
 
 // const poppins = Poppins({
@@ -81,14 +82,11 @@ export default function RootLayout({
   return (
     <html lang="es" className="bg-background" suppressHydrationWarning>
       <body className={` font-sans antialiased`}>
-        {/* La bienvenida de primera visita se monta tras la hidratación; sin
-            este preload su imagen se descubría ~2 s tarde y era el LCP. */}
-        <link
-          rel="preload"
-          as="image"
-          href="/onboarding/bienvenida.webp"
-          fetchPriority="high"
-        />
+        {/* Corre durante el parseo, antes del primer pintado: marca el documento
+            si la sesión ya terminó la bienvenida para que CSS la oculte. */}
+        <script dangerouslySetInnerHTML={{ __html: onboardingVisibilityScript() }} />
+        {/* La bienvenida está en el HTML del servidor: next/image emite su
+            propio preload con fetchPriority="high" para la imagen del paso 1. */}
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
           <SettingsApplicator />
           <AuthProvider>

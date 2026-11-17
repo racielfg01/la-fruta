@@ -296,3 +296,9 @@
 }
 
 .settings-loading { opacity: 0; }
+
+/* El script de onboarding-visibility marca el documento antes del primer
+   pintado cuando la sesión ya terminó la bienvenida. Se oculta con CSS (no se
+   quita del DOM) para que el HTML del servidor y la primera renderización de
+   React coincidan y no haya error de hidratación. */
+html[data-onboarded="true"] [data-onboarding] { display: none; }

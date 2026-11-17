@@ -34,7 +34,10 @@ export function HomeExperience({
     setMounted(true);
   }, []);
 
-  const showOnboarding = mounted && !onboardingComplete;
+  // Se renderiza también antes de hidratar: así su imagen está en el HTML y
+  // el navegador la descubre al parsear, sin esperar al efecto de `mounted`.
+  // El script de layout + CSS la ocultan antes del pintado si ya se completó.
+  const showOnboarding = !mounted || !onboardingComplete;
 
   return (
     <>

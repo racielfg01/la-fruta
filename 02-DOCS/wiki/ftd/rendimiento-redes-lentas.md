@@ -91,16 +91,25 @@ Comprobaciones puntuales en producción:
   pudiera haber fijado. Cubierto por `lib/sw.test.ts`: 5 pruebas, 4 fallaron
   antes del cambio y las 259 de la suite pasan después. Sin medir aún en
   producción.
+- Bienvenida en el HTML del servidor: `HomeExperience` la renderiza desde el
+  primer render (antes de `mounted`) y `lib/onboarding-visibility.ts` inyecta un
+  script inline que marca `data-onboarded` cuando `la-fruta-cart` ya tiene
+  `onboardingComplete: true`; CSS oculta la tarjeta antes del primer pintado.
+  Comprobado en el build local: el HTML trae la imagen, un solo preload con
+  `fetchPriority="high"`, FCP ~532 ms, sin error de hidratación; con el
+  `localStorage` completado la tarjeta no se muestra. `lib/onboarding-lcp.test.ts`
+  cubre ambos casos. Falta la medición Lighthouse en producción.
 
 Las visitas recurrentes no ven la bienvenida: su LCP es el banner (con
 `priority`), no la tarjeta de primera visita.
 
 ## Deuda y siguientes pasos
 
-1. **El LCP de la primera visita sigue atado a la hidratación** (~3 s): la
-   bienvenida solo existe tras montar React. Para bajarlo a ~1,5 s hay que
-   renderizarla en el HTML y ocultarla antes del primer pintado con un script
-   inline + `localStorage` (decisión de producto, no solo técnica).
+1. **LCP de primera visita: implementado, pendiente de medir.** La bienvenida ya
+   se renderiza en el HTML y se oculta antes del pintado para sesiones que ya
+   completaron el recorrido. Queda confirmar con Lighthouse en producción si el
+   LCP baja de ~3,3 s y revisar el coste de los ~40 KB de la imagen en visitas
+   recurrentes (se descarga aunque esté oculta).
 2. **TBT**: el chunk de framework (react-dom, 71 KB) evalúa ~1,2 s en CPU 4×
    lenta. Partir `StoreView` o reducir el DOM inicial es el siguiente trabajo.
 3. `/api/img` y `sharp` quedan sin uso; se pueden eliminar (y actualizar

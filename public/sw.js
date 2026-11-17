@@ -1,4 +1,23 @@
-const CACHE = "la-fruta-v5";
+const CACHE = "la-fruta-v6";
+
+// Rutas sin hash en el nombre: el mismo URL puede cambiar de contenido al
+// desplegar, así que se consulta la red primero y la caché solo es respaldo.
+const UNHASHED_PREFIXES = ["/onboarding/"];
+
+function isUnhashed(pathname) {
+  return UNHASHED_PREFIXES.some((prefix) => pathname.startsWith(prefix));
+}
+
+// Nunca guardar respuestas con error: si un 404/500 entra en caché, el usuario
+// ve el recurso roto hasta que cambie la versión de CACHE.
+async function cacheIfOk(request, response) {
+  if (response.ok) {
+    const cache = await caches.open(CACHE);
+    await cache.put(request, response.clone());
+  }
+  return response;
+}
+
 const STATIC_ASSETS = [
   "/",
   "/offline",
@@ -11,11 +30,15 @@ const STATIC_ASSETS = [
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
-    caches.open(CACHE).then((cache) => {
-      return cache.addAll(STATIC_ASSETS).catch(() => {
-        // Ignore individual failures
-      });
-    })
+    caches.open(CACHE).then((cache) =>
+      Promise.all(
+        STATIC_ASSETS.map((asset) =>
+          fetch(asset)
+            .then((response) => (response.ok ? cache.put(asset, response) : undefined))
+            .catch(() => undefined)
+        )
+      )
+    )
   );
   self.skipWaiting();
 });
@@ -97,11 +120,7 @@ self.addEventListener("fetch", (event) => {
   if (request.mode === "navigate") {
     event.respondWith(
       fetch(request)
-        .then((response) => {
-          const clone = response.clone();
-          caches.open(CACHE).then((cache) => cache.put(request, clone));
-          return response;
-        })
+        .then((response) => cacheIfOk(request, response))
         .catch(() =>
           caches.match(request).then((cached) => {
             return cached || caches.match("/offline");
@@ -111,19 +130,26 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // Static assets: cache-first
+  // Unhashed assets: network-first. Evita servir una copia vieja tras un deploy
+  // y evita fijar un error de red en la caché.
+  if (isUnhashed(url.pathname)) {
+    event.respondWith(
+      fetch(request)
+        .then((response) => cacheIfOk(request, response))
+        .catch(() =>
+          caches.match(request).then((cached) => cached || new Response(null, { status: 503 }))
+        )
+    );
+    return;
+  }
+
+  // Static assets con hash: cache-first, pero sin guardar respuestas con error.
   event.respondWith(
     caches.match(request).then((cached) => {
-      return (
-        cached ||
-        fetch(request)
-          .then((response) => {
-            const clone = response.clone();
-            caches.open(CACHE).then((cache) => cache.put(request, clone));
-            return response;
-          })
-          .catch(() => new Response(null, { status: 503 }))
-      );
+      if (cached) return cached;
+      return fetch(request)
+        .then((response) => cacheIfOk(request, response))
+        .catch(() => new Response(null, { status: 503 }));
     })
   );
 });

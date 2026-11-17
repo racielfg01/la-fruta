@@ -84,6 +84,13 @@ Comprobaciones puntuales en producción:
 - Las 252 URLs `/_next/image` del HTML responden 200 (sin hosts fuera de
   `remotePatterns`).
 - Consola del navegador en producción: 0 errores.
+- Service worker (`public/sw.js`, ahora `la-fruta-v6`): deja de guardar
+  respuestas con error en instalación, navegación y assets; `/onboarding/*`
+  pasa a network-first con caché como respaldo; los assets con hash conservan
+  cache-first. El cambio de versión descarta las entradas 404/500 que v5
+  pudiera haber fijado. Cubierto por `lib/sw.test.ts`: 5 pruebas, 4 fallaron
+  antes del cambio y las 259 de la suite pasan después. Sin medir aún en
+  producción.
 
 Las visitas recurrentes no ven la bienvenida: su LCP es el banner (con
 `priority`), no la tarjeta de primera visita.

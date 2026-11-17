@@ -108,6 +108,10 @@ async function setup() {
     { name: 'payment_status', type: 'text' },
     { name: 'delivery_address', type: 'text' },
     { name: 'delivery_notes', type: 'text' },
+    // Valoración de la entrega, dentro de las 72 h posteriores.
+    { name: 'delivered_at', type: 'date' },
+    { name: 'delivery_rating', type: 'number' },
+    { name: 'delivery_comment', type: 'text' },
   ])
 
   // Order Items

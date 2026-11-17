@@ -7,6 +7,7 @@ import { getAdminPB, getTokenPB, getAllRecords, sanitize, buildOrFilter } from '
 import { resolveRoleForSave } from '@/lib/user-roles';
 import { restoreOrderStock } from '@/lib/order-stock';
 import { orderDates } from '@/lib/order-dates';
+import { deliveryRatingFromRecord } from '@/lib/order-ratings';
 import { notifyNewUser } from '@/lib/push/notify';
 import { after } from 'next/server';
 import type PocketBase from 'pocketbase';
@@ -80,6 +81,7 @@ function mapDeliveryZone(z: any) {
 function mapOrder(o: any) {
   return {
     ...orderDates(o),
+    ...deliveryRatingFromRecord(o),
     id: o.id,
     userId: o.user_id,
     userName: o.user_name,
@@ -486,7 +488,12 @@ export async function setOrderStatusAction(
     await restoreOrderStock(pb, order);
     return;
   }
-  await pb.collection('orders').update(orderId, { status });
+  const update: Record<string, unknown> = { status };
+  if (status === 'delivered') {
+    // Fecha real de entrega: de ella dependen las 72 h para valorar.
+    update.delivered_at = new Date().toISOString();
+  }
+  await pb.collection('orders').update(orderId, update);
 }
 
 const VALID_PAYMENT_TRANSITIONS: Record<string, string[]> = {

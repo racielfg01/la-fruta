@@ -3,7 +3,11 @@
 import { useState, useEffect } from "react";
 import { useAuthStore, AuthUser } from "@/lib/auth-context";
 import { useRouter } from "next/navigation";
-import { getUserOrders, updateUserProfile } from "@/app/actions/orders";
+import {
+  getUserOrders,
+  rateDeliveryAction,
+  updateUserProfile,
+} from "@/app/actions/orders";
 import {
   BeneficiariesSection,
   SavedAddressesSection,
@@ -136,6 +140,17 @@ export default function ProfilePage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleRateDelivery = async (
+    orderId: string,
+    stars: number,
+    description: string
+  ) => {
+    if (!token) return { success: false, error: "Sesión caducada" };
+    const result = await rateDeliveryAction(orderId, stars, description, token);
+    if (result.success) await loadOrders();
+    return result;
   };
 
   const handleUpdate = async () => {
@@ -537,6 +552,7 @@ export default function ProfilePage() {
         open={detailOpen}
         onOpenChange={setDetailOpen}
         readOnly
+        onRateDelivery={handleRateDelivery}
         customer={user ? { name: user.name, email: user.email } : null}
       />
 

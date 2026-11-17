@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 import { toast } from "sonner";
 import {
   Ban,
@@ -18,6 +18,7 @@ import {
   Package,
   Phone,
   ShoppingBag,
+  Star,
   StickyNote,
   User,
   XCircle,
@@ -51,6 +52,10 @@ import {
   paymentMethodLabel,
 } from "@/lib/order-flow";
 import { formatOrderDate } from "@/lib/order-dates";
+import {
+  canRateDelivery,
+  deliveryRatingHoursLeft,
+} from "@/lib/order-ratings";
 import { useOrderMoney } from "@/lib/use-order-money";
 import { cn } from "@/lib/utils";
 import { OrderStatusBadge, PaymentStatusBadge } from "./order-badges";
@@ -76,6 +81,12 @@ interface OrderDetailDialogProps {
     status: Order["paymentStatus"]
   ) => Promise<void> | void;
   onCancel?: (orderId: string, reason: string) => Promise<void> | void;
+  /** Solo en la vista del cliente: guarda la valoración de la entrega. */
+  onRateDelivery?: (
+    orderId: string,
+    stars: number,
+    comment: string
+  ) => Promise<{ success: boolean; error?: string }>;
 }
 
 type BusyAction = "advance" | "payment" | "cancel" | null;
@@ -90,6 +101,7 @@ export function OrderDetailDialog({
   onAdvance,
   onPaymentStatusChange,
   onCancel,
+  onRateDelivery,
 }: OrderDetailDialogProps) {
   const { formatOrderMoney, hasCupBase } = useOrderMoney();
   const [busy, setBusy] = useState<BusyAction>(null);
@@ -99,6 +111,20 @@ export function OrderDetailDialog({
   const [copiedField, setCopiedField] = useState<
     "phone" | "address" | null
   >(null);
+  const [stars, setStars] = useState(0);
+  const [ratingComment, setRatingComment] = useState("");
+  const [ratingBusy, setRatingBusy] = useState(false);
+  const [ratingError, setRatingError] = useState("");
+  const [submittedRating, setSubmittedRating] = useState<number | null>(null);
+  const [submittedComment, setSubmittedComment] = useState("");
+
+  useEffect(() => {
+    setStars(0);
+    setRatingComment("");
+    setRatingError("");
+    setSubmittedRating(null);
+    setSubmittedComment("");
+  }, [order?.id]);
 
   if (!order) return null;
 
@@ -116,6 +142,30 @@ export function OrderDetailDialog({
   const phoneHref = order.contactPhone?.replace(/[^\d+]/g, "");
   const money = (amount: number) =>
     formatOrderMoney(amount, order.currencyCode);
+  const savedRating = submittedRating ?? order.deliveryRating ?? 0;
+  const canRate = readOnly && !!onRateDelivery && canRateDelivery(order);
+
+  const submitRating = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!onRateDelivery || stars === 0 || !ratingComment.trim()) return;
+    setRatingBusy(true);
+    setRatingError("");
+    try {
+      const result = await onRateDelivery(order.id, stars, ratingComment.trim());
+      if (!result.success) {
+        setRatingError(result.error || "No se pudo guardar la valoración");
+        return;
+      }
+      setSubmittedRating(stars);
+      setSubmittedComment(ratingComment.trim());
+    } catch (error) {
+      setRatingError(
+        error instanceof Error ? error.message : "No se pudo guardar la valoración"
+      );
+    } finally {
+      setRatingBusy(false);
+    }
+  };
 
   const run = async (
     action: Exclude<BusyAction, null>,
@@ -370,6 +420,98 @@ export function OrderDetailDialog({
                   </>
                 )}
               </Section>
+
+              {(savedRating > 0 || canRate) && (
+                <Section icon={Star} title="Valoración de la entrega">
+                  {savedRating > 0 ? (
+                    <div className="space-y-2">
+                      <div
+                        className="flex items-center gap-1"
+                        aria-label={`${savedRating} de 5 estrellas`}
+                      >
+                        {[1, 2, 3, 4, 5].map((n) => (
+                          <Star
+                            key={n}
+                            className={cn(
+                              "size-4",
+                              n <= savedRating
+                                ? "fill-amber-400 text-amber-400"
+                                : "text-muted-foreground/40"
+                            )}
+                            aria-hidden="true"
+                          />
+                        ))}
+                        <span className="ml-1 text-sm font-semibold tabular-nums">
+                          {savedRating}/5
+                        </span>
+                      </div>
+                      {(submittedComment || order.deliveryComment) && (
+                        <p className="text-sm leading-relaxed">
+                          {submittedComment || order.deliveryComment}
+                        </p>
+                      )}
+                      <p className="text-xs text-muted-foreground">
+                        Solo la ve el equipo de MercaToma.
+                      </p>
+                    </div>
+                  ) : (
+                    <form onSubmit={submitRating} className="space-y-3">
+                      <p className="text-sm text-muted-foreground">
+                        ¿Cómo llegó el pedido? Tienes{" "}
+                        {deliveryRatingHoursLeft(order)} h para valorar la entrega.
+                      </p>
+                      <fieldset className="space-y-1.5">
+                        <legend className="text-xs font-medium text-muted-foreground">
+                          Estrellas
+                        </legend>
+                        <div className="flex gap-1">
+                          {[1, 2, 3, 4, 5].map((n) => (
+                            <button
+                              key={n}
+                              type="button"
+                              onClick={() => setStars(n)}
+                              aria-label={`${n} estrella${n > 1 ? "s" : ""}`}
+                              aria-pressed={stars === n}
+                              className="flex size-11 items-center justify-center rounded-md border border-transparent transition-colors hover:border-border hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                            >
+                              <Star
+                                className={cn(
+                                  "size-5",
+                                  n <= stars
+                                    ? "fill-amber-400 text-amber-400"
+                                    : "text-muted-foreground"
+                                )}
+                                aria-hidden="true"
+                              />
+                            </button>
+                          ))}
+                        </div>
+                      </fieldset>
+                      <Textarea
+                        value={ratingComment}
+                        onChange={(e) => setRatingComment(e.target.value)}
+                        maxLength={500}
+                        rows={3}
+                        placeholder="Cuéntanos si llegó a tiempo, en buen estado y con todo lo pedido…"
+                        aria-label="Descripción de la entrega"
+                        className="resize-none text-sm"
+                      />
+                      {ratingError && (
+                        <p role="alert" className="text-xs text-destructive">
+                          {ratingError}
+                        </p>
+                      )}
+                      <Button
+                        type="submit"
+                        size="sm"
+                        disabled={ratingBusy || stars === 0 || !ratingComment.trim()}
+                      >
+                        {ratingBusy ? "Guardando…" : "Enviar valoración"}
+                      </Button>
+                    </form>
+                  )}
+                </Section>
+              )}
 
               <Section icon={MapPin} title="Entrega">
                 <div className="overflow-hidden rounded-lg border">

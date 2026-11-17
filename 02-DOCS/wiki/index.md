@@ -12,6 +12,7 @@
 | --- | --- |
 | [seo-aeo-local.md](ftd/seo-aeo-local.md) | Visibilidad local en Google y agentes de IA |
 | [admin-movil.md](ftd/admin-movil.md) | Densidad y navegación del panel en móvil |
+| [valoracion-entrega.md](ftd/valoracion-entrega.md) | Valoración de entregas e icono redondeado |
 | [rendimiento-redes-lentas.md](ftd/rendimiento-redes-lentas.md) | LCP, service worker y peso de la portada |
 
 ## SDD

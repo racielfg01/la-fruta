@@ -111,6 +111,10 @@ export interface Order {
   exchangeRateUsed?: number;
   createdAt: string;
   updatedAt: string;
+  /** Momento real en que la orden pasó a «Entregado». */
+  deliveredAt?: string;
+  deliveryRating?: number;
+  deliveryComment?: string;
 }
 
 export interface Currency {

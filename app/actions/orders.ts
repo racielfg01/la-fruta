@@ -12,6 +12,11 @@ import {
   type PaymentMethodRecord,
 } from "@/lib/payment-methods";
 import { orderDates } from "@/lib/order-dates";
+import {
+  canRateDelivery,
+  deliveryRatingFromRecord,
+  validateDeliveryRating,
+} from "@/lib/order-ratings";
 import { notifyNewOrder } from "@/lib/push/notify";
 import { after } from "next/server";
 import { randomUUID } from "crypto";
@@ -515,6 +520,7 @@ export async function getUserOrders(token: string) {
       });
       return {
         ...orderDates(order),
+        ...deliveryRatingFromRecord(order),
         id: order.id,
         userId: order.user_id,
         userName: order.user_name,
@@ -568,4 +574,73 @@ export async function updateUserProfile(
   });
 
   return { success: true, user: updatedUser };
+}
+
+export interface RateDeliveryResult {
+  success: boolean;
+  error?: string;
+  rating?: number;
+  comment?: string;
+}
+
+/** Valora la entrega de una orden propia dentro de las 72 h posteriores. */
+export async function rateDeliveryAction(
+  orderId: string,
+  stars: unknown,
+  comment: unknown,
+  token: string
+): Promise<RateDeliveryResult> {
+  const session = await verifySession(token);
+  const valid = validateDeliveryRating({ stars, comment });
+  if (!valid.ok) return { success: false, error: valid.error };
+
+  try {
+    const pb = await getAdminPB();
+    const order = await pb.collection('orders').getOne(orderId).catch(() => null);
+    if (!order || order.user_id !== session.userId) {
+      return { success: false, error: "Pedido no encontrado" };
+    }
+
+    const existing = deliveryRatingFromRecord(order);
+    if (!canRateDelivery({
+      status: order.status,
+      deliveredAt: existing.deliveredAt,
+      deliveryRating: existing.deliveryRating,
+    })) {
+      return {
+        success: false,
+        error: "El plazo para valorar esta entrega ha terminado",
+      };
+    }
+
+    await pb.collection('orders').update(orderId, {
+      delivery_rating: valid.value.stars,
+      delivery_comment: valid.value.comment,
+    });
+
+    // PocketBase descarta sin avisar los campos que no existen en la
+    // colección: se confirma con una lectura antes de dar el éxito por hecho.
+    const saved = deliveryRatingFromRecord(
+      await pb.collection('orders').getOne(orderId)
+    );
+    if (
+      saved.deliveryRating !== valid.value.stars ||
+      saved.deliveryComment !== valid.value.comment
+    ) {
+      return {
+        success: false,
+        error: "Faltan los campos de valoración en PocketBase",
+      };
+    }
+    return {
+      success: true,
+      rating: saved.deliveryRating,
+      comment: saved.deliveryComment,
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "No se pudo guardar",
+    };
+  }
 }

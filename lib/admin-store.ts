@@ -73,6 +73,7 @@ export interface User {
   // queda como espejo legado: 2 = admin, 1 = resto.
   roleId?: string;
   gender?: string | null;
+  birth_date?: string;
 }
 
 export interface OrderItem {

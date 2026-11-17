@@ -1,10 +1,13 @@
 "use client";
 
+import { useState } from "react";
+
 import { useAdminStore } from "@/lib/admin-store";
 import { useAuthStore } from "@/lib/auth-context";
 import { hasPermission } from "@/lib/use-permissions";
 import type { RolePermissions } from "@/lib/permissions";
 import { ratingSummary } from "@/lib/order-ratings";
+import { upcomingBirthdays } from "@/lib/birthdays";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Package,
@@ -53,6 +56,26 @@ export default function AdminDashboard() {
     .filter((o) => o.paymentStatus === "paid")
     .reduce((sum, o) => sum + o.total, 0);
   const ratingStats = ratingSummary(orders);
+
+  const [birthWindow, setBirthWindow] = useState<number | null>(30);
+  const buyerStats = new Map<string, { count: number; spent: number }>();
+  for (const order of orders) {
+    if (order.status === "cancelled") continue;
+    const stats = buyerStats.get(order.userId) || { count: 0, spent: 0 };
+    stats.count += 1;
+    stats.spent += Number(order.total) || 0;
+    buyerStats.set(order.userId, stats);
+  }
+  const birthdayCandidates = users
+    .filter((user) => buyerStats.has(user.id))
+    .map((user) => ({
+      id: user.id,
+      name: user.name,
+      birthDate: user.birth_date || "",
+      orders: buyerStats.get(user.id)?.count || 0,
+      totalSpent: buyerStats.get(user.id)?.spent || 0,
+    }));
+  const birthdays = upcomingBirthdays(birthdayCandidates, new Date(), birthWindow);
 
   // Currency stats
   const totalCurrencies = currencies.length;
@@ -448,6 +471,65 @@ export default function AdminDashboard() {
             </Button>
           </CardContent>
         </Card>
+        )}
+
+        {can("users") && (
+          <Card>
+            <CardHeader className="flex flex-col gap-3 pb-2 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+                  <Gift className="h-5 w-5 text-amber-500" />
+                  Cumpleaños de clientes
+                </CardTitle>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Clientes que han comprado y guardaron su fecha. Este dato solo se ve aquí.
+                </p>
+              </div>
+              <div className="flex w-fit gap-1 rounded-lg border p-1">
+                <Button
+                  variant={birthWindow === 30 ? "secondary" : "ghost"}
+                  size="sm"
+                  onClick={() => setBirthWindow(30)}
+                >
+                  30 días
+                </Button>
+                <Button
+                  variant={birthWindow === null ? "secondary" : "ghost"}
+                  size="sm"
+                  onClick={() => setBirthWindow(null)}
+                >
+                  Todos
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {birthdays.length === 0 ? (
+                <p className="py-6 text-center text-sm text-muted-foreground">
+                  No hay cumpleaños en este periodo.
+                </p>
+              ) : (
+                <ul className="divide-y overflow-hidden rounded-lg border">
+                  {birthdays.map((person) => (
+                    <li key={person.id} className="flex items-center justify-between gap-3 p-3">
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-medium">{person.name}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {person.orders} {person.orders === 1 ? "compra" : "compras"} ·{" "}
+                          {new Date(`${person.nextDate}T00:00:00`).toLocaleDateString("es-ES", {
+                            day: "numeric",
+                            month: "short",
+                          })}
+                        </p>
+                      </div>
+                      <span className="shrink-0 rounded-full bg-primary/10 px-2.5 py-1 text-xs font-semibold text-primary">
+                        {person.daysUntil === 0 ? "Hoy" : `En ${person.daysUntil} d`}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </CardContent>
+          </Card>
         )}
       </div>
     </div>

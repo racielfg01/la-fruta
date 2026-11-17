@@ -15,6 +15,7 @@
 | [valoracion-entrega.md](ftd/valoracion-entrega.md) | Valoración de entregas e icono redondeado |
 | [ofertas-moneda.md](ftd/ofertas-moneda.md) | Precio de ofertas en la moneda predeterminada |
 | [aviso-sin-dispositivos-admin.md](ftd/aviso-sin-dispositivos-admin.md) | Aviso cuando el admin no tiene dispositivos activos |
+| [cumpleanos-clientes.md](ftd/cumpleanos-clientes.md) | Fecha de nacimiento y cumpleaños de clientes |
 | [rendimiento-redes-lentas.md](ftd/rendimiento-redes-lentas.md) | LCP, service worker y peso de la portada |
 
 ## SDD

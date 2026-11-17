@@ -5,6 +5,7 @@ import { getAdminPB, getEphemeralPB, getTokenPB, sanitize } from '@/lib/pocketba
 import { notifyNewUser } from '@/lib/push/notify';
 import { after } from 'next/server';
 import type { RolePermissions } from '@/lib/permissions';
+import { isValidBirthDate, normalizeBirthDate } from '@/lib/birthdays';
 
 export interface AuthResponse {
   success: boolean;
@@ -16,6 +17,8 @@ export interface AuthResponse {
     phone: string;
     gender: string;
     address: string;
+    /** YYYY-MM-DD, opcional. Nunca se muestra en la tienda. */
+    birthDate?: string;
     role_id: number;
     permissions?: RolePermissions;
   };
@@ -134,6 +137,11 @@ export async function signupAction(data: SignupData & { referralCode?: string })
     const passwordValidation = validatePassword(data.password);
     if (!passwordValidation.valid) return { success: false, message: '', error: passwordValidation.error };
 
+    const birthDate = normalizeBirthDate(data.birthDate);
+    if (data.birthDate && (!birthDate || !isValidBirthDate(birthDate))) {
+      return { success: false, message: '', error: 'La fecha de nacimiento no es válida' };
+    }
+
     if (data.password !== data.confirmPassword) {
       return { success: false, message: '', error: 'Las contraseñas no coinciden' };
     }
@@ -156,7 +164,7 @@ export async function signupAction(data: SignupData & { referralCode?: string })
       console.warn('Could not check duplicates, proceeding — PB will enforce uniqueness', e);
     }
 
-    const newUser = await createUser(data);
+    const newUser = await createUser({ ...data, birthDate });
     if (!newUser) {
       return { success: false, message: '', error: 'Error al registrar el usuario. Intenta de nuevo.' };
     }
@@ -185,6 +193,7 @@ export async function signupAction(data: SignupData & { referralCode?: string })
         phone: newUser.phone,
         address: newUser.address,
         gender: newUser.gender || '',
+        birthDate: newUser.birthDate,
         role_id: newUser.role_id || 1,
       },
       token: authData.token,
@@ -228,6 +237,7 @@ export async function loginAction(credentials: { email: string; password: string
         phone: authData.record.phone || '',
         address: authData.record.address || '',
         gender: authData.record.gender || '',
+        birthDate: normalizeBirthDate(authData.record.birth_date),
         role_id: roleIds.admin
           ? (userWithRole.role_id === roleIds.admin ? 2 : 1)
           : (userWithRole.expand?.role_id?.name === 'admin' ? 2 : 1),
@@ -267,6 +277,7 @@ user: {
         phone: userWithRole.phone || '',
         address: userWithRole.address || '',
         gender: userWithRole.gender || '',
+        birthDate: normalizeBirthDate(userWithRole.birth_date),
         role_id: roleIds.admin
           ? (userWithRole.role_id === roleIds.admin ? 2 : 1)
           : (userWithRole.expand?.role_id?.name === 'admin' 

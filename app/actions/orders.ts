@@ -12,6 +12,7 @@ import {
   type PaymentMethodRecord,
 } from "@/lib/payment-methods";
 import { orderDates } from "@/lib/order-dates";
+import { isValidBirthDate, normalizeBirthDate } from "@/lib/birthdays";
 import { convertOfferPrice, offerCurrencyCode } from "@/lib/offer-currency";
 import {
   canRateDelivery,
@@ -587,6 +588,30 @@ export async function updateUserProfile(
   });
 
   return { success: true, user: updatedUser };
+}
+
+/** Guarda o borra la fecha de nacimiento del propio usuario autenticado. */
+export async function saveBirthDateAction(
+  token: string,
+  value: string | null
+): Promise<{ success: boolean; birthDate?: string; error?: string }> {
+  const session = await verifySession(token);
+  const date = normalizeBirthDate(value);
+  if (value && (!date || !isValidBirthDate(date))) {
+    return { success: false, error: "La fecha de nacimiento no es válida" };
+  }
+  try {
+    const pb = await getAdminPB();
+    await pb.collection("users").update(session.userId, {
+      birth_date: date || null,
+    });
+    return { success: true, birthDate: date };
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "No se pudo guardar",
+    };
+  }
 }
 
 export interface RateDeliveryResult {

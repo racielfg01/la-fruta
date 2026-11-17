@@ -14,6 +14,8 @@ export interface AuthUser {
   phone: string;
   address: string;
   gender: string;
+  /** YYYY-MM-DD, solo para el panel de cumpleaños del admin. */
+  birthDate?: string;
   created_at?: string;
   role_id: number;
   permissions?: RolePermissions;

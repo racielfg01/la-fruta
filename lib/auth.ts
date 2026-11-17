@@ -1,4 +1,5 @@
 import { getEphemeralPB, getAdminPB, getAllRecords, sanitize } from './pocketbase';
+import { isValidBirthDate, normalizeBirthDate } from './birthdays';
 
 let _roleIdsCache: { admin: string; client: string } | null = null;
 
@@ -29,6 +30,8 @@ export interface User {
   total_orders: number;
   total_spent: number;
   gender: string | null;
+  /** YYYY-MM-DD. Dato personal opcional para regalos y rifas. */
+  birthDate?: string;
 }
 
 export interface LoginCredentials {
@@ -43,6 +46,7 @@ export interface SignupData {
   gender: string;
   password: string;
   confirmPassword: string;
+  birthDate?: string;
 }
 
 function base64UrlDecode(str: string): string {
@@ -93,6 +97,7 @@ function mapUser(record: any, roleIds?: { admin: string; client: string }): User
     total_orders: record.total_orders || 0,
     total_spent: Number(record.total_spent) || 0,
     gender: record.gender || null,
+    birthDate: normalizeBirthDate(record.birth_date),
   };
 }
 
@@ -154,6 +159,7 @@ export async function createUser(data: SignupData): Promise<User | null> {
       password: data.password,
       passwordConfirm: data.confirmPassword,
       gender: data.gender,
+      birth_date: normalizeBirthDate(data.birthDate) || null,
     };
     if (roleIds.client) {
       payload.role_id = roleIds.client;

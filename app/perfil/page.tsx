@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import {
   getUserOrders,
   rateDeliveryAction,
+  saveBirthDateAction,
   updateUserProfile,
 } from "@/app/actions/orders";
 import {
@@ -62,6 +63,9 @@ export default function ProfilePage() {
   const [filteredOrders, setFilteredOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
+  const [birthDraft, setBirthDraft] = useState("");
+  const [birthSaving, setBirthSaving] = useState(false);
+  const [birthMessage, setBirthMessage] = useState("");
   const [editMode, setEditMode] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
@@ -140,6 +144,33 @@ export default function ProfilePage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleSaveBirthDate = async () => {
+    if (!token) return;
+    setBirthSaving(true);
+    setBirthMessage("");
+    const result = await saveBirthDateAction(token, birthDraft || null);
+    if (result.success) {
+      setUser(user ? { ...user, birthDate: result.birthDate } : null);
+      setBirthMessage("Fecha guardada. Gracias.");
+    } else {
+      setBirthMessage(result.error || "No se pudo guardar la fecha");
+    }
+    setBirthSaving(false);
+  };
+
+  const handleClearBirthDate = async () => {
+    if (!token) return;
+    setBirthSaving(true);
+    const result = await saveBirthDateAction(token, null);
+    if (result.success) {
+      setUser(user ? { ...user, birthDate: undefined } : null);
+      setBirthMessage("Fecha borrada.");
+    } else {
+      setBirthMessage(result.error || "No se pudo borrar la fecha");
+    }
+    setBirthSaving(false);
   };
 
   const handleRateDelivery = async (
@@ -241,7 +272,39 @@ export default function ProfilePage() {
           </div>
 
           {activeTab === "profile" && (
-            <div className="grid gap-8 md:grid-cols-2">
+            <div className="space-y-6">
+              {!user?.birthDate && (
+                <div className="rounded-lg border border-primary/20 bg-primary/5 p-4">
+                  <p className="text-sm font-semibold">Ayúdanos a celebrar contigo</p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Guarda tu fecha de nacimiento para posibles regalos y rifas. Solo la ve
+                    el administrador: no se muestra en la tienda y puedes borrarla cuando quieras.
+                  </p>
+                  <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+                    <Input
+                      type="date"
+                      aria-label="Fecha de nacimiento"
+                      value={birthDraft}
+                      onChange={(e) => setBirthDraft(e.target.value)}
+                      max={new Date().toISOString().slice(0, 10)}
+                      className="h-11 sm:max-w-xs"
+                    />
+                    <Button
+                      onClick={handleSaveBirthDate}
+                      disabled={birthSaving || !birthDraft}
+                      className="h-11"
+                    >
+                      {birthSaving ? "Guardando…" : "Guardar fecha"}
+                    </Button>
+                  </div>
+                  {birthMessage && (
+                    <p role="status" className="mt-2 text-xs text-muted-foreground">
+                      {birthMessage}
+                    </p>
+                  )}
+                </div>
+              )}
+              <div className="grid gap-8 md:grid-cols-2">
               <Card>
                 <CardContent className="p-6">
                   <div className="flex flex-col items-center text-center">
@@ -314,6 +377,33 @@ export default function ProfilePage() {
                             </span>
                           </div>
                         </div>
+                        {user?.birthDate && (
+                          <div className="flex flex-wrap items-center justify-between gap-2">
+                            <div className="flex items-center gap-2">
+                              <Calendar className="h-4 w-4 text-muted-foreground" />
+                              <span>
+                                Cumpleaños:{" "}
+                                {new Date(`${user.birthDate}T00:00:00`).toLocaleDateString("es-ES", {
+                                  day: "numeric",
+                                  month: "long",
+                                })}
+                              </span>
+                            </div>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={handleClearBirthDate}
+                              disabled={birthSaving}
+                            >
+                              Borrar
+                            </Button>
+                          </div>
+                        )}
+                        {birthMessage && !birthDraft && (
+                          <p role="status" className="text-xs text-muted-foreground">
+                            {birthMessage}
+                          </p>
+                        )}
                         <Button variant="outline" size="sm" className="mt-4" onClick={() => setEditMode(true)}>
                           <Edit2 className="h-4 w-4 mr-1" /> Editar perfil
                         </Button>
@@ -325,6 +415,7 @@ export default function ProfilePage() {
               <div className="space-y-6">
                 <SavedAddressesSection token={token} />
                 <BeneficiariesSection token={token} />
+              </div>
               </div>
             </div>
           )}

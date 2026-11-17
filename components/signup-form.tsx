@@ -8,6 +8,7 @@ import { useAuthStore } from '@/lib/auth-context';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Eye, EyeOff, AlertCircle, Loader2 } from 'lucide-react';
+import { isValidBirthDate } from '@/lib/birthdays';
 
 export default function SignupForm() {
   const router = useRouter();
@@ -20,13 +21,14 @@ export default function SignupForm() {
     name: '',
     email: '',
     phone: '',
+    birthDate: '',
     gender: '',
     password: '',
     confirmPassword: '',
     referralCode: '',
   });
   const [touched, setTouched] = useState({
-    name: false, email: false, phone: false, gender: false, password: false, confirmPassword: false
+    name: false, email: false, phone: false, birthDate: false, gender: false, password: false, confirmPassword: false
   });
 
   useEffect(() => {
@@ -43,6 +45,7 @@ export default function SignupForm() {
   const isValidName = (v: string) => v.trim().length >= 2;
   const isValidEmail = (v: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
   const isValidPhone = (v: string) => /^[0-9]{7,15}$/.test(v.replace(/\D/g, ''));
+  const isValidBirth = (v: string) => !v || isValidBirthDate(v);
   const isValidGender = (v: string) => ['masculino', 'femenino', 'otro', 'prefiero-no-decir'].includes(v);
   const isValidPassword = (v: string) => v.length >= 8 && /[a-z]/.test(v) && /[A-Z]/.test(v) && /[0-9]/.test(v);
   const isValidConfirm = (v: string) => v === formData.password;
@@ -51,6 +54,7 @@ export default function SignupForm() {
     isValidName(formData.name) &&
     isValidEmail(formData.email) &&
     isValidPhone(formData.phone) &&
+    isValidBirth(formData.birthDate) &&
     isValidGender(formData.gender) &&
     isValidPassword(formData.password) &&
     isValidConfirm(formData.confirmPassword);
@@ -142,6 +146,28 @@ export default function SignupForm() {
             className={touched.phone && !isValidPhone(formData.phone) ? 'border-destructive' : ''}
           />
           {touched.phone && !isValidPhone(formData.phone) && <p className="text-xs text-destructive">7 a 15 dígitos</p>}
+        </div>
+
+        {/* Fecha de nacimiento */}
+        <div>
+          <label className="block text-sm font-medium text-foreground">
+            Fecha de nacimiento <span className="font-normal text-muted-foreground">(opcional)</span>
+          </label>
+          <Input
+            type="date"
+            name="birthDate"
+            value={formData.birthDate}
+            onChange={handleChange}
+            onBlur={handleBlur}
+            max={new Date().toISOString().slice(0, 10)}
+            className={touched.birthDate && !isValidBirth(formData.birthDate) ? 'border-destructive' : ''}
+          />
+          <p className="mt-1 text-xs text-muted-foreground">
+            Solo para regalos y rifas. No se muestra a otros clientes.
+          </p>
+          {touched.birthDate && !isValidBirth(formData.birthDate) && (
+            <p className="text-xs text-destructive">Revisa la fecha indicada</p>
+          )}
         </div>
 
         {/* Género */}

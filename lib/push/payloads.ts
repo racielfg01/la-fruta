@@ -56,6 +56,20 @@ export function buildProductPayload(input: { names: string[]; total: number }): 
   };
 }
 
+export function buildRatingPayload(input: {
+  orderId: string;
+  customerName: string;
+  rating: number;
+}): PushPayload {
+  const who = input.customerName?.trim() || "un cliente";
+  return {
+    title: "Valoración de entrega",
+    body: `${who} valoró la entrega con ${input.rating}/5 estrellas.`,
+    url: "/admin/valoraciones",
+    tag: `rating-${input.orderId}`,
+  };
+}
+
 export function buildTestPayload(): PushPayload {
   return {
     title: "Prueba de aviso",

@@ -9,6 +9,7 @@ import { sendPushToSubscriptions } from "./send";
 import {
   buildOrderPayload,
   buildProductPayload,
+  buildRatingPayload,
   buildUserPayload,
   remainingCooldownMs,
 } from "./payloads";
@@ -70,6 +71,30 @@ export async function notifyNewUser(input: { userId: string; name: string }): Pr
     await cleanup(result.expired);
   } catch (error) {
     console.warn("[push] no se pudo avisar del usuario", error instanceof Error ? error.message : "");
+  }
+}
+
+/** Avisa al admin de una valoración nueva; comparte el ajuste de pedidos. */
+export async function notifyNewRating(input: {
+  orderId: string;
+  customerName: string;
+  rating: number;
+}): Promise<void> {
+  try {
+    const settings = await getNotificationSettings();
+    if (!settings.newOrder) return;
+
+    const subscriptions = await listActiveSubscriptions("admin");
+    if (subscriptions.length === 0) return;
+
+    const result = await sendPushToSubscriptions(
+      subscriptions,
+      buildRatingPayload(input),
+      "normal"
+    );
+    await cleanup(result.expired);
+  } catch (error) {
+    console.warn("[push] no se pudo avisar de la valoración", error instanceof Error ? error.message : "");
   }
 }
 

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   canRateDelivery,
   deliveryRatingHoursLeft,
+  ratingSummary,
   validateDeliveryRating,
   type DeliveryRatingRecord,
 } from "@/lib/order-ratings";
@@ -64,5 +65,35 @@ describe("validación de la valoración", () => {
   it("exige una descripción no vacía y limitada a 500 caracteres", () => {
     expect(validateDeliveryRating({ stars: 4, comment: "   " }).ok).toBe(false);
     expect(validateDeliveryRating({ stars: 4, comment: "x".repeat(501) }).ok).toBe(false);
+  });
+});
+
+describe("resumen de valoraciones del panel", () => {
+  it("cuenta solo valoraciones válidas y calcula el promedio", () => {
+    expect(
+      ratingSummary([
+        { deliveryRating: 3 },
+        { deliveryRating: 5 },
+        { deliveryRating: 4 },
+      ])
+    ).toEqual({ count: 3, average: 4 });
+  });
+
+  it("ignora valores ausentes o fuera de rango", () => {
+    expect(
+      ratingSummary([
+        { deliveryRating: 5 },
+        { deliveryRating: 0 },
+        { deliveryRating: 9 },
+        {},
+      ])
+    ).toEqual({ count: 1, average: 5 });
+  });
+
+  it("redondea el promedio a un decimal y devuelve cero si no hay ninguna", () => {
+    expect(
+      ratingSummary([{ deliveryRating: 5 }, { deliveryRating: 4 }, { deliveryRating: 4 }])
+    ).toEqual({ count: 3, average: 4.3 });
+    expect(ratingSummary([])).toEqual({ count: 0, average: 0 });
   });
 });

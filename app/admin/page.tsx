@@ -4,6 +4,7 @@ import { useAdminStore } from "@/lib/admin-store";
 import { useAuthStore } from "@/lib/auth-context";
 import { hasPermission } from "@/lib/use-permissions";
 import type { RolePermissions } from "@/lib/permissions";
+import { ratingSummary } from "@/lib/order-ratings";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Package,
@@ -18,6 +19,7 @@ import {
   Clock,
   CheckCircle,
   Gift,
+  Star,
 } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -50,6 +52,7 @@ export default function AdminDashboard() {
   const totalRevenue = orders
     .filter((o) => o.paymentStatus === "paid")
     .reduce((sum, o) => sum + o.total, 0);
+  const ratingStats = ratingSummary(orders);
 
   // Currency stats
   const totalCurrencies = currencies.length;
@@ -94,6 +97,18 @@ export default function AdminDashboard() {
       description: `${pendingOrders} pendientes`,
       href: "/admin/ordenes",
       color: "text-purple-500",
+      permission: "orders" as const,
+    },
+    {
+      title: "Valoraciones",
+      value: ratingStats.count,
+      icon: Star,
+      description:
+        ratingStats.count > 0
+          ? `promedio ${ratingStats.average.toFixed(1)} de 5`
+          : "sin valoraciones aún",
+      href: "/admin/valoraciones",
+      color: "text-amber-500",
       permission: "orders" as const,
     },
   ].filter((stat) => can(stat.permission));

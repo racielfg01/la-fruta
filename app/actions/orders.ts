@@ -17,7 +17,7 @@ import {
   deliveryRatingFromRecord,
   validateDeliveryRating,
 } from "@/lib/order-ratings";
-import { notifyNewOrder } from "@/lib/push/notify";
+import { notifyNewOrder, notifyNewRating } from "@/lib/push/notify";
 import { after } from "next/server";
 import { randomUUID } from "crypto";
 
@@ -632,6 +632,14 @@ export async function rateDeliveryAction(
         error: "Faltan los campos de valoración en PocketBase",
       };
     }
+    after(() =>
+      notifyNewRating({
+        orderId,
+        customerName: order.user_name || order.user_email || "un cliente",
+        rating: valid.value.stars,
+      })
+    );
+
     return {
       success: true,
       rating: saved.deliveryRating,

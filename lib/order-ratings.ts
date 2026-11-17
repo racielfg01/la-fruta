@@ -67,6 +67,21 @@ export function validateDeliveryRating(input: {
   return { ok: true, value: { stars, comment } };
 }
 
+/** Conteo y promedio de las valoraciones válidas, para el panel del admin. */
+export function ratingSummary(
+  items: { deliveryRating?: number | string | null }[]
+): { count: number; average: number } {
+  const values = items
+    .map((item) => Number(item.deliveryRating))
+    .filter((n) => Number.isFinite(n) && n >= 1 && n <= 5);
+  if (values.length === 0) return { count: 0, average: 0 };
+  const sum = values.reduce((total, n) => total + n, 0);
+  return {
+    count: values.length,
+    average: Math.round((sum / values.length) * 10) / 10,
+  };
+}
+
 /** Campos de valoración tal como vienen de PocketBase, ya normalizados. */
 export function deliveryRatingFromRecord(record: Record<string, any> | null | undefined) {
   return {

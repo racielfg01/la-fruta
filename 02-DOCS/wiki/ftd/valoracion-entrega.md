@@ -3,7 +3,7 @@ author: Raciel Ferrin
 branch: main
 status: done
 ---
-# Valoración de la entrega e icono redondeado
+# Valoración de la entrega, panel e icono redondeado
 
 ## Intent
 
@@ -46,10 +46,24 @@ solo el admin. Además, el icono instalado en móviles debe verse redondeado.
 - Icono `any` inspeccionado visualmente: esquinas redondeadas y tomato centrado.
   Variante `maskable` con fondo crema hasta los bordes y sin recorte del dibujo.
 
+## Cierre del ciclo en el admin
+
+Después se añadió la sección `/admin/valoraciones`, accesible con el permiso
+`orders`: lista de valoraciones ordenadas por fecha de entrega, búsqueda por
+pedido/cliente/texto y acceso al detalle de la orden. El Panel Principal
+muestra el número de valoraciones y el promedio. Al guardar una valoración se
+envía un aviso push al admin reutilizando el ajuste existente de pedidos
+nuevos, para no añadir un campo más a la configuración.
+
+`ratingSummary` calcula el conteo y el promedio ignorando valores fuera de
+rango; sus tres pruebas se escribieron antes de la implementación. La sección
+se comprobó en navegador a 390 px: cabecera con el nombre de la sección, estado
+vacío claro y sin desbordamiento.
+
 ## Siguiente
 
-1. Ejecutar `node scripts/ensure-order-rating-fields.mjs` en PocketBase con
-   las credenciales de admin antes de probar el guardado en producción.
+1. Migración ejecutada: `node scripts/ensure-order-rating-fields.mjs` añadió
+   los tres campos y una segunda ejecución confirmó que es idempotente.
 2. Comprobar en un móvil real que el icono instalado usa la variante redondeada.
 3. Si se quiere mostrar algo en la portada, decidir después cómo se eligen las
    valoraciones reales sin mezclarlas con los testimonios fijos.

@@ -5,6 +5,7 @@ import {
   Package,
   Settings as SettingsIcon,
   ShoppingBag,
+  Star,
   Tags,
   Truck,
   Users,
@@ -21,6 +22,7 @@ export interface AdminNavItem {
 export const adminNavigation: AdminNavItem[] = [
   { name: "Panel Principal", href: "/admin", icon: LayoutDashboard, permission: "dashboard" },
   { name: "Órdenes", href: "/admin/ordenes", icon: ShoppingBag, permission: "orders" },
+  { name: "Valoraciones", href: "/admin/valoraciones", icon: Star, permission: "orders" },
   { name: "Productos", href: "/admin/productos", icon: Package, permission: "products" },
   { name: "Categorías", href: "/admin/categorias", icon: Tags, permission: "products" },
   { name: "Envíos", href: "/admin/envios", icon: Truck, permission: "shipping" },

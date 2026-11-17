@@ -21,6 +21,7 @@ import {
   unsubscribeFromPush,
 } from "@/lib/push/client";
 import { remainingCooldownMs } from "@/lib/push/payloads";
+import { shouldShowNoAdminNotice } from "@/lib/push/notices";
 import type { NotificationOverview, PushConfigResult } from "@/lib/push/types";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -237,6 +238,13 @@ export default function NotificacionesPage() {
     return "Avisar a clientes";
   })();
 
+  const noAdminDevices = shouldShowNoAdminNotice({
+    setupNeeded: overview?.setupNeeded,
+    configured: config?.configured,
+    supported,
+    adminCount: overview?.counts.admins ?? 0,
+  });
+
   if (loading) {
     return (
       <div className="flex justify-center py-16">
@@ -295,6 +303,29 @@ export default function NotificacionesPage() {
           <AlertDescription>
             En Safari, toca Compartir → Añadir a pantalla de inicio, abre MercaToma desde
             ese icono y vuelve aquí para activar los avisos.
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {noAdminDevices && (
+        <Alert>
+          <BellRing className="h-4 w-4" />
+          <AlertTitle>No hay dispositivos de administrador activos</AlertTitle>
+          <AlertDescription>
+            <p>
+              Los avisos de pedidos y clientes nuevos están encendidos, pero no
+              hay dónde entregarlos. Activa este dispositivo para recibirlos aquí.
+            </p>
+            {!subscribed && (
+              <Button
+                size="sm"
+                className="mt-3"
+                onClick={handleActivate}
+                disabled={busy || blocked || !supported}
+              >
+                Activar este dispositivo
+              </Button>
+            )}
           </AlertDescription>
         </Alert>
       )}

@@ -14,6 +14,7 @@
 | [admin-movil.md](ftd/admin-movil.md) | Densidad y navegación del panel en móvil |
 | [valoracion-entrega.md](ftd/valoracion-entrega.md) | Valoración de entregas e icono redondeado |
 | [ofertas-moneda.md](ftd/ofertas-moneda.md) | Precio de ofertas en la moneda predeterminada |
+| [aviso-sin-dispositivos-admin.md](ftd/aviso-sin-dispositivos-admin.md) | Aviso cuando el admin no tiene dispositivos activos |
 | [rendimiento-redes-lentas.md](ftd/rendimiento-redes-lentas.md) | LCP, service worker y peso de la portada |
 
 ## SDD

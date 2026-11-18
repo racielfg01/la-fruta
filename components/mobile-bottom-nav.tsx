@@ -91,12 +91,12 @@ export function MobileBottomNav({
 
   return (
     <>
-      <nav className="fixed bottom-0 left-0 right-0 z-50 border-t bg-background/95 pb-[env(safe-area-inset-bottom)] backdrop-blur supports-[backdrop-filter]:bg-background/80 md:hidden">
+      <nav className="fixed bottom-0 left-0 right-0 z-50 border-t bg-white pb-[env(safe-area-inset-bottom)] md:hidden">
         <div className="grid grid-cols-5 h-16">
           <Link
             href="/"
-            className={`flex flex-col items-center justify-center gap-1 text-xs ${
-              isActive("/") ? "text-primary" : "text-muted-foreground"
+            className={`flex flex-col items-center justify-center gap-1 rounded-lg text-xs ${
+              isActive("/") ? "bg-green-700 text-white" : "text-slate-600"
             }`}
           >
             <Home className="h-5 w-5" />
@@ -104,15 +104,15 @@ export function MobileBottomNav({
           </Link>
           <button
             onClick={() => setOpen(true)}
-            className="flex flex-col items-center justify-center gap-1 text-xs text-muted-foreground"
+            className="flex flex-col items-center justify-center gap-1 rounded-lg text-xs text-slate-600"
           >
             <Grid3X3 className="h-5 w-5" />
             <span>Categorías</span>
           </button>
           <Link
             href="/cart"
-            className={`relative flex flex-col items-center justify-center gap-1 text-xs ${
-              isActive("/cart") ? "text-primary" : "text-muted-foreground"
+            className={`relative flex flex-col items-center justify-center gap-1 rounded-lg text-xs ${
+              isActive("/cart") ? "bg-green-700 text-white" : "text-slate-600"
             }`}
           >
             <div className="relative">
@@ -127,8 +127,8 @@ export function MobileBottomNav({
           </Link>
           <Link
             href="/favoritos"
-            className={`flex flex-col items-center justify-center gap-1 text-xs ${
-              isActive("/favoritos") ? "text-primary" : "text-muted-foreground"
+            className={`flex flex-col items-center justify-center gap-1 rounded-lg text-xs ${
+              isActive("/favoritos") ? "bg-green-700 text-white" : "text-slate-600"
             }`}
           >
             <Heart className="h-5 w-5" />
@@ -136,8 +136,10 @@ export function MobileBottomNav({
           </Link>
           <Link
             href={isAuthenticated ? "/perfil" : "/auth/login"}
-            className={`flex flex-col items-center justify-center gap-1 text-xs ${
-              isActive("/perfil") || isActive("/auth") ? "text-primary" : "text-muted-foreground"
+            className={`flex flex-col items-center justify-center gap-1 rounded-lg text-xs ${
+              isActive("/perfil") || isActive("/auth")
+                ? "bg-green-700 text-white"
+                : "text-slate-600"
             }`}
           >
             <User className="h-5 w-5" />

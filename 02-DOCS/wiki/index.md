@@ -10,6 +10,8 @@
 
 | Ficha | Qué cubre |
 | --- | --- |
+| [sesion-pedidos-indisponible.md](ftd/sesion-pedidos-indisponible.md) | Error de sesión al cargar pedidos sin cerrar la sesión |
+| [navbar-movil-contraste.md](ftd/navbar-movil-contraste.md) | Fondo blanco y ítem activo verde en la barra móvil |
 | [seo-aeo-local.md](ftd/seo-aeo-local.md) | Visibilidad local en Google y agentes de IA |
 | [admin-movil.md](ftd/admin-movil.md) | Densidad y navegación del panel en móvil |
 | [valoracion-entrega.md](ftd/valoracion-entrega.md) | Valoración de entregas e icono redondeado |

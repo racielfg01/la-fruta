@@ -16,6 +16,7 @@
 | [ofertas-moneda.md](ftd/ofertas-moneda.md) | Precio de ofertas en la moneda predeterminada |
 | [aviso-sin-dispositivos-admin.md](ftd/aviso-sin-dispositivos-admin.md) | Aviso cuando el admin no tiene dispositivos activos |
 | [cumpleanos-clientes.md](ftd/cumpleanos-clientes.md) | Fecha de nacimiento y cumpleaños de clientes |
+| [iconos-categorias.md](ftd/iconos-categorias.md) | Iconos SVG para las categorías |
 | [rendimiento-redes-lentas.md](ftd/rendimiento-redes-lentas.md) | LCP, service worker y peso de la portada |
 
 ## SDD

@@ -20,6 +20,7 @@ import {
   faqPageSchema,
   localBusinessSchema,
 } from '@/lib/seo-content'
+import { categoryIcon } from '@/lib/category-icons'
 
 /** El catálogo se refresca solo: una portada cacheada un minuto sigue siendo barata. */
 export const revalidate = 60
@@ -127,8 +128,14 @@ export default async function HomePage() {
                 <li key={category}>
                   <Link
                     href={`/categoria/${categorySlug(category)}`}
-                    className="inline-flex rounded-full border border-border bg-muted/40 px-3 py-1.5 text-sm text-foreground hover:bg-muted"
+                    className="inline-flex items-center gap-1.5 rounded-full border border-border bg-muted/40 px-3 py-1.5 text-sm text-foreground hover:bg-muted"
                   >
+                    {(() => {
+                      const icon = categoryIcon(category);
+                      return icon ? (
+                        <img src={icon} alt="" aria-hidden="true" className="h-5 w-5 shrink-0 object-contain" />
+                      ) : null;
+                    })()}
                     {category}
                   </Link>
                 </li>

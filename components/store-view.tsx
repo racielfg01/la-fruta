@@ -41,6 +41,7 @@ import { effectiveCupPrice, displayProductCupPrice } from "@/lib/price-margin";
 import { useMarginConfig } from "@/lib/use-price-margin";
 import { WHATSAPP_DISPLAY } from "@/lib/seo";
 import type { PublicOffer } from "@/lib/offers";
+import { categoryIcon } from "@/lib/category-icons";
 import { OffersSection } from "@/components/offers-section";
 import {
   Search,
@@ -585,6 +586,14 @@ export function StoreView({
                         onClick={() => toggleCategory(category)}
                         className="h-8 shrink-0 gap-1.5 rounded-full px-3 text-xs"
                       >
+                        {categoryIcon(category) && (
+                          <img
+                            src={categoryIcon(category)!}
+                            alt=""
+                            aria-hidden="true"
+                            className="h-4 w-4 shrink-0 object-contain"
+                          />
+                        )}
                         {getCategoryLabel(category)}
                         <span
                           className={`rounded-full px-1.5 text-[10px] font-semibold ${
@@ -990,7 +999,16 @@ function FilterContent({
                   onCheckedChange={() => toggleCategory(category)}
                 />
                 <span className={`flex h-5 w-5 items-center justify-center rounded ${config.bgColor}`}>
-                  <Leaf className={`h-3 w-3 ${config.color}`} />
+                  {categoryIcon(category) ? (
+                    <img
+                      src={categoryIcon(category)!}
+                      alt=""
+                      aria-hidden="true"
+                      className="h-4 w-4 object-contain"
+                    />
+                  ) : (
+                    <Leaf className={`h-3 w-3 ${config.color}`} />
+                  )}
                 </span>
                 <span className="flex-1 font-medium">
                   {getCategoryLabel(category)}

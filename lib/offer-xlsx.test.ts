@@ -68,6 +68,18 @@ describe("readOfferWorkbook", () => {
     expect(rows[0].endDate).toBe("2027-01-02T10:30");
   });
 
+  test("convierte un número de serie de Excel en una fecha real", async () => {
+    const workbook = new ExcelJS.Workbook();
+    const sheet = workbook.addWorksheet("Ofertas");
+    sheet.addRow([...OFFER_HEADERS]);
+    sheet.addRow(["Combo A", "Verduras", "Combo", "", 100, 46324, "Sí"]);
+    const buffer = Buffer.from(await workbook.xlsx.writeBuffer());
+
+    const { rows } = await readOfferWorkbook(buffer);
+
+    expect(rows[0].endDate).toBe("2026-10-29T00:00");
+  });
+
   test("rechaza un archivo sin la columna Nombre", async () => {
     const workbook = new ExcelJS.Workbook();
     const sheet = workbook.addWorksheet("Ofertas");

@@ -176,6 +176,29 @@ describe("planOfferImport", () => {
     expect(plan.errors[0]).toMatchObject({ row: 11 });
     expect(plan.errors[0].message).toMatch(/activa/i);
   });
+
+  test("no elige un producto a ciegas cuando dos nombres se confunden", () => {
+    const plan = planOfferImport(
+      [row({ type: "Rebaja", product: "AJO" })],
+      [],
+      [
+        { id: "p1", name: "Ajo" },
+        { id: "p2", name: "ajo" },
+      ]
+    );
+
+    expect(plan.creates).toEqual([]);
+    expect(plan.errors[0]).toMatchObject({ row: 2 });
+    expect(plan.errors[0].message).toMatch(/ambiguo/i);
+  });
+
+  test("rechaza una fecha con un año absurdo que PocketBase no podría guardar", () => {
+    const plan = planOfferImport([row({ endDate: "9999-01-01T00:00" })], [], products);
+
+    expect(plan.creates).toEqual([]);
+    expect(plan.errors[0]).toMatchObject({ row: 2 });
+    expect(plan.errors[0].message).toMatch(/vencimiento/i);
+  });
 });
 
 describe("buildOfferCreateRecord", () => {

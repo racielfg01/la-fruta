@@ -17,7 +17,11 @@ import { Category, DeliveryZone, User, Order, Currency } from '@/lib/admin-store
 import { AdminOffer, OfferInput, toAdminOffer, toIsoOfferDate, validateOfferInput } from '@/lib/offers';
 import { buildZoneCreateRecord, buildZonePriceUpdate } from '@/lib/delivery-zones-excel';
 import { buildProductPriceUpdate } from '@/lib/product-prices-excel';
-import { buildOfferCreateRecord, type OfferCreation } from '@/lib/offer-excel';
+import {
+  buildOfferCreateRecord,
+  MAX_OFFER_IMPORT_ROWS,
+  type OfferCreation,
+} from '@/lib/offer-excel';
 import { normalizeTextKey } from '@/lib/sheet-values';
 import { randomBytes } from 'crypto';
 
@@ -637,20 +641,39 @@ export async function applyOfferImportAction(
   await requirePermission(token, 'offers');
   if (creations.length === 0) return { created: [] };
 
+  if (creations.length > MAX_OFFER_IMPORT_ROWS) {
+    throw new Error(
+      `El archivo tiene ${creations.length} filas; el máximo es ${MAX_OFFER_IMPORT_ROWS}.`
+    );
+  }
+
   const pb = await getDataPB(token);
-  const existing = await getAllRecords(pb, 'offers');
+  const [existing, products] = await Promise.all([
+    getAllRecords(pb, 'offers'),
+    getAllRecords(pb, 'products'),
+  ]);
   const existingNames = new Set(
     existing
       .map((o: any) => normalizeTextKey(String(o.name ?? '')))
       .filter(Boolean)
   );
+  const productIds = new Set(products.map((p: any) => String(p.id)));
   const seen = new Set<string>();
 
   for (const item of creations) {
+    if (item.type !== 'combo' && item.type !== 'product') {
+      throw new Error(`Tipo no reconocido en la fila ${item.row}: "${item.type}"`);
+    }
+    if (typeof item.active !== 'boolean') {
+      throw new Error(`Estado activo no reconocido en la fila ${item.row}`);
+    }
     if (!validateOfferInput({ ...item, image: "" })) {
       throw new Error(
         `Oferta inválida en la fila ${item.row}: completa nombre, descripción, precio, vencimiento y producto de la rebaja`
       );
+    }
+    if (item.type === 'product' && !productIds.has(item.productId)) {
+      throw new Error(`Producto no encontrado en la fila ${item.row}: "${item.productId}"`);
     }
     const key = normalizeTextKey(item.name);
     if (existingNames.has(key)) {
@@ -665,9 +688,23 @@ export async function applyOfferImportAction(
   }
 
   const created: AdminOffer[] = [];
-  for (const item of creations) {
-    const record = await pb.collection('offers').create(buildOfferCreateRecord(item));
-    created.push(toAdminOffer(record as Record<string, any>));
+  const createdIds: string[] = [];
+  try {
+    for (const item of creations) {
+      const record = await pb.collection('offers').create(buildOfferCreateRecord(item));
+      createdIds.push(String(record.id));
+      created.push(toAdminOffer(record as Record<string, any>));
+    }
+  } catch (error) {
+    // Si PocketBase falla a mitad, no dejamos un lote creado a medias.
+    for (const id of createdIds) {
+      try {
+        await pb.collection('offers').delete(id);
+      } catch {
+        // No tapamos el error original con un fallo al deshacer.
+      }
+    }
+    throw error;
   }
   return { created };
 }

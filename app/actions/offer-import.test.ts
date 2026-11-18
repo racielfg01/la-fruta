@@ -17,8 +17,9 @@ import { applyOfferImportAction } from "./admin";
 const mockGetToken = getTokenPB as unknown as ReturnType<typeof vi.fn>;
 const mockGetAll = getAllRecords as unknown as ReturnType<typeof vi.fn>;
 const mockCreate = vi.fn();
+const mockDelete = vi.fn();
 
-const pb = { collection: vi.fn(() => ({ create: mockCreate })) };
+const pb = { collection: vi.fn(() => ({ create: mockCreate, delete: mockDelete })) };
 
 function creation(over: Partial<OfferCreation> = {}): OfferCreation {
   return {
@@ -38,7 +39,10 @@ function creation(over: Partial<OfferCreation> = {}): OfferCreation {
 beforeEach(() => {
   vi.clearAllMocks();
   mockGetToken.mockReturnValue(pb);
-  mockGetAll.mockResolvedValue([]);
+  mockGetAll.mockImplementation(async (_client: unknown, collection: string) =>
+    collection === "products" ? [{ id: "p1", name: "Ajo" }] : []
+  );
+  mockDelete.mockResolvedValue(undefined);
   mockCreate.mockImplementation(async (record: Record<string, unknown>) => ({
     id: "nueva",
     ...record,
@@ -86,5 +90,57 @@ describe("applyOfferImportAction", () => {
       type: "product",
       product_id: "p1",
     });
+  });
+
+  test("rechaza un tipo fuera del dominio antes de crear", async () => {
+    await expect(
+      applyOfferImportAction(
+        [creation({ type: "2x1" as unknown as OfferCreation["type"] })],
+        "token"
+      )
+    ).rejects.toThrow(/fila 2/i);
+    expect(mockCreate).not.toHaveBeenCalled();
+  });
+
+  test("rechaza un Activa que no sea booleano", async () => {
+    await expect(
+      applyOfferImportAction(
+        [creation({ active: "quizá" as unknown as boolean })],
+        "token"
+      )
+    ).rejects.toThrow(/fila 2/i);
+    expect(mockCreate).not.toHaveBeenCalled();
+  });
+
+  test("rechaza una rebaja cuyo producto no existe en PocketBase", async () => {
+    mockGetAll.mockResolvedValue([]);
+
+    await expect(
+      applyOfferImportAction(
+        [creation({ name: "Rebaja de ajo", type: "product", productId: "inexistente" })],
+        "token"
+      )
+    ).rejects.toThrow(/producto/i);
+    expect(mockCreate).not.toHaveBeenCalled();
+  });
+
+  test("rechaza un lote mayor al máximo de filas", async () => {
+    const many = Array.from({ length: 501 }, (_, i) =>
+      creation({ row: i + 2, name: `Oferta ${i + 2}` })
+    );
+
+    await expect(applyOfferImportAction(many, "token")).rejects.toThrow(/máximo/i);
+    expect(mockCreate).not.toHaveBeenCalled();
+  });
+
+  test("deshace las ofertas creadas si una fila falla en PocketBase", async () => {
+    mockCreate
+      .mockResolvedValueOnce({ id: "creada-1", name: "Combo familiar" })
+      .mockRejectedValueOnce(new Error("PB caído"));
+
+    await expect(
+      applyOfferImportAction([creation(), creation({ row: 3, name: "Otra oferta" })], "token")
+    ).rejects.toThrow(/PB caído/);
+    expect(mockDelete).toHaveBeenCalledWith("creada-1");
   });
 });

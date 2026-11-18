@@ -1,14 +1,22 @@
 import ExcelJS from "exceljs";
-import { OFFER_HEADERS, type OfferRowInput } from "./offer-excel";
+import { MAX_OFFER_IMPORT_ROWS, OFFER_HEADERS, type OfferRowInput } from "./offer-excel";
 
 const SHEET_NAME = "Ofertas";
 
-export const MAX_OFFER_IMPORT_ROWS = 500;
+function pad(n: number): string {
+  return String(n).padStart(2, "0");
+}
 
 /** Fecha de Excel a texto de `datetime-local` en hora local. */
 function cellDate(value: Date): string {
-  const pad = (n: number) => String(n).padStart(2, "0");
   return `${value.getFullYear()}-${pad(value.getMonth() + 1)}-${pad(value.getDate())}T${pad(value.getHours())}:${pad(value.getMinutes())}`;
+}
+
+/** Número de serie de Excel (época 1899-12-30) a `datetime-local`. */
+function serialDate(value: number): string | null {
+  if (!Number.isFinite(value) || value <= 0) return null;
+  const date = new Date(Date.UTC(1899, 11, 30) + Math.floor(value * 86_400_000));
+  return `${date.getUTCFullYear()}-${pad(date.getUTCMonth() + 1)}-${pad(date.getUTCDate())}T${pad(date.getUTCHours())}:${pad(date.getUTCMinutes())}`;
 }
 
 /** Genera la plantilla vacía: el usuario rellena las filas con sus ofertas. */
@@ -120,6 +128,19 @@ export async function readOfferWorkbook(
     return String(value);
   };
 
+  /** La columna Vence acepta fecha, texto o número de serie de Excel. */
+  const cellEndDate = (row: ExcelJS.Row, col: number): string => {
+    const value = row.getCell(col).value;
+    if (typeof value === "number") return serialDate(value) ?? String(value);
+    if (typeof value === "object" && value !== null && "result" in value) {
+      const result = (value as { result: unknown }).result;
+      if (typeof result === "number") return serialDate(result) ?? String(result);
+    }
+    const text = cellText(row, col);
+    if (/^\d+(?:\.\d+)?$/.test(text)) return serialDate(Number(text)) ?? text;
+    return text;
+  };
+
   const rows: OfferRowInput[] = [];
   let dataRows = 0;
 
@@ -131,7 +152,7 @@ export async function readOfferWorkbook(
     const type = cellText(row, typeCol);
     const product = cellText(row, productCol);
     const price = cellPrice(row, priceCol);
-    const endDate = cellText(row, endDateCol);
+    const endDate = cellEndDate(row, endDateCol);
     const active = cellText(row, activeCol);
 
     // Las filas totalmente vacías se saltan sin contarlas.

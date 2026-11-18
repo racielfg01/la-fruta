@@ -17,6 +17,8 @@ export const OFFER_HEADERS = [
   "Activa",
 ] as const;
 
+export const MAX_OFFER_IMPORT_ROWS = 500;
+
 export interface OfferRowInput {
   /** Número de fila en el archivo, para los mensajes de error. */
   row: number;
@@ -97,9 +99,15 @@ export function planOfferImport(
     existingOffers.map((o) => normalizeTextKey(o.name)).filter(Boolean)
   );
   const productsByName = new Map<string, string>();
+  const ambiguousProducts = new Set<string>();
   for (const product of products) {
     const key = normalizeTextKey(product.name);
-    if (key && !productsByName.has(key)) productsByName.set(key, product.id);
+    if (!key) continue;
+    if (productsByName.has(key) && productsByName.get(key) !== product.id) {
+      ambiguousProducts.add(key);
+    } else {
+      productsByName.set(key, product.id);
+    }
   }
 
   for (const row of rows) {
@@ -152,7 +160,8 @@ export function planOfferImport(
     }
 
     const endDate = String(row.endDate ?? "").trim();
-    if (!isValidOfferEndDate(endDate)) {
+    const endYear = new Date(endDate.replace(" ", "T")).getFullYear();
+    if (!isValidOfferEndDate(endDate) || endYear < 2000 || endYear > 2100) {
       plan.errors.push({
         row: row.row,
         message: `Vencimiento inválido para "${name}": "${endDate}"`,
@@ -176,6 +185,13 @@ export function planOfferImport(
         plan.errors.push({
           row: row.row,
           message: `Falta el producto de la rebaja "${name}"`,
+        });
+        continue;
+      }
+      if (ambiguousProducts.has(productKey)) {
+        plan.errors.push({
+          row: row.row,
+          message: `Producto ambiguo para "${name}": "${row.product}" coincide con varios productos; elige el producto en el formulario`,
         });
         continue;
       }

@@ -14,9 +14,11 @@ import { after } from 'next/server';
 import type PocketBase from 'pocketbase';
 import { Product } from '@/lib/store';
 import { Category, DeliveryZone, User, Order, Currency } from '@/lib/admin-store';
-import { AdminOffer, OfferInput, toAdminOffer, toIsoOfferDate } from '@/lib/offers';
+import { AdminOffer, OfferInput, toAdminOffer, toIsoOfferDate, validateOfferInput } from '@/lib/offers';
 import { buildZoneCreateRecord, buildZonePriceUpdate } from '@/lib/delivery-zones-excel';
 import { buildProductPriceUpdate } from '@/lib/product-prices-excel';
+import { buildOfferCreateRecord, type OfferCreation } from '@/lib/offer-excel';
+import { normalizeTextKey } from '@/lib/sheet-values';
 import { randomBytes } from 'crypto';
 
 async function getDataPB(token: string): Promise<PocketBase> {
@@ -621,4 +623,51 @@ export async function removeOfferAction(id: string, token: string) {
   await requirePermission(token, 'offers');
   const pb = await getDataPB(token);
   await pb.collection('offers').delete(id);
+}
+
+/**
+ * Aplica una importación Excel: crea ofertas nuevas, nunca actualiza. Todo el
+ * lote se valida antes de escribir para no dejar ofertas a medias si una fila
+ * es dudosa o su nombre choca con una oferta que ya existe.
+ */
+export async function applyOfferImportAction(
+  creations: OfferCreation[],
+  token: string
+): Promise<{ created: AdminOffer[] }> {
+  await requirePermission(token, 'offers');
+  if (creations.length === 0) return { created: [] };
+
+  const pb = await getDataPB(token);
+  const existing = await getAllRecords(pb, 'offers');
+  const existingNames = new Set(
+    existing
+      .map((o: any) => normalizeTextKey(String(o.name ?? '')))
+      .filter(Boolean)
+  );
+  const seen = new Set<string>();
+
+  for (const item of creations) {
+    if (!validateOfferInput({ ...item, image: "" })) {
+      throw new Error(
+        `Oferta inválida en la fila ${item.row}: completa nombre, descripción, precio, vencimiento y producto de la rebaja`
+      );
+    }
+    const key = normalizeTextKey(item.name);
+    if (existingNames.has(key)) {
+      throw new Error(
+        `Ya existe una oferta con el nombre "${item.name}" (fila ${item.row}); no se sobrescribió nada`
+      );
+    }
+    if (seen.has(key)) {
+      throw new Error(`Nombre repetido en la fila ${item.row}: "${item.name}"`);
+    }
+    seen.add(key);
+  }
+
+  const created: AdminOffer[] = [];
+  for (const item of creations) {
+    const record = await pb.collection('offers').create(buildOfferCreateRecord(item));
+    created.push(toAdminOffer(record as Record<string, any>));
+  }
+  return { created };
 }

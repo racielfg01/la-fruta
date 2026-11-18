@@ -1,8 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { toast } from "sonner";
 import { useAdminStore } from "@/lib/admin-store";
+import { useAuthStore } from "@/lib/auth-context";
+import { applyOfferImportAction } from "@/app/actions/admin";
+import type { OfferImportPlan } from "@/lib/offer-excel";
 import {
   isOfferActive,
   validateOfferInput,
@@ -57,6 +60,12 @@ import {
   Timer,
   Package,
   ImageIcon,
+  Download,
+  Upload,
+  Loader2,
+  FileSpreadsheet,
+  CheckCircle2,
+  XCircle,
 } from "lucide-react";
 import { ImageUpload } from "@/components/upload-button";
 
@@ -102,6 +111,7 @@ function formatEndDate(endDate: string): string {
 
 export default function OffersAdminPage() {
   const { offers, products, currencies, addOffer, updateOffer, deleteOffer } = useAdminStore();
+  const token = useAuthStore((s) => s.token);
   const defaultCurrencyCode =
     currencies.find((c) => c.isDefault)?.code || "CUP";
 
@@ -112,6 +122,14 @@ export default function OffersAdminPage() {
   const [saving, setSaving] = useState(false);
   const [imageUploaded, setImageUploaded] = useState(false);
   const [offerToDelete, setOfferToDelete] = useState<AdminOffer | null>(null);
+
+  // ── Plantilla Excel de ofertas ──
+  const offerFileInputRef = useRef<HTMLInputElement>(null);
+  const [downloadingOffers, setDownloadingOffers] = useState(false);
+  const [readingOfferFile, setReadingOfferFile] = useState(false);
+  const [offerPlan, setOfferPlan] = useState<OfferImportPlan | null>(null);
+  const [offerPreviewOpen, setOfferPreviewOpen] = useState(false);
+  const [applyingOfferPlan, setApplyingOfferPlan] = useState(false);
 
   const productName = (id?: string) =>
     products.find((p) => p.id === id)?.name || "Producto no disponible";
@@ -217,6 +235,80 @@ export default function OffersAdminPage() {
     }
   };
 
+  const handleDownloadOfferTemplate = async () => {
+    setDownloadingOffers(true);
+    try {
+      const { buildOfferWorkbook } = await import("@/lib/offer-xlsx");
+      const buffer = await buildOfferWorkbook();
+      const blob = new Blob([buffer], {
+        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `ofertas-plantilla-${new Date().toISOString().slice(0, 10)}.xlsx`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+      toast.success("Plantilla de ofertas descargada");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "No pudimos generar la plantilla");
+    } finally {
+      setDownloadingOffers(false);
+    }
+  };
+
+  const handleOfferFileSelected = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+
+    setReadingOfferFile(true);
+    try {
+      const { readOfferWorkbook } = await import("@/lib/offer-xlsx");
+      const { planOfferImport } = await import("@/lib/offer-excel");
+      const { rows } = await readOfferWorkbook(await file.arrayBuffer());
+      const plan = planOfferImport(
+        rows,
+        offers.map((o) => ({ name: o.name })),
+        products.map((p) => ({ id: p.id, name: p.name }))
+      );
+      if (plan.creates.length === 0) {
+        toast.error("El archivo no tiene ofertas aplicables. Revisa los motivos antes de reintentar.");
+      }
+      setOfferPlan(plan);
+      setOfferPreviewOpen(true);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "No pudimos leer el archivo");
+    } finally {
+      setReadingOfferFile(false);
+    }
+  };
+
+  const handleApplyOfferImport = async () => {
+    if (!offerPlan) return;
+    if (!token) {
+      toast.error("Tu sesión expiró. Vuelve a iniciar sesión.");
+      return;
+    }
+
+    setApplyingOfferPlan(true);
+    try {
+      const result = await applyOfferImportAction(offerPlan.creates, token);
+      useAdminStore.setState((state) => ({
+        offers: [...result.created, ...state.offers],
+      }));
+      toast.success(`Ofertas creadas: ${result.created.length}`);
+      setOfferPreviewOpen(false);
+      setOfferPlan(null);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "No pudimos crear las ofertas");
+    } finally {
+      setApplyingOfferPlan(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -227,10 +319,45 @@ export default function OffersAdminPage() {
             Combos y rebajas que se muestran en la portada
           </p>
         </div>
-        <Button onClick={openNew}>
-          <Plus className="mr-2 h-4 w-4" />
-          Nueva Oferta
-        </Button>
+        <div className="flex w-full shrink-0 flex-wrap items-center gap-2 sm:w-auto">
+          <Button
+            variant="outline"
+            onClick={handleDownloadOfferTemplate}
+            disabled={downloadingOffers}
+            className="gap-2"
+          >
+            {downloadingOffers ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Download className="h-4 w-4" />
+            )}
+            Plantilla
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => offerFileInputRef.current?.click()}
+            disabled={readingOfferFile}
+            className="gap-2"
+          >
+            {readingOfferFile ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Upload className="h-4 w-4" />
+            )}
+            Subir Excel
+          </Button>
+          <input
+            ref={offerFileInputRef}
+            type="file"
+            accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            className="hidden"
+            onChange={handleOfferFileSelected}
+          />
+          <Button onClick={openNew}>
+            <Plus className="mr-2 h-4 w-4" />
+            Nueva Oferta
+          </Button>
+        </div>
       </div>
 
       {/* Mobile: tarjetas */}
@@ -621,6 +748,101 @@ export default function OffersAdminPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Revisión de la plantilla de ofertas */}
+      <Dialog open={offerPreviewOpen} onOpenChange={setOfferPreviewOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <FileSpreadsheet className="h-5 w-5 text-primary" />
+              Revisar ofertas del Excel
+            </DialogTitle>
+          </DialogHeader>
+
+          {offerPlan && (
+            <div className="space-y-4">
+              <div className="grid gap-2 sm:grid-cols-2">
+                <div className="rounded-lg border bg-muted/30 p-3">
+                  <p className="text-xs text-muted-foreground">Se crean</p>
+                  <p className="text-xl font-bold">{offerPlan.creates.length}</p>
+                </div>
+                <div className="rounded-lg border bg-muted/30 p-3">
+                  <p className="text-xs text-muted-foreground">Con problemas</p>
+                  <p className="text-xl font-bold">{offerPlan.errors.length}</p>
+                </div>
+              </div>
+
+              <div className="max-h-[50vh] space-y-4 overflow-y-auto pr-1">
+                {offerPlan.creates.length > 0 && (
+                  <section>
+                    <h4 className="mb-2 flex items-center gap-1.5 text-sm font-semibold">
+                      <CheckCircle2 className="h-4 w-4 text-green-600" />
+                      Ofertas que se crean
+                    </h4>
+                    <ul className="space-y-1 text-sm">
+                      {offerPlan.creates.map((offer) => (
+                        <li
+                          key={offer.row}
+                          className="flex items-center justify-between gap-3 rounded border px-2 py-1"
+                        >
+                          <span className="min-w-0 truncate">
+                            {offer.name}
+                            <span className="text-muted-foreground">
+                              {" · "}
+                              {offer.type === "combo" ? "Combo" : "Rebaja"}
+                              {offer.productId ? ` · ${productName(offer.productId)}` : ""}
+                            </span>
+                          </span>
+                          <span className="shrink-0 font-semibold text-primary">
+                            {offer.price.toFixed(2)} {offer.currencyCode}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  </section>
+                )}
+
+                {offerPlan.errors.length > 0 && (
+                  <section>
+                    <h4 className="mb-2 flex items-center gap-1.5 text-sm font-semibold">
+                      <XCircle className="h-4 w-4 text-destructive" />
+                      Filas que no se crean
+                    </h4>
+                    <ul className="space-y-1 text-sm">
+                      {offerPlan.errors.map((error) => (
+                        <li
+                          key={`${error.row}-${error.message}`}
+                          className="rounded border px-2 py-1"
+                        >
+                          <span className="font-mono text-xs text-muted-foreground">
+                            Fila {error.row}:
+                          </span>{" "}
+                          {error.message}
+                        </li>
+                      ))}
+                    </ul>
+                  </section>
+                )}
+              </div>
+            </div>
+          )}
+
+          <DialogFooter className="gap-2">
+            <DialogClose asChild>
+              <Button type="button" variant="outline">
+                Cancelar
+              </Button>
+            </DialogClose>
+            <Button
+              onClick={handleApplyOfferImport}
+              disabled={applyingOfferPlan || !offerPlan || offerPlan.creates.length === 0}
+            >
+              {applyingOfferPlan && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Crear ofertas
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

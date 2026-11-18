@@ -163,6 +163,7 @@ interface AdminStore {
   offers: AdminOffer[];
 
   initialize: () => Promise<void>;
+  refresh: () => Promise<void>;
 
   addProduct: (product: Product) => Promise<void>;
   updateProduct: (id: string, product: Partial<Product>) => Promise<void>;
@@ -212,24 +213,14 @@ const withTimeout = <T>(promise: Promise<T>, ms: number): Promise<T> => {
   return Promise.race([promise, timeoutPromise]).finally(() => clearTimeout(timeoutId));
 };
 
-export const useAdminStore = create<AdminStore>()((set, get) => ({
-  loaded: false,
-  loading: false,
-  products: [],
-  categories: [],
-  deliveryZones: [],
-  users: [],
-  orders: [],
-  currencies: [],
-  roles: [],
-  offers: [],
-
-  initialize: async () => {
-    if (get().loaded || get().loading) return;
-    set({ loading: true });
+export const useAdminStore = create<AdminStore>()((set, get) => {
+  const fetchAdminData = async (options?: { background?: boolean }) => {
+    if (get().loading) return;
+    const isBackground = options?.background && get().loaded;
+    if (!isBackground) set({ loading: true });
     try {
       const token = getAuthToken();
-const data = await withTimeout(getAdminData(token), 15000);
+      const data = await withTimeout(getAdminData(token), 15000);
       set({
         products: data.products as Product[],
         categories: data.categories as unknown as Category[],
@@ -251,6 +242,27 @@ const data = await withTimeout(getAdminData(token), 15000);
         window.location.href = "/auth/login";
       }
     }
+  };
+
+  return {
+  loaded: false,
+  loading: false,
+  products: [],
+  categories: [],
+  deliveryZones: [],
+  users: [],
+  orders: [],
+  currencies: [],
+  roles: [],
+  offers: [],
+
+  initialize: async () => {
+    if (get().loaded || get().loading) return;
+    await fetchAdminData();
+  },
+
+  refresh: async () => {
+    await fetchAdminData({ background: true });
   },
 
   addProduct: async (product) => {
@@ -396,4 +408,5 @@ const data = await withTimeout(getAdminData(token), 15000);
     await removeOfferAction(id, token);
     set({ offers: get().offers.filter((o) => o.id !== id) });
   },
-}));
+  };
+});

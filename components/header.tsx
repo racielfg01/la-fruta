@@ -2,14 +2,14 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ShoppingCart, Leaf, Menu, X, Settings, LogOut, User, Moon, Sun } from "lucide-react";
+import { ShoppingCart, Menu, X, Settings, LogOut, User, Moon, Sun } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useCartStore } from "@/lib/store";
 import { useAuthStore } from "@/lib/auth-context";
 import { useState, useEffect } from "react";
-import Image from "next/image";
 import { useTheme } from "next-themes";
+import { BrandMark } from "@/components/brand-mark";
 import { useSettingsStore } from "@/lib/settings-store";
 import { canAccessAdmin } from "@/lib/use-permissions";
 import { NotificationBell } from "@/components/push/notification-bell";
@@ -38,13 +38,6 @@ export function Header() {
   const settings = useSettingsStore((s) => s.settings);
   const initSettings = useSettingsStore((s) => s.init);
 
-  // Mismo tratamiento de marca que el footer: "Merca" en primary y "Toma" en
-  // destructive. Si el nombre se personaliza desde Configuración, se usa el
-  // nombre completo en primary para no romper la marca.
-  const brandName = settings.storeName?.trim();
-  const isDefaultBrand =
-    !brandName || brandName.toLowerCase().replace(/\s+/g, "") === "mercatoma";
-
   useEffect(() => {
     initSettings();
   }, [initSettings]);
@@ -60,19 +53,7 @@ export function Header() {
     <header className="sticky top-0 z-50 w-full border-b bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80">
       <div className="container mx-auto flex h-16 items-center justify-between px-4">
         <Link href="/" className="flex items-center gap-2">
-          <div className="flex h-10 w-10 items-center justify-center rounded-full overflow-hidden">
-            <Image className="object-cover" src={settings.logo || "/icon-512x512.png"} alt={settings.storeName || "logo"} width={40} height={40} priority/>
-          </div>
-          <span className="font-[family-name:var(--font-playfair)] text-2xl font-bold">
-            {isDefaultBrand ? (
-              <>
-                <span className="text-primary">Merca</span>
-                <span className="text-destructive">Toma</span>
-              </>
-            ) : (
-              <span className="text-primary">{brandName}</span>
-            )}
-          </span>
+          <BrandMark storeName={settings.storeName} logo={settings.logo} />
         </Link>
 
         <nav className="hidden items-center gap-6 md:flex">

@@ -1,10 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import PocketBase from "pocketbase";
 import {
-  Leaf,
   ChevronRight,
   Menu,
   X,
@@ -13,15 +13,93 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { BrandMark } from "@/components/brand-mark";
 import { useAdminStore } from "@/lib/admin-store";
 import { useAuthStore } from "@/lib/auth-context";
 import { hasPermission, canAccessAdmin } from "@/lib/use-permissions";
 import { adminGate } from "@/lib/admin-gate";
 import { adminNavigation, adminSectionLabel } from "@/lib/admin-navigation";
+import { useSettingsStore } from "@/lib/settings-store";
+
+const ADMIN_REALTIME_COLLECTIONS = [
+  "orders",
+  "products",
+  "categories",
+  "delivery_zones",
+  "users",
+  "currencies",
+  "roles",
+  "offers",
+];
 
 function AdminStoreInitializer() {
   const initialize = useAdminStore((s) => s.initialize);
-  useEffect(() => { initialize(); }, [initialize]);
+  useEffect(() => {
+    initialize();
+  }, [initialize]);
+  return null;
+}
+
+function AdminRealtimeSync() {
+  const token = useAuthStore((s) => s.token);
+  const refresh = useAdminStore((s) => s.refresh);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    if (!token) return;
+
+    const pb = new PocketBase(
+      process.env.NEXT_PUBLIC_POCKETBASE_URL ||
+        "https://everything-hay-mercatoma.pockethost.io"
+    );
+    pb.autoCancellation(false);
+    pb.authStore.save(token);
+
+    let cancelled = false;
+    const unsubscribers: Array<() => void | Promise<void>> = [];
+
+    const scheduleRefresh = () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+      timerRef.current = setTimeout(() => {
+        void refresh();
+      }, 400);
+    };
+
+    for (const collection of ADMIN_REALTIME_COLLECTIONS) {
+      pb.collection(collection)
+        .subscribe("*", () => {
+          if (!cancelled) scheduleRefresh();
+        })
+        .then((unsub) => {
+          if (cancelled) {
+            void unsub();
+          } else {
+            unsubscribers.push(unsub);
+          }
+        })
+        .catch(() => {
+          // Si la suscripción falla (permisos/conexión), el panel sigue
+          // funcionando con los datos actuales; un recarga manual los actualiza.
+        });
+    }
+
+    return () => {
+      cancelled = true;
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+        timerRef.current = null;
+      }
+      for (const unsub of unsubscribers) {
+        void unsub();
+      }
+      try {
+        pb.realtime.unsubscribe();
+      } catch {
+        // noop
+      }
+    };
+  }, [token, refresh]);
+
   return null;
 }
 
@@ -38,6 +116,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const pendingOrders = useAdminStore(
     (state) => state.orders.filter((order) => order.status === "pending").length
   );
+  const settings = useSettingsStore((s) => s.settings);
+  const initSettings = useSettingsStore((s) => s.init);
+
+  useEffect(() => {
+    initSettings();
+  }, [initSettings]);
 
   // La puerta espera a que el servidor confirme la sesión: el usuario cacheado
   // puede estar obsoleto (p. ej. a quien se le asignó un rol con permisos
@@ -115,6 +199,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   return (
     <div className="min-h-screen bg-muted/30">
       <AdminStoreInitializer />
+      <AdminRealtimeSync />
       {/* Mobile sidebar backdrop */}
       {sidebarOpen && (
         <div
@@ -131,9 +216,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         )}
       >
         <div className="flex h-14 shrink-0 items-center gap-2 border-b border-border px-4 sm:h-16 sm:px-6">
-          <Leaf className="h-6 w-6 text-primary" />
-          <span className="font-serif text-xl font-bold"><span className="text-primary">Merca</span><span className="text-destructive">Toma</span></span>
-          <span className="ml-1 text-xs text-muted-foreground">Admin</span>
+          <BrandMark
+            storeName={settings.storeName}
+            logo={settings.logo}
+            compact
+            className="min-w-0"
+          />
+          <span className="shrink-0 text-xs text-muted-foreground">Admin</span>
           <Button
             variant="ghost"
             size="icon"

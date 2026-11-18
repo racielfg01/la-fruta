@@ -62,6 +62,7 @@ export default function ProfilePage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [filteredOrders, setFilteredOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
+  const [ordersError, setOrdersError] = useState(false);
   const [updating, setUpdating] = useState(false);
   const [birthDraft, setBirthDraft] = useState("");
   const [birthSaving, setBirthSaving] = useState(false);
@@ -123,10 +124,17 @@ export default function ProfilePage() {
   const loadOrders = async () => {
     if (!token) return;
     setLoading(true);
+    setOrdersError(false);
     try {
-      const data = await getUserOrders(token);
+      const result = await getUserOrders(token);
+      if (!result.ok) {
+        setOrders([]);
+        setFilteredOrders([]);
+        setOrdersError(true);
+        return;
+      }
       // Normalizar números (PostgreSQL devuelve numeric como string)
-      const normalized: Order[] = data.map((order: any) => ({
+      const normalized: Order[] = result.orders.map((order: any) => ({
         ...order,
         subtotal: Number(order.subtotal) || 0,
         deliveryFee: Number(order.deliveryFee) || 0,
@@ -446,6 +454,16 @@ export default function ProfilePage() {
                       {[...Array(3)].map((_, i) => (
                         <div key={i} className="animate-pulse h-20 bg-muted rounded-lg" />
                       ))}
+                    </div>
+                  ) : ordersError ? (
+                    <div className="text-center py-12">
+                      <ShoppingBag className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
+                      <p className="text-muted-foreground">
+                        No se pudieron cargar tus pedidos. Comprueba tu conexión e inténtalo de nuevo.
+                      </p>
+                      <Button variant="link" className="mt-2" onClick={loadOrders}>
+                        Reintentar
+                      </Button>
                     </div>
                   ) : filteredOrders.length === 0 ? (
                     <div className="text-center py-12">

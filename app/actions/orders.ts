@@ -1,6 +1,6 @@
 "use server";
 
-import { verifySession } from "@/lib/verify-session";
+import { isUnavailableSession, verifySession } from "@/lib/verify-session";
 import { getAdminPB, getAllRecords, sanitize } from "@/lib/pocketbase";
 import { parseLocations, matchLocationIndex, StoredLocation } from "@/lib/order-stock";
 import { orderItemPrice } from "@/lib/price-margin";
@@ -518,12 +518,14 @@ export async function createOrderAction(
   }
 }
 
-export async function getUserOrders(token: string) {
-  const session = await verifySession(token);
+export type UserOrdersResult =
+  | { ok: true; orders: Awaited<ReturnType<typeof loadOrders>> }
+  | { ok: false; reason: "unavailable" };
 
+async function loadOrders(userId: string) {
   const pb = await getAdminPB();
   const orders = await getAllRecords(pb, 'orders', {
-    filter: `user_id = "${sanitize(session.userId)}"`,
+    filter: `user_id = "${sanitize(userId)}"`,
     sort: '-created_at',
   });
 
@@ -567,6 +569,21 @@ export async function getUserOrders(token: string) {
       };
     })
   );
+}
+
+export async function getUserOrders(token: string): Promise<UserOrdersResult> {
+  let session: Awaited<ReturnType<typeof verifySession>>;
+  try {
+    session = await verifySession(token);
+  } catch (error) {
+    if (isUnavailableSession(error)) {
+      // PocketBase no respondió: el token puede estar bien y la sesión sigue.
+      return { ok: false, reason: "unavailable" };
+    }
+    throw error;
+  }
+
+  return { ok: true, orders: await loadOrders(session.userId) };
 }
 
 export async function updateUserProfile(

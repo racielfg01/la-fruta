@@ -25,9 +25,18 @@ export function isInvalidSession(error: unknown): boolean {
   return (error as SessionError | undefined)?.code === "invalid_session";
 }
 
-function sessionError(code: SessionErrorCode, message: string): SessionError {
+export function isUnavailableSession(error: unknown): boolean {
+  return (error as SessionError | undefined)?.code === "unavailable";
+}
+
+function sessionError(
+  code: SessionErrorCode,
+  message: string,
+  cause?: unknown,
+): SessionError {
   const error = new Error(message) as SessionError;
   error.code = code;
+  if (cause !== undefined) error.cause = cause;
   return error;
 }
 
@@ -62,7 +71,7 @@ export async function verifySession(token: string): Promise<VerifiedSession> {
     }
     // Red caída o PocketBase sin responder: no dice nada del token, así que
     // no se cierra la sesión — solo falla esta operación.
-    throw sessionError("unavailable", "No se pudo validar la sesión");
+    throw sessionError("unavailable", "No se pudo validar la sesión", error);
   }
 
   return {

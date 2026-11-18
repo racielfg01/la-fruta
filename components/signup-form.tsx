@@ -191,7 +191,7 @@ export default function SignupForm() {
 
         {/* Contraseña */}
         <div>
-          <label className="block text-sm font-medium text-foreground">Contraseña</label>
+          <label className="block text-sm font-medium text-foreground">Crea tú contraseña</label>
           <div className="relative">
             <Input
               type={showPassword ? 'text' : 'password'}

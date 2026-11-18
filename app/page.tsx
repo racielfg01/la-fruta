@@ -43,7 +43,7 @@ export const metadata: Metadata = {
 }
 
 export default async function HomePage() {
-  const [{ products, categories }, banners, settings, offersResult] = await Promise.all([
+  const [{ products, categories, categoryIcons }, banners, settings, offersResult] = await Promise.all([
     getPublicProducts(),
     getPublicBanners(),
     getPublicSettings(),
@@ -104,6 +104,7 @@ export default async function HomePage() {
       <HomeExperience
         products={products as unknown as Product[]}
         categories={categories}
+        categoryIcons={categoryIcons}
         banners={banners}
         offers={offers}
       />
@@ -131,7 +132,7 @@ export default async function HomePage() {
                     className="inline-flex items-center gap-1.5 rounded-full border border-border bg-muted/40 px-3 py-1.5 text-sm text-foreground hover:bg-muted"
                   >
                     {(() => {
-                      const icon = categoryIcon(category);
+                      const icon = categoryIcon(category, categoryIcons);
                       return icon ? (
                         <img src={icon} alt="" aria-hidden="true" className="h-5 w-5 shrink-0 object-contain" />
                       ) : null;

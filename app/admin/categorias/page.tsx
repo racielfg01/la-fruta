@@ -38,11 +38,13 @@ import { Plus, Pencil, Trash2, Tags, Package, ImageIcon, Loader2 } from "lucide-
 import { ImageUpload } from "@/components/upload-button";
 
 import { Switch } from "@/components/ui/switch";
+import { CATEGORY_ICON_OPTIONS, categoryIcon } from "@/lib/category-icons";
 
 const emptyCategory: Omit<Category, "id"> = {
   name: "",
   description: "",
   image: "",
+  icon: "",
   active: true,
   habilitada: true,
 };
@@ -100,6 +102,7 @@ function CategoriesAdmin() {
       name: category.name,
       description: category.description,
       image: category.image,
+      icon: category.icon || "",
       active: category.active,
       habilitada: category.habilitada,
     });
@@ -388,6 +391,39 @@ function CategoriesAdmin() {
                 placeholder="Describe brevemente esta categoría..."
                 rows={3}
               />
+            </Field>
+
+            <Field>
+              <FieldLabel htmlFor="icon">Icono de la categoría</FieldLabel>
+              <div className="flex items-center gap-3">
+                <select
+                  id="icon"
+                  value={formData.icon || ""}
+                  onChange={(e) =>
+                    setFormData({ ...formData, icon: e.target.value })
+                  }
+                  className="h-11 flex-1 rounded-lg border border-input bg-background px-3 text-sm"
+                >
+                  <option value="">Sin icono</option>
+                  {CATEGORY_ICON_OPTIONS.map((option) => (
+                    <option key={option.key} value={option.key}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+                {formData.icon && (
+                  <img
+                    src={categoryIcon(formData.icon) || undefined}
+                    alt=""
+                    aria-hidden="true"
+                    className="h-9 w-9 shrink-0 object-contain"
+                  />
+                )}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Se muestra en los filtros de la tienda. Solo hay una lista
+                cerrada de iconos.
+              </p>
             </Field>
 
             <Field>

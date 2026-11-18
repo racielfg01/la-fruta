@@ -8,6 +8,7 @@ import { resolveRoleForSave } from '@/lib/user-roles';
 import { restoreOrderStock } from '@/lib/order-stock';
 import { orderDates } from '@/lib/order-dates';
 import { deliveryRatingFromRecord } from '@/lib/order-ratings';
+import { isValidCategoryIcon } from '@/lib/category-icons';
 import { notifyNewUser } from '@/lib/push/notify';
 import { after } from 'next/server';
 import type PocketBase from 'pocketbase';
@@ -286,6 +287,7 @@ export async function addCategoryAction(category: Category, token: string) {
     name: category.name,
     description: category.description,
     image: category.image,
+    ...(isValidCategoryIcon(category.icon) ? { icon: category.icon } : {}),
   });
   return { ...category, id: record.id };
 }
@@ -297,6 +299,10 @@ export async function editCategoryAction(id: string, data: Partial<Category>, to
   if (data.name !== undefined) updateData.name = data.name;
   if (data.description !== undefined) updateData.description = data.description;
   if (data.image !== undefined) updateData.image = data.image;
+  if (data.icon !== undefined) {
+    // Lista cerrada: un valor arbitrario nunca llega a la base de datos.
+    updateData.icon = isValidCategoryIcon(data.icon) ? data.icon : null;
+  }
   if (Object.keys(updateData).length === 0) return;
   await pb.collection('categories').update(id, updateData);
 }

@@ -102,6 +102,7 @@ interface StoreViewProps {
   /** Catálogo ya resuelto en el servidor: llega en el HTML de la portada. */
   initialProducts?: Product[];
   initialCategories?: string[];
+  initialCategoryIcons?: Record<string, string>;
   initialBanners?: Banner[];
   /** Ofertas vigentes resueltas en el servidor. */
   initialOffers?: PublicOffer[];
@@ -112,6 +113,7 @@ interface StoreViewProps {
 export function StoreView({
   initialProducts,
   initialCategories,
+  initialCategoryIcons,
   initialBanners,
   initialOffers,
   locationPromptEnabled = true,
@@ -122,6 +124,9 @@ export function StoreView({
   const [offers, setOffers] = useState<PublicOffer[]>(initialOffers ?? []);
   const [categories, setCategories] = useState<string[]>(
     initialCategories ?? []
+  );
+  const [categoryIcons, setCategoryIcons] = useState<Record<string, string>>(
+    initialCategoryIcons ?? {}
   );
   const [loading, setLoading] = useState(!hasServerProducts);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -172,7 +177,7 @@ export function StoreView({
       setLoading(true);
       setLoadError(null);
       try {
-        const [{ products: prods, categories: cats }, bannersData, offersRes] =
+        const [{ products: prods, categories: cats, categoryIcons: icons }, bannersData, offersRes] =
           await Promise.all([getPublicProducts(), getPublicBanners(), getPublicOffers()]);
         const prodsWithNumberPrice = prods.map((p) => ({
           ...p,
@@ -181,6 +186,7 @@ export function StoreView({
         setProducts(prodsWithNumberPrice);
         setBanners(bannersData);
         setCategories(cats);
+        setCategoryIcons(icons ?? {});
         if (offersRes.success) setOffers(offersRes.data);
         if (prods.length === 0) setLoadError("No hay productos disponibles");
       } catch (e) {
@@ -544,6 +550,7 @@ export function StoreView({
                       showOnlyInStock={showOnlyInStock}
                       setShowOnlyInStock={setShowOnlyInStock}
                       categoryCounts={categoryCounts}
+                      categoryIcons={categoryIcons}
                     />
                   </div>
 
@@ -586,9 +593,9 @@ export function StoreView({
                         onClick={() => toggleCategory(category)}
                         className="h-8 shrink-0 gap-1.5 rounded-full px-3 text-xs"
                       >
-                        {categoryIcon(category) && (
+                        {categoryIcon(category, categoryIcons) && (
                           <img
-                            src={categoryIcon(category)!}
+                            src={categoryIcon(category, categoryIcons)!}
                             alt=""
                             aria-hidden="true"
                             className="h-4 w-4 shrink-0 object-contain"
@@ -711,6 +718,7 @@ export function StoreView({
                       showOnlyInStock={showOnlyInStock}
                       setShowOnlyInStock={setShowOnlyInStock}
                       categoryCounts={categoryCounts}
+                      categoryIcons={categoryIcons}
                     />
                   </CardContent>
                 </Card>
@@ -964,8 +972,10 @@ function FilterContent({
   showOnlyInStock,
   setShowOnlyInStock,
   categoryCounts,
+  categoryIcons,
 }: {
   categories: string[];
+  categoryIcons?: Record<string, string>;
   selectedCategories: string[];
   toggleCategory: (category: string) => void;
   priceRange: [number, number];
@@ -999,9 +1009,9 @@ function FilterContent({
                   onCheckedChange={() => toggleCategory(category)}
                 />
                 <span className={`flex h-5 w-5 items-center justify-center rounded ${config.bgColor}`}>
-                  {categoryIcon(category) ? (
+                  {categoryIcon(category, categoryIcons) ? (
                     <img
-                      src={categoryIcon(category)!}
+                      src={categoryIcon(category, categoryIcons)!}
                       alt=""
                       aria-hidden="true"
                       className="h-4 w-4 object-contain"

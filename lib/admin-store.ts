@@ -42,6 +42,8 @@ export interface Category {
   name: string;
   description: string;
   image: string;
+  /** Clave del SVG permitido en `lib/category-icons.ts`. */
+  icon?: string;
   active: boolean;
   habilitada: boolean;
 }

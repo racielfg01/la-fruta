@@ -10,6 +10,7 @@ import type { PublicOffer } from "@/lib/offers";
 interface HomeExperienceProps {
   products: Product[];
   categories: string[];
+  categoryIcons?: Record<string, string>;
   banners: Banner[];
   offers: PublicOffer[];
 }
@@ -21,6 +22,7 @@ interface HomeExperienceProps {
 export function HomeExperience({
   products,
   categories,
+  categoryIcons,
   banners,
   offers,
 }: HomeExperienceProps) {
@@ -44,6 +46,7 @@ export function HomeExperience({
       <StoreView
         initialProducts={products}
         initialCategories={categories}
+        initialCategoryIcons={categoryIcons}
         initialBanners={banners}
         initialOffers={offers}
         locationPromptEnabled={onboardingComplete}

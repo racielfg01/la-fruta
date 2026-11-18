@@ -1,6 +1,7 @@
 'use server';
 
 import { getPB, getAllRecords } from '@/lib/pocketbase';
+import { isValidCategoryIcon } from '@/lib/category-icons';
 
 function parseJson<T>(raw: unknown, fallback: T): T {
   if (raw === null || raw === undefined || raw === '') return fallback;
@@ -96,12 +97,19 @@ export async function getPublicProducts() {
     const categories = await loadWithRetry(() =>
       getAllRecords(pb, 'categories', { sort: 'name' })
     );
+    const categoryIcons: Record<string, string> = {};
+    for (const category of categories) {
+      if (isValidCategoryIcon(category.icon)) {
+        categoryIcons[category.name] = category.icon;
+      }
+    }
     return {
       products: products.map(mapProduct),
       categories: categories.map((c: any) => c.name),
+      categoryIcons,
     };
   } catch (error) {
     console.error('Error fetching public products:', error);
-    return { products: [], categories: [] };
+    return { products: [], categories: [], categoryIcons: {} };
   }
 }

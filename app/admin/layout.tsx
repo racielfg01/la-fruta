@@ -44,9 +44,12 @@ function AdminRealtimeSync() {
   const token = useAuthStore((s) => s.token);
   const refresh = useAdminStore((s) => s.refresh);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
     if (!token) return;
+
+    const POLL_MS = 10_000;
 
     const pb = new PocketBase(
       process.env.NEXT_PUBLIC_POCKETBASE_URL ||
@@ -63,6 +66,40 @@ function AdminRealtimeSync() {
       timerRef.current = setTimeout(() => {
         void refresh();
       }, 400);
+    };
+
+    const stopPolling = () => {
+      if (pollRef.current) {
+        clearInterval(pollRef.current);
+        pollRef.current = null;
+      }
+    };
+
+    const startPolling = () => {
+      stopPolling();
+      if (typeof document !== "undefined" && document.visibilityState === "visible") {
+        pollRef.current = setInterval(() => {
+          void refresh();
+        }, POLL_MS);
+      }
+    };
+
+    const refreshAndResumePolling = () => {
+      if (cancelled) return;
+      void refresh();
+      startPolling();
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        refreshAndResumePolling();
+      } else {
+        stopPolling();
+      }
+    };
+
+    const handleOnline = () => {
+      refreshAndResumePolling();
     };
 
     for (const collection of ADMIN_REALTIME_COLLECTIONS) {
@@ -83,12 +120,21 @@ function AdminRealtimeSync() {
         });
     }
 
+    startPolling();
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("focus", handleVisibilityChange);
+
     return () => {
       cancelled = true;
+      stopPolling();
       if (timerRef.current) {
         clearTimeout(timerRef.current);
         timerRef.current = null;
       }
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("focus", handleVisibilityChange);
       for (const unsub of unsubscribers) {
         void unsub();
       }

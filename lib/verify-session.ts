@@ -59,11 +59,12 @@ export async function verifySession(token: string): Promise<VerifiedSession> {
   if (!payload) throw sessionError("invalid_session", "Sesión inválida o expirada");
 
   const pb = getTokenPB(token);
-  let record: any;
+  let record: { id: string; email?: string; name?: string; role_id?: string };
   try {
     record = await pb.collection("users").getOne(payload.userId, { expand: "role_id" });
-  } catch (error: any) {
-    const status = error?.status ?? error?.response?.status;
+  } catch (error: unknown) {
+    const err = error as { status?: number; response?: { status?: number } };
+    const status = err?.status ?? err?.response?.status;
     // PocketBase rechazó la petición: la firma no vale, el token caducó, el
     // usuario se borró o el id no es el del titular. No hay sesión.
     if (status === 400 || status === 401 || status === 403 || status === 404) {

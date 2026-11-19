@@ -61,7 +61,7 @@ describe("getUserOrders con sesión no verificable", () => {
       name: "Ana",
       roleId: "role-1",
     });
-    mockAdmin.mockResolvedValue({} as any);
+    mockAdmin.mockResolvedValue({} as Awaited<ReturnType<typeof getAdminPB>>);
     mockAll.mockResolvedValueOnce([]);
 
     await expect(getUserOrders("tok")).resolves.toEqual({

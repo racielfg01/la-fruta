@@ -73,14 +73,14 @@ import { useAdminStore } from "./admin-store";
 
 function emptyAdminData() {
   return {
-    products: [],
-    categories: [],
-    deliveryZones: [],
-    users: [],
-    orders: [],
-    currencies: [],
-    roles: [],
-    offers: [],
+    products: [] as unknown[],
+    categories: [] as unknown[],
+    deliveryZones: [] as unknown[],
+    users: [] as unknown[],
+    orders: [] as unknown[],
+    currencies: [] as unknown[],
+    roles: [] as unknown[],
+    offers: [] as unknown[],
   };
 }
 
@@ -141,11 +141,11 @@ describe("admin-store initialize/refresh", () => {
   });
 
   test("refresh no dispara otra carga si ya hay una en curso", async () => {
-    let resolveFetch!: (value: ReturnType<typeof emptyAdminData>) => void;
+    let resolveFetch!: (value: unknown) => void;
     mockGetAdminData.mockImplementation(
       () =>
         new Promise((resolve) => {
-          resolveFetch = resolve;
+          resolveFetch = resolve as (value: unknown) => void;
         })
     );
 

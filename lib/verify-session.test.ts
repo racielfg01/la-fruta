@@ -76,7 +76,8 @@ describe("verifySession", () => {
 
     await expect(verifySession("tok")).rejects.toThrow(/No se pudo validar/);
     await expect(verifySession("tok")).rejects.toSatisfy(
-      (error: any) => error?.code === "unavailable",
+      (error: unknown) =>
+        (error as { code?: string } | undefined)?.code === "unavailable",
     );
   });
 
@@ -88,7 +89,8 @@ describe("verifySession", () => {
     mockTokenPB.mockReturnValue({ collection: () => ({ getOne }) });
 
     await expect(verifySession("tok")).rejects.toSatisfy(
-      (error: any) => error?.code === "unavailable",
+      (error: unknown) =>
+        (error as { code?: string } | undefined)?.code === "unavailable",
     );
   });
 

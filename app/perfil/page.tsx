@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useAuthStore, AuthUser } from "@/lib/auth-context";
 import { useRouter } from "next/navigation";
 import {
@@ -60,7 +60,6 @@ export default function ProfilePage() {
   );
   const scheduleText = (settings.storeSchedule || "").trim();
   const [orders, setOrders] = useState<Order[]>([]);
-  const [filteredOrders, setFilteredOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [ordersError, setOrdersError] = useState(false);
   const [updating, setUpdating] = useState(false);
@@ -82,6 +81,37 @@ export default function ProfilePage() {
     gender: "",
   });
 
+  const loadOrders = useCallback(async () => {
+    if (!token) return;
+    setLoading(true);
+    setOrdersError(false);
+    try {
+      const result = await getUserOrders(token);
+      if (!result.ok) {
+        setOrders([]);
+        setOrdersError(true);
+        return;
+      }
+      // Normalizar números (PostgreSQL devuelve numeric como string)
+      const normalized: Order[] = result.orders.map((order) => ({
+        ...order,
+        subtotal: Number(order.subtotal) || 0,
+        deliveryFee: Number(order.deliveryFee) || 0,
+        total: Number(order.total) || 0,
+        items: order.items.map((item) => ({
+          ...item,
+          quantity: Number(item.quantity) || 0,
+          price: Number(item.price) || 0,
+        })),
+      })) as Order[];
+      setOrders(normalized);
+    } catch (error) {
+      console.error("Error loading orders:", error);
+    } finally {
+      setLoading(false);
+    }
+  }, [token]);
+
   // Redirigir si no autenticado
   useEffect(() => {
     initSettings();
@@ -92,67 +122,38 @@ export default function ProfilePage() {
       router.push("/auth/login");
       return;
     }
-    if (user) {
-      setFormData({
-        name: user.name || "",
-        email: user.email || "",
-        phone: user.phone || "",
-        address: user.address || "",
-        gender: user.gender || "",
-      });
-    }
-    loadOrders();
-  }, [isAuthenticated, user]);
+    // Carga inicial de pedidos al autenticar; el estado de carga vive en loadOrders.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    void loadOrders();
+  }, [isAuthenticated, loadOrders, router]);
 
-  // Filtrar órdenes según búsqueda
   useEffect(() => {
-    if (!orders.length) return;
-    const filtered = orders.filter((order) => {
-      const searchLower = searchTerm.toLowerCase();
+    if (!user) return;
+    // Sincroniza el formulario con los datos del usuario autenticado al cargar/cambiar.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setFormData({
+      name: user.name || "",
+      email: user.email || "",
+      phone: user.phone || "",
+      address: user.address || "",
+      gender: user.gender || "",
+    });
+  }, [user]);
+
+  const filteredOrders = useMemo(() => {
+    if (!orders.length) return [];
+    if (!searchTerm) return orders;
+    const searchLower = searchTerm.toLowerCase();
+    return orders.filter((order) => {
       return (
         order.id.toLowerCase().includes(searchLower) ||
-        order.items.some((item: any) =>
-          item.productName.toLowerCase().includes(searchLower)
+        order.items.some((item) =>
+          String(item.productName ?? "").toLowerCase().includes(searchLower)
         ) ||
         (order.deliveryAddress || "").toLowerCase().includes(searchLower)
       );
     });
-    setFilteredOrders(filtered);
-    setCurrentPage(1); // reset page when filter changes
-  }, [searchTerm, orders]);
-
-  const loadOrders = async () => {
-    if (!token) return;
-    setLoading(true);
-    setOrdersError(false);
-    try {
-      const result = await getUserOrders(token);
-      if (!result.ok) {
-        setOrders([]);
-        setFilteredOrders([]);
-        setOrdersError(true);
-        return;
-      }
-      // Normalizar números (PostgreSQL devuelve numeric como string)
-      const normalized: Order[] = result.orders.map((order: any) => ({
-        ...order,
-        subtotal: Number(order.subtotal) || 0,
-        deliveryFee: Number(order.deliveryFee) || 0,
-        total: Number(order.total) || 0,
-        items: order.items.map((item: any) => ({
-          ...item,
-          quantity: Number(item.quantity) || 0,
-          price: Number(item.price) || 0,
-        })),
-      }));
-      setOrders(normalized);
-      setFilteredOrders(normalized);
-    } catch (error) {
-      console.error("Error loading orders:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  }, [orders, searchTerm]);
 
   const handleSaveBirthDate = async () => {
     if (!token) return;
@@ -443,7 +444,10 @@ export default function ProfilePage() {
                   <Input
                     placeholder="Buscar por ID, producto o dirección..."
                     value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
+                    onChange={(e) => {
+                      setSearchTerm(e.target.value);
+                      setCurrentPage(1);
+                    }}
                     className="pl-9 h-9 w-full sm:w-64"
                   />
                 </div>

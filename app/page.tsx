@@ -50,6 +50,8 @@ export default async function HomePage() {
     getPublicOffers(),
   ])
   const offers = offersResult.success ? offersResult.data : []
+  const showHomeBanners = settings.showHomeBanners !== false
+  const visibleBanners = showHomeBanners ? banners : []
 
   const storeName = settings.storeName || SITE_NAME
   const phone = settings.whatsappPhone || WHATSAPP_PHONE
@@ -105,8 +107,9 @@ export default async function HomePage() {
         products={products as unknown as Product[]}
         categories={categories}
         categoryIcons={categoryIcons}
-        banners={banners}
+        banners={visibleBanners}
         offers={offers}
+        showHomeBanners={showHomeBanners}
       />
 
       {/* Texto y enlaces en el HTML del servidor: da a Google y a los agentes

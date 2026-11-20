@@ -108,6 +108,8 @@ interface StoreViewProps {
   initialOffers?: PublicOffer[];
   /** En la primera visita manda la bienvenida: no abrir el diálogo de zona debajo. */
   locationPromptEnabled?: boolean;
+  /** Permite ocultar los banners de la portada desde configuración. */
+  showHomeBanners?: boolean;
 }
 
 export function StoreView({
@@ -117,10 +119,12 @@ export function StoreView({
   initialBanners,
   initialOffers,
   locationPromptEnabled = true,
+  showHomeBanners = true,
 }: StoreViewProps = {}) {
   const hasServerProducts = (initialProducts?.length ?? 0) > 0;
   const [products, setProducts] = useState<Product[]>(initialProducts ?? []);
   const [banners, setBanners] = useState<Banner[]>(initialBanners ?? []);
+  const displayBanners = showHomeBanners === false ? [] : banners;
   const [offers, setOffers] = useState<PublicOffer[]>(initialOffers ?? []);
   const [categories, setCategories] = useState<string[]>(
     initialCategories ?? []
@@ -351,7 +355,7 @@ export function StoreView({
         <SupportWhatsAppButton />
 
         {/* El hero solo aparece sin banners: con banners, el carrusel ocupa su lugar. */}
-        {banners.length === 0 && (
+        {displayBanners.length === 0 && (
           <section className="border-b bg-gradient-to-b from-primary/5 via-primary/[0.02] to-background">
             <div className="container mx-auto px-4 py-8 sm:px-6 sm:py-10 lg:px-8 lg:py-12">
               <div className="flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
@@ -385,14 +389,14 @@ export function StoreView({
         )}
 
         {/* Sin hero visible, la página conserva su encabezado para lectores de pantalla y buscadores. */}
-        {banners.length > 0 && (
+        {displayBanners.length > 0 && (
           <h1 className="sr-only">
             Verduras y viandas a domicilio en Santiago de Cuba
           </h1>
         )}
 
         <BannerCarousel
-          banners={banners}
+          banners={displayBanners}
           validProductIds={products.map((p) => p.id)}
         />
 

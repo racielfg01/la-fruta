@@ -377,6 +377,7 @@ const EMPTY_SETTINGS = {
   whatsappPhone: '',
   freeShippingMin: 0,
   storeSchedule: 'Lunes a sábado, 8:00 AM - 6:00 PM',
+  showHomeBanners: true,
 };
 
 export async function getSettingsAction(token: string) {
@@ -408,6 +409,7 @@ export async function getSettingsAction(token: string) {
     whatsappPhone: s.whatsapp_phone || '',
     freeShippingMin: Number(s.free_shipping_min) || 0,
     storeSchedule: s.store_schedule || EMPTY_SETTINGS.storeSchedule,
+    showHomeBanners: s.show_home_banners !== false,
   };
 }
 
@@ -454,6 +456,9 @@ export async function updateSettingsAction(data: Partial<typeof EMPTY_SETTINGS>,
   }
   if (data.showPaymentTransfer !== undefined) {
     body.payment_transfer_enabled = data.showPaymentTransfer === true;
+  }
+  if (data.showHomeBanners !== undefined) {
+    body.show_home_banners = data.showHomeBanners === true;
   }
   if (recs[0]) {
     return pb.collection('settings').update(recs[0].id, body);

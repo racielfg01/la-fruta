@@ -13,6 +13,7 @@ interface HomeExperienceProps {
   categoryIcons?: Record<string, string>;
   banners: Banner[];
   offers: PublicOffer[];
+  showHomeBanners?: boolean;
 }
 
 /**
@@ -25,6 +26,7 @@ export function HomeExperience({
   categoryIcons,
   banners,
   offers,
+  showHomeBanners = true,
 }: HomeExperienceProps) {
   const [mounted, setMounted] = useState(false);
   const onboardingComplete = useCartStore((state) => state.onboardingComplete);
@@ -49,6 +51,7 @@ export function HomeExperience({
         initialCategoryIcons={categoryIcons}
         initialBanners={banners}
         initialOffers={offers}
+        showHomeBanners={showHomeBanners}
         locationPromptEnabled={onboardingComplete}
       />
       {showOnboarding && (

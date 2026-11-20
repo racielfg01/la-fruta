@@ -32,6 +32,8 @@ export interface StoreSettings {
   freeShippingMin?: number;
   /** Horario de atención visible en la tienda (texto libre). */
   storeSchedule?: string;
+  /** Muestra los banners/carrusel en la portada. */
+  showHomeBanners?: boolean;
 }
 
 const EMPTY: StoreSettings = {
@@ -46,6 +48,7 @@ const EMPTY: StoreSettings = {
   whatsappPhone: '',
   freeShippingMin: 0,
   storeSchedule: 'Lunes a sábado, 8:00 AM - 6:00 PM',
+  showHomeBanners: true,
 };
 
 interface SettingsState {
@@ -87,6 +90,7 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
       whatsappPhone: data.whatsappPhone || '',
       freeShippingMin: Number(data.freeShippingMin) || 0,
       storeSchedule: data.storeSchedule || 'Lunes a sábado, 8:00 AM - 6:00 PM',
+      showHomeBanners: data.showHomeBanners !== false,
     };
     set({ settings: s, loading: false, initialized: true });
     applyBrandCSS(s);

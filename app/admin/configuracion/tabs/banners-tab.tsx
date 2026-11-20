@@ -39,6 +39,8 @@ import {
   createBannerAction,
   updateBannerAction,
   deleteBannerAction,
+  getSettingsAction,
+  updateSettingsAction,
   type BannerRow,
   type BannerLinkType,
 } from "@/app/actions/admin-extras";
@@ -72,6 +74,8 @@ export default function BannersTab() {
   const [form, setForm] = useState<BannerForm>(empty);
   const [saving, setSaving] = useState(false);
   const [pendingId, setPendingId] = useState<string | null>(null);
+  const [showHomeBanners, setShowHomeBanners] = useState(true);
+  const [savingHomeVisibility, setSavingHomeVisibility] = useState(false);
 
   const load = useCallback(async () => {
     if (!token) return;
@@ -90,12 +94,39 @@ export default function BannersTab() {
   }, [token, load]);
 
   useEffect(() => {
+    if (!token) return;
+    getSettingsAction(token)
+      .then((settings) => setShowHomeBanners(settings.showHomeBanners !== false))
+      .catch(() => toast.error("No se pudo cargar la configuración de banners"));
+  }, [token]);
+
+  useEffect(() => {
     getPublicProducts()
       .then(({ products: prods }) =>
         setProducts(prods.map((p) => ({ id: p.id, name: p.name })))
       )
       .catch(() => setProducts([]));
   }, []);
+
+  const toggleHomeBanners = async (active: boolean) => {
+    if (!token || savingHomeVisibility) return;
+    setSavingHomeVisibility(true);
+    const previous = showHomeBanners;
+    setShowHomeBanners(active);
+    try {
+      await updateSettingsAction({ showHomeBanners: active }, token);
+      toast.success(
+        active
+          ? "Los banners se mostrarán en la portada"
+          : "Los banners se ocultaron en la portada"
+      );
+    } catch (error: any) {
+      setShowHomeBanners(previous);
+      toast.error(error?.message || "No se pudo guardar la configuración");
+    } finally {
+      setSavingHomeVisibility(false);
+    }
+  };
 
   const productName = (id: string) =>
     products.find((p) => p.id === id)?.name || "Producto no disponible";
@@ -191,6 +222,28 @@ export default function BannersTab() {
           hay ninguna, la portada queda igual.
         </p>
       </div>
+
+      <Card>
+        <CardContent className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="min-w-0">
+            <p className="font-medium">Mostrar banners en la portada</p>
+            <p className="text-sm text-muted-foreground">
+              Oculta o muestra el carrusel de inicio sin eliminar los banners configurados.
+            </p>
+          </div>
+          <div className="flex items-center gap-2 self-start sm:self-auto">
+            <span className="text-sm text-muted-foreground">
+              {showHomeBanners ? "Visible" : "Oculto"}
+            </span>
+            <Switch
+              checked={showHomeBanners}
+              onCheckedChange={toggleHomeBanners}
+              disabled={!token || savingHomeVisibility}
+              aria-label="Mostrar banners en la portada"
+            />
+          </div>
+        </CardContent>
+      </Card>
 
       <div className="flex justify-end">
         <Button onClick={openNew}>

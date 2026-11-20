@@ -39,6 +39,7 @@ const DEFAULTS: StoreSettings = {
   whatsappPhone: "",
   freeShippingMin: 0,
   storeSchedule: "Lunes a sábado\n8:00 AM - 6:00 PM",
+  showHomeBanners: true,
 };
 
 export default function ConfiguracionPage() {

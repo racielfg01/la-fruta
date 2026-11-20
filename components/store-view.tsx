@@ -69,6 +69,7 @@ import { getPublicBanners } from "@/app/actions/public";
 import { getPublicOffers } from "@/app/actions/public-offers";
 import { getPublicStories } from "@/app/actions/public-stories";
 import { BannerCarousel, type Banner } from "@/components/banner-carousel";
+import { HomeStories } from "@/components/home-stories";
 import { LocationSelector } from "@/components/location-selector";
 import { SiteFooter } from "@/components/site-footer";
 import { SupportWhatsAppButton } from "@/components/support-whatsapp-button";
@@ -361,51 +362,63 @@ export function StoreView({
         <Header />
         <SupportWhatsAppButton />
 
-        {/* El hero solo aparece sin banners: con banners, el carrusel ocupa su lugar. */}
-        {displayBanners.length === 0 && (
-          <section className="border-b bg-gradient-to-b from-primary/5 via-primary/[0.02] to-background">
-            <div className="container mx-auto px-4 py-8 sm:px-6 sm:py-10 lg:px-8 lg:py-12">
-              <div className="flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
-                <div className="max-w-2xl">
-                  <h1 className="font-[family-name:var(--font-playfair)] text-3xl font-bold tracking-tight text-foreground sm:text-4xl lg:text-5xl">
-                    Verduras y viandas a domicilio en Santiago de Cuba
-                  </h1>
-                  <p className="mt-2 text-sm text-muted-foreground sm:text-base lg:text-lg">
-                    Frutas, verduras y viandas frescas del campo, con entrega por
-                    zona y pago en efectivo.
-                  </p>
+        {/* Con historias activas, la tira reemplaza el hero/carrusel de banners. */}
+        {stories.length > 0 ? (
+          <>
+            <h1 className="sr-only">
+              Verduras y viandas a domicilio en Santiago de Cuba
+            </h1>
+            <HomeStories stories={stories} />
+          </>
+        ) : (
+          <>
+            {/* El hero solo aparece sin banners: con banners, el carrusel ocupa su lugar. */}
+            {displayBanners.length === 0 && (
+              <section className="border-b bg-gradient-to-b from-primary/5 via-primary/[0.02] to-background">
+                <div className="container mx-auto px-4 py-8 sm:px-6 sm:py-10 lg:px-8 lg:py-12">
+                  <div className="flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
+                    <div className="max-w-2xl">
+                      <h1 className="font-[family-name:var(--font-playfair)] text-3xl font-bold tracking-tight text-foreground sm:text-4xl lg:text-5xl">
+                        Verduras y viandas a domicilio en Santiago de Cuba
+                      </h1>
+                      <p className="mt-2 text-sm text-muted-foreground sm:text-base lg:text-lg">
+                        Frutas, verduras y viandas frescas del campo, con entrega por
+                        zona y pago en efectivo.
+                      </p>
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-muted-foreground">
+                      <span className="flex items-center gap-1.5">
+                        <Leaf className="h-4 w-4 text-emerald-600" />
+                        {products.length} productos
+                      </span>
+                      <span className="flex items-center gap-1.5">
+                        <Truck className="h-4 w-4 text-blue-600" />
+                        Entregas máx. en 48h
+                      </span>
+                      <span className="flex items-center gap-1.5">
+                        <Shield className="h-4 w-4 text-amber-600" />
+                        Garantía de frescura
+                      </span>
+                    </div>
+                  </div>
                 </div>
+              </section>
+            )}
 
-                <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-muted-foreground">
-                  <span className="flex items-center gap-1.5">
-                    <Leaf className="h-4 w-4 text-emerald-600" />
-                    {products.length} productos
-                  </span>
-                  <span className="flex items-center gap-1.5">
-                    <Truck className="h-4 w-4 text-blue-600" />
-                    Entregas máx. en 48h
-                  </span>
-                  <span className="flex items-center gap-1.5">
-                    <Shield className="h-4 w-4 text-amber-600" />
-                    Garantía de frescura
-                  </span>
-                </div>
-              </div>
-            </div>
-          </section>
+            {/* Sin hero visible, la página conserva su encabezado para lectores de pantalla y buscadores. */}
+            {displayBanners.length > 0 && (
+              <h1 className="sr-only">
+                Verduras y viandas a domicilio en Santiago de Cuba
+              </h1>
+            )}
+
+            <BannerCarousel
+              banners={displayBanners}
+              validProductIds={products.map((p) => p.id)}
+            />
+          </>
         )}
-
-        {/* Sin hero visible, la página conserva su encabezado para lectores de pantalla y buscadores. */}
-        {displayBanners.length > 0 && (
-          <h1 className="sr-only">
-            Verduras y viandas a domicilio en Santiago de Cuba
-          </h1>
-        )}
-
-        <BannerCarousel
-          banners={displayBanners}
-          validProductIds={products.map((p) => p.id)}
-        />
 
 
         {/* Toolbar sticky: 2 filas limpias */}

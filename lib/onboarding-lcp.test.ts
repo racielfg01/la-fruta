@@ -35,6 +35,7 @@ describe("bienvenida en el HTML inicial", () => {
         categories: [],
         banners: [],
         offers: [],
+        stories: [],
       })
     );
 

@@ -4,21 +4,35 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { X, ChevronLeft, ChevronRight } from "lucide-react";
-import type { PublicStory } from "@/lib/stories";
+import { toast } from "sonner";
+import type { PublicStory, StoryReaction } from "@/lib/stories";
 import { storyCtaHref } from "@/lib/stories";
 import { advanceStoryIndex, retreatStoryIndex } from "@/lib/story-viewer";
 import { optimizedImageUrl } from "@/lib/image";
-
+import { useAuthStore } from "@/lib/auth-context";
+import {
+  getMyStoryReactionsAction,
+  setStoryReactionAction,
+} from "@/app/actions/story-reactions";
 
 interface HomeStoriesProps {
   stories: PublicStory[];
 }
 
+const REACTION_OPTIONS: { value: StoryReaction; emoji: string; label: string }[] = [
+  { value: "like", emoji: "👍", label: "Me gusta" },
+  { value: "love", emoji: "❤️", label: "Me encanta" },
+  { value: "whatever", emoji: "😐", label: "Da igual" },
+  { value: "dislike", emoji: "👎", label: "No me gusta" },
+];
+
 export function HomeStories({ stories }: HomeStoriesProps) {
+  const token = useAuthStore((s) => s.token);
   const [open, setOpen] = useState(false);
   const [index, setIndex] = useState(0);
   const [paused, setPaused] = useState(false);
   const [progress, setProgress] = useState(0); // 0..1 for current segment
+  const [reactions, setReactions] = useState<Record<string, StoryReaction | null>>({});
   const rafRef = useRef<number | null>(null);
   const startRef = useRef<number>(0);
   const elapsedRef = useRef<number>(0);
@@ -87,6 +101,45 @@ export function HomeStories({ stories }: HomeStoriesProps) {
     setPaused(false);
     setOpen(true);
   }, []);
+
+  useEffect(() => {
+    if (!open || !token || activeStories.length === 0) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const map = await getMyStoryReactionsAction(
+          token,
+          activeStories.map((s) => s.id)
+        );
+        if (!cancelled) setReactions(map);
+      } catch {
+        // ignore: reactions are optional
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [open, token, activeStories]);
+
+  const handleReact = useCallback(
+    async (storyId: string, reaction: StoryReaction) => {
+      if (!token) {
+        toast.info("Inicia sesión para reaccionar");
+        return;
+      }
+      const prev = reactions[storyId] ?? null;
+      setReactions((r) => ({ ...r, [storyId]: reaction }));
+      try {
+        await setStoryReactionAction(token, storyId, reaction);
+      } catch (error) {
+        setReactions((r) => ({ ...r, [storyId]: prev }));
+        const message =
+          error instanceof Error ? error.message : "No se pudo guardar la reacción";
+        toast.error(message);
+      }
+    },
+    [token, reactions]
+  );
 
   useEffect(() => {
     if (!open || !current) return;
@@ -303,7 +356,7 @@ export function HomeStories({ stories }: HomeStoriesProps) {
               </button>
             </div>
 
-            {/* Bottom CTA / reactions area (reactions wired in Task 5) */}
+            {/* Bottom CTA / reactions area */}
             <div className="absolute inset-x-0 bottom-0 z-20 space-y-3 p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
               {ctaHref && ctaLabel && (
                 <div className="flex justify-center">
@@ -316,7 +369,32 @@ export function HomeStories({ stories }: HomeStoriesProps) {
                   </Link>
                 </div>
               )}
-              <div id="story-reactions-slot" data-story-id={current.id} />
+              <div className="flex items-center justify-center gap-2">
+                {REACTION_OPTIONS.map((opt) => {
+                  const selected = reactions[current.id] === opt.value;
+                  return (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        void handleReact(current.id, opt.value);
+                      }}
+                      onPointerDown={(e) => e.stopPropagation()}
+                      className={`flex h-10 w-10 items-center justify-center rounded-full text-lg transition ${
+                        selected
+                          ? "bg-white text-black scale-110"
+                          : "bg-black/40 text-white hover:bg-black/60"
+                      }`}
+                      aria-label={opt.label}
+                      aria-pressed={selected}
+                      title={opt.label}
+                    >
+                      <span aria-hidden="true">{opt.emoji}</span>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           </div>
         </div>

@@ -580,3 +580,143 @@ export async function deleteBannerAction(id: string, token: string) {
   await pb.collection('banners').delete(id);
   return true;
 }
+
+// ── Stories (historias de la portada) ──
+
+export type StoryLinkType = 'none' | 'product' | 'offer';
+
+export interface StoryRow {
+  id: string;
+  name: string;
+  image: string;
+  duration: number;
+  linkType: StoryLinkType;
+  productId: string;
+  offerId: string;
+  active: boolean;
+  sort: number;
+}
+
+export interface StoryInput {
+  name?: string;
+  image?: string;
+  duration?: number;
+  linkType?: StoryLinkType;
+  productId?: string;
+  offerId?: string;
+  active?: boolean;
+  sort?: number;
+}
+
+function mapStory(s: any): StoryRow {
+  const linkType: StoryLinkType =
+    s.link_type === 'product' || s.link_type === 'offer' ? s.link_type : 'none';
+  const durationNum = Math.trunc(Number(s.duration));
+  return {
+    id: s.id,
+    name: s.name || '',
+    image: s.image || '',
+    duration: Number.isFinite(durationNum) && durationNum >= 1 ? durationNum : 5,
+    linkType,
+    productId: s.product_id || '',
+    offerId: s.offer_id || '',
+    active: s.active !== false,
+    sort: Number(s.sort) || 0,
+  };
+}
+
+function storyLinkFields(data: StoryInput) {
+  const linkType: StoryLinkType = data.linkType || 'none';
+  if (linkType === 'product') {
+    const productId = (data.productId || '').trim();
+    if (!productId) throw new Error('Elige el producto al que lleva la historia');
+    return { link_type: 'product' as const, product_id: productId, offer_id: '' };
+  }
+  if (linkType === 'offer') {
+    const offerId = (data.offerId || '').trim();
+    if (!offerId) throw new Error('Elige la oferta a la que lleva la historia');
+    return { link_type: 'offer' as const, product_id: '', offer_id: offerId };
+  }
+  return { link_type: 'none' as const, product_id: '', offer_id: '' };
+}
+
+function validateStoryWriteInput(data: StoryInput) {
+  const name = (data.name || '').trim();
+  if (!name) throw new Error('El nombre de la historia es requerido');
+  const image = (data.image || '').trim();
+  if (!image) throw new Error('La imagen de la historia es requerida');
+  if (data.duration !== undefined) {
+    const n = Math.trunc(Number(data.duration));
+    if (!Number.isFinite(n) || n < 1) {
+      throw new Error('La duración debe ser de al menos 1 segundo');
+    }
+  }
+  storyLinkFields(data);
+}
+
+export async function getStoriesAction(token: string): Promise<StoryRow[]> {
+  await requirePermission(token, 'settings');
+  const pb = await getDataPB(token);
+  const rows = await getAllRecords(pb, 'stories', { sort: 'sort,created' });
+  return rows.map(mapStory);
+}
+
+export async function createStoryAction(data: StoryInput, token: string) {
+  await requirePermission(token, 'settings');
+  validateStoryWriteInput(data);
+  const pb = await getDataPB(token);
+  const duration = Math.max(1, Math.trunc(Number(data.duration)) || 5);
+  const rec = await pb.collection('stories').create({
+    name: (data.name || '').trim(),
+    image: (data.image || '').trim(),
+    duration,
+    active: data.active !== false,
+    sort: Number(data.sort) || 0,
+    ...storyLinkFields(data),
+  });
+  return mapStory(rec);
+}
+
+export async function updateStoryAction(id: string, data: StoryInput, token: string) {
+  if (!id) throw new Error('ID de historia requerido');
+  await requirePermission(token, 'settings');
+  const pb = await getDataPB(token);
+  const body: Record<string, unknown> = {};
+  if (data.name !== undefined) {
+    const name = data.name.trim();
+    if (!name) throw new Error('El nombre de la historia es requerido');
+    body.name = name;
+  }
+  if (data.image !== undefined) {
+    const image = data.image.trim();
+    if (!image) throw new Error('La imagen de la historia es requerida');
+    body.image = image;
+  }
+  if (data.duration !== undefined) {
+    const n = Math.trunc(Number(data.duration));
+    if (!Number.isFinite(n) || n < 1) {
+      throw new Error('La duración debe ser de al menos 1 segundo');
+    }
+    body.duration = n;
+  }
+  if (data.active !== undefined) body.active = data.active === true;
+  if (data.sort !== undefined) body.sort = Number(data.sort) || 0;
+  if (data.linkType !== undefined) {
+    Object.assign(body, storyLinkFields(data));
+  } else if (
+    data.productId !== undefined ||
+    data.offerId !== undefined
+  ) {
+    // If link ids change without linkType, caller should provide linkType; ignore partials.
+  }
+  const rec = await pb.collection('stories').update(id, body);
+  return mapStory(rec);
+}
+
+export async function deleteStoryAction(id: string, token: string) {
+  if (!id) throw new Error('ID de historia requerido');
+  await requirePermission(token, 'settings');
+  const pb = await getDataPB(token);
+  await pb.collection('stories').delete(id);
+  return true;
+}

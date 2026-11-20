@@ -28,6 +28,7 @@ export interface StoryInput {
 }
 
 export function normalizeStoryDuration(value: unknown): number {
+  if (value === undefined || value === null || value === "") return 5;
   const n = Math.trunc(Number(value));
   if (!Number.isFinite(n) || n < 1) return 5;
   return n;
@@ -75,4 +76,45 @@ export function storyCtaHref(story: Pick<AdminStory, "linkType" | "productId" | 
     return "/ofertas";
   }
   return null;
+}
+
+export function storyLinkFields(data: {
+  linkType?: StoryLinkType | string;
+  productId?: string;
+  offerId?: string;
+}) {
+  const linkType = normalizeLinkType(data.linkType);
+  if (linkType === "product") {
+    const productId = String(data.productId || "").trim();
+    if (!productId) throw new Error("Elige el producto al que lleva la historia");
+    return { link_type: "product" as const, product_id: productId, offer_id: "" };
+  }
+  if (linkType === "offer") {
+    const offerId = String(data.offerId || "").trim();
+    if (!offerId) throw new Error("Elige la oferta a la que lleva la historia");
+    return { link_type: "offer" as const, product_id: "", offer_id: offerId };
+  }
+  return { link_type: "none" as const, product_id: "", offer_id: "" };
+}
+
+export function validateStoryInput(data: {
+  name?: string;
+  image?: string;
+  duration?: unknown;
+  linkType?: StoryLinkType | string;
+  productId?: string;
+  offerId?: string;
+}) {
+  const name = String(data.name ?? "").trim();
+  if (!name) throw new Error("El nombre de la historia es requerido");
+  const image = String(data.image ?? "").trim();
+  if (!image) throw new Error("La imagen de la historia es requerida");
+  if (data.duration !== undefined && data.duration !== null && data.duration !== "") {
+    const n = Math.trunc(Number(data.duration));
+    if (!Number.isFinite(n) || n < 1) {
+      throw new Error("La duración debe ser de al menos 1 segundo");
+    }
+  }
+  storyLinkFields(data);
+  return true;
 }

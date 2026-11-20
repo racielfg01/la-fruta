@@ -936,9 +936,9 @@ function ProductsAdmin() {
                               alt={product.name}
                               className="h-11 w-11 rounded-md object-cover"
                             />
-                            <div className="min-w-0">
-                              <p className="font-medium">{product.name}</p>
-                              <p className="line-clamp-1 max-w-[220px] text-xs text-muted-foreground">
+                            <div className="min-w-0 max-w-[220px]">
+                              <p className="truncate font-medium">{product.name}</p>
+                              <p className="truncate text-xs text-muted-foreground">
                                 {product.description}
                               </p>
                             </div>
@@ -957,7 +957,7 @@ function ProductsAdmin() {
                             / {product.unit}
                           </span>
                         </TableCell>
-                        <TableCell className="text-sm text-muted-foreground">
+                        <TableCell className="max-w-[180px] truncate text-sm text-muted-foreground">
                           {product.origin || "—"}
                         </TableCell>
                         <TableCell>

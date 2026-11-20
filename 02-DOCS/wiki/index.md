@@ -10,6 +10,7 @@
 
 | Ficha | Qué cubre |
 | --- | --- |
+| [historias-portada.md](ftd/historias-portada.md) | Historias en portada: tira, visor, CTA y reacciones por usuario |
 | [sesion-pedidos-indisponible.md](ftd/sesion-pedidos-indisponible.md) | Error de sesión al cargar pedidos sin cerrar la sesión |
 | [navbar-movil-contraste.md](ftd/navbar-movil-contraste.md) | Fondo blanco y ítem activo verde en la barra móvil |
 | [seo-aeo-local.md](ftd/seo-aeo-local.md) | Visibilidad local en Google y agentes de IA |

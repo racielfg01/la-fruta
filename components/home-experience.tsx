@@ -6,6 +6,7 @@ import { Onboarding } from "@/components/onboarding";
 import { StoreView } from "@/components/store-view";
 import { Product, useCartStore } from "@/lib/store";
 import type { PublicOffer } from "@/lib/offers";
+import type { PublicStory } from "@/lib/stories";
 
 interface HomeExperienceProps {
   products: Product[];
@@ -13,6 +14,7 @@ interface HomeExperienceProps {
   categoryIcons?: Record<string, string>;
   banners: Banner[];
   offers: PublicOffer[];
+  stories: PublicStory[];
   showHomeBanners?: boolean;
 }
 
@@ -26,6 +28,7 @@ export function HomeExperience({
   categoryIcons,
   banners,
   offers,
+  stories,
   showHomeBanners = true,
 }: HomeExperienceProps) {
   const [mounted, setMounted] = useState(false);
@@ -51,6 +54,7 @@ export function HomeExperience({
         initialCategoryIcons={categoryIcons}
         initialBanners={banners}
         initialOffers={offers}
+        initialStories={stories}
         showHomeBanners={showHomeBanners}
         locationPromptEnabled={onboardingComplete}
       />

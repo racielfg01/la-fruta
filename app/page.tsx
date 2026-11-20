@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { getPublicBanners, getPublicSettings } from '@/app/actions/public'
 import { getPublicProducts } from '@/app/actions/public-products'
 import { getPublicOffers } from '@/app/actions/public-offers'
+import { getPublicStories } from '@/app/actions/public-stories'
 import { HomeExperience } from '@/components/home-experience'
 import type { Product } from '@/lib/store'
 import {
@@ -43,11 +44,12 @@ export const metadata: Metadata = {
 }
 
 export default async function HomePage() {
-  const [{ products, categories, categoryIcons }, banners, settings, offersResult] = await Promise.all([
+  const [{ products, categories, categoryIcons }, banners, settings, offersResult, stories] = await Promise.all([
     getPublicProducts(),
     getPublicBanners(),
     getPublicSettings(),
     getPublicOffers(),
+    getPublicStories(),
   ])
   const offers = offersResult.success ? offersResult.data : []
   const showHomeBanners = settings.showHomeBanners !== false
@@ -109,6 +111,7 @@ export default async function HomePage() {
         categoryIcons={categoryIcons}
         banners={visibleBanners}
         offers={offers}
+        stories={stories}
         showHomeBanners={showHomeBanners}
       />
 

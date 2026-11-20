@@ -41,6 +41,7 @@ import { effectiveCupPrice, displayProductCupPrice } from "@/lib/price-margin";
 import { useMarginConfig } from "@/lib/use-price-margin";
 import { WHATSAPP_DISPLAY } from "@/lib/seo";
 import type { PublicOffer } from "@/lib/offers";
+import type { PublicStory } from "@/lib/stories";
 import { categoryIcon } from "@/lib/category-icons";
 import { OffersSection } from "@/components/offers-section";
 import {
@@ -66,6 +67,7 @@ import Image from "next/image";
 import { getPublicProducts } from "@/app/actions/public-products";
 import { getPublicBanners } from "@/app/actions/public";
 import { getPublicOffers } from "@/app/actions/public-offers";
+import { getPublicStories } from "@/app/actions/public-stories";
 import { BannerCarousel, type Banner } from "@/components/banner-carousel";
 import { LocationSelector } from "@/components/location-selector";
 import { SiteFooter } from "@/components/site-footer";
@@ -106,6 +108,8 @@ interface StoreViewProps {
   initialBanners?: Banner[];
   /** Ofertas vigentes resueltas en el servidor. */
   initialOffers?: PublicOffer[];
+  /** Historias activas resueltas en el servidor. */
+  initialStories?: PublicStory[];
   /** En la primera visita manda la bienvenida: no abrir el diálogo de zona debajo. */
   locationPromptEnabled?: boolean;
   /** Permite ocultar los banners de la portada desde configuración. */
@@ -118,6 +122,7 @@ export function StoreView({
   initialCategoryIcons,
   initialBanners,
   initialOffers,
+  initialStories,
   locationPromptEnabled = true,
   showHomeBanners = true,
 }: StoreViewProps = {}) {
@@ -126,6 +131,7 @@ export function StoreView({
   const [banners, setBanners] = useState<Banner[]>(initialBanners ?? []);
   const displayBanners = showHomeBanners === false ? [] : banners;
   const [offers, setOffers] = useState<PublicOffer[]>(initialOffers ?? []);
+  const [stories, setStories] = useState<PublicStory[]>(initialStories ?? []);
   const [categories, setCategories] = useState<string[]>(
     initialCategories ?? []
   );
@@ -181,8 +187,8 @@ export function StoreView({
       setLoading(true);
       setLoadError(null);
       try {
-        const [{ products: prods, categories: cats, categoryIcons: icons }, bannersData, offersRes] =
-          await Promise.all([getPublicProducts(), getPublicBanners(), getPublicOffers()]);
+        const [{ products: prods, categories: cats, categoryIcons: icons }, bannersData, offersRes, storiesData] =
+          await Promise.all([getPublicProducts(), getPublicBanners(), getPublicOffers(), getPublicStories()]);
         const prodsWithNumberPrice = prods.map((p) => ({
           ...p,
           price: Number(p.price),
@@ -192,6 +198,7 @@ export function StoreView({
         setCategories(cats);
         setCategoryIcons(icons ?? {});
         if (offersRes.success) setOffers(offersRes.data);
+        setStories(storiesData);
         if (prods.length === 0) setLoadError("No hay productos disponibles");
       } catch (e) {
         setLoadError("Error al cargar productos");

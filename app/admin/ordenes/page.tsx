@@ -294,11 +294,11 @@ export default function OrdersPage() {
                         </TooltipContent>
                       </Tooltip>
                     </div>
-                    <p className="text-xl sm:text-2xl lg:text-3xl font-bold leading-tight tracking-tight">
+                    <p className="break-words text-xl font-bold leading-tight tracking-tight sm:text-2xl lg:text-3xl">
                       {displayValue}
                     </p>
                     {usdValue && (
-                      <p className="text-xs text-muted-foreground mt-0.5">
+                      <p className="mt-0.5 break-words text-xs text-muted-foreground">
                         {usdValue}
                       </p>
                     )}
@@ -371,35 +371,38 @@ export default function OrdersPage() {
           {paginatedOrders.map((order) => (
             <Card key={order.id} className="overflow-hidden">
               <CardContent className="p-4 space-y-3">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <p className="font-mono text-xs text-muted-foreground">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate font-mono text-xs text-muted-foreground">
                       {order.id}
                     </p>
-                    <p className="font-semibold">{order.userName}</p>
-                    <p className="text-sm text-muted-foreground">
+                    <p className="truncate font-semibold">{order.userName}</p>
+                    <p className="truncate text-sm text-muted-foreground">
                       {order.userEmail}
                     </p>
                   </div>
                   <Button
                     variant="ghost"
                     size="icon"
+                    className="shrink-0"
                     onClick={() => handleViewDetails(order)}
                   >
                     <Eye className="h-4 w-4" />
                   </Button>
                 </div>
-                  <div className="flex justify-between items-center">
-                    <div className="flex gap-2">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div className="flex flex-wrap gap-2">
                       <OrderStatusBadge status={order.status} />
                       <PaymentStatusBadge status={order.paymentStatus} />
                     </div>
-                    <p className="font-bold text-lg">{orderMoney(order.total, order.currencyCode)}</p>
-                    {showCupBase(order.currencyCode) && (
-                      <p className="text-xs text-muted-foreground">
-                        {formatPrice(order.total, cupCurrency)}
-                      </p>
-                    )}
+                    <div className="text-right">
+                      <p className="font-bold text-lg leading-tight">{orderMoney(order.total, order.currencyCode)}</p>
+                      {showCupBase(order.currencyCode) && (
+                        <p className="text-xs text-muted-foreground">
+                          {formatPrice(order.total, cupCurrency)}
+                        </p>
+                      )}
+                    </div>
                   </div>
                 <div className="text-xs text-muted-foreground flex justify-between">
                   <span>{order.items.length} producto(s)</span>
@@ -417,7 +420,7 @@ export default function OrdersPage() {
 
         {/* Tabla para desktop */}
         <div className="hidden md:block">
-          <Card>
+          <Card className="overflow-hidden">
             <CardHeader>
               <CardTitle>Lista de Órdenes ({filteredOrders.length})</CardTitle>
             </CardHeader>

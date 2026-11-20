@@ -203,18 +203,18 @@ export default function AdminDashboard() {
       {/* Revenue & Summary Cards */}
       <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3">
         {can("orders") && (
-        <Card>
-          <CardContent className="flex items-center gap-3 p-4 sm:gap-4 sm:p-6">
-            <div className="rounded-full bg-green-500/10 p-2 sm:p-3">
+        <Card className="overflow-hidden">
+          <CardContent className="flex items-start gap-3 p-4 sm:items-center sm:gap-4 sm:p-6">
+            <div className="shrink-0 rounded-full bg-green-500/10 p-2 sm:p-3">
               <DollarSign className="h-5 w-5 text-green-500 sm:h-6 sm:w-6" />
             </div>
-            <div>
-              <p className="text-sm text-muted-foreground">Ingresos Totales</p>
-              <p className="text-2xl font-bold">
+            <div className="min-w-0 flex-1">
+              <p className="text-xs text-muted-foreground sm:text-sm">Ingresos Totales</p>
+              <p className="break-words text-xl font-bold leading-tight sm:text-2xl">
                 {defaultCurrency?.symbol || "$"}
                 {totalRevenue.toFixed(2)}
               </p>
-              <p className="text-xs text-muted-foreground">
+              <p className="mt-0.5 break-words text-xs text-muted-foreground">
                 De {completedOrders} órdenes completadas
               </p>
             </div>
@@ -222,18 +222,18 @@ export default function AdminDashboard() {
         </Card>
         )}
         {can("shipping") && (
-        <Card>
-          <CardContent className="flex items-center gap-3 p-4 sm:gap-4 sm:p-6">
-            <div className="rounded-full bg-primary/10 p-2 sm:p-3">
+        <Card className="overflow-hidden">
+          <CardContent className="flex items-start gap-3 p-4 sm:items-center sm:gap-4 sm:p-6">
+            <div className="shrink-0 rounded-full bg-primary/10 p-2 sm:p-3">
               <Truck className="h-5 w-5 text-primary sm:h-6 sm:w-6" />
             </div>
-            <div>
-              <p className="text-sm text-muted-foreground">Envío Promedio</p>
-              <p className="text-2xl font-bold">
+            <div className="min-w-0 flex-1">
+              <p className="text-xs text-muted-foreground sm:text-sm">Envío Promedio</p>
+              <p className="break-words text-xl font-bold leading-tight sm:text-2xl">
                 {defaultCurrency?.symbol || "$"}
                 {avgDeliveryPrice.toFixed(2)}
               </p>
-              <p className="text-xs text-muted-foreground">
+              <p className="mt-0.5 break-words text-xs text-muted-foreground">
                 {deliveryZones.length} zonas configuradas
               </p>
             </div>
@@ -241,21 +241,21 @@ export default function AdminDashboard() {
         </Card>
         )}
         {can("settings") && (
-        <Link href="/admin/configuracion?tab=monedas">
-          <Card className="hover:shadow-md transition-shadow cursor-pointer h-full">
-            <CardContent className="flex items-center gap-3 p-4 sm:gap-4 sm:p-6">
-              <div className="rounded-full bg-blue-500/10 p-2 sm:p-3">
+        <Link href="/admin/configuracion?tab=monedas" className="min-w-0">
+          <Card className="h-full cursor-pointer overflow-hidden transition-shadow hover:shadow-md">
+            <CardContent className="flex items-start gap-3 p-4 sm:items-center sm:gap-4 sm:p-6">
+              <div className="shrink-0 rounded-full bg-blue-500/10 p-2 sm:p-3">
                 <Coins className="h-5 w-5 text-blue-500 sm:h-6 sm:w-6" />
               </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Monedas</p>
-                <p className="text-2xl font-bold">
+              <div className="min-w-0 flex-1">
+                <p className="text-xs text-muted-foreground sm:text-sm">Monedas</p>
+                <p className="break-words text-xl font-bold leading-tight sm:text-2xl">
                   {activeCurrencies}
-                  <span className="text-sm text-muted-foreground font-normal">
+                  <span className="text-sm font-normal text-muted-foreground">
                     {" "}/ {totalCurrencies} activas
                   </span>
                 </p>
-                <p className="text-xs text-muted-foreground">
+                <p className="mt-0.5 break-words text-xs text-muted-foreground">
                   {defaultCurrency
                     ? `${defaultCurrency.code} (${defaultCurrency.symbol}) predeterminada`
                     : "Sin moneda predeterminada"}
@@ -281,15 +281,15 @@ export default function AdminDashboard() {
               {otherActiveCurrencies.slice(0, 4).map((currency) => (
                 <div
                   key={currency.id}
-                  className="flex items-center justify-between p-3 rounded-lg bg-muted/50"
+                  className="flex items-center justify-between gap-2 overflow-hidden rounded-lg bg-muted/50 p-3"
                 >
-                  <div>
-                    <p className="font-medium">{currency.code}</p>
-                    <p className="text-xs text-muted-foreground">
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate font-medium">{currency.code}</p>
+                    <p className="truncate text-xs text-muted-foreground">
                       {currency.name}
                     </p>
                   </div>
-                  <div className="text-right">
+                  <div className="shrink-0 text-right">
                     <p className="text-sm font-semibold">
                       {currency.symbol}
                       {currency.exchangeRate?.toFixed(4) || "1.0000"}
@@ -375,42 +375,42 @@ export default function AdminDashboard() {
           </CardHeader>
           <CardContent className="grid grid-cols-2 gap-2 p-4 sm:gap-3 sm:p-6">
             {can("products") && (
-              <Button asChild className="justify-start w-full">
+              <Button asChild className="h-auto w-full justify-start whitespace-normal py-2 text-left">
                 <Link href="/admin/productos?action=new">
-                  <Package className="mr-2 h-4 w-4" />
-                  Agregar Nuevo Producto
+                  <Package className="mr-2 h-4 w-4 shrink-0" />
+                  <span className="min-w-0 break-words">Agregar Nuevo Producto</span>
                 </Link>
               </Button>
             )}
             {can("users") && (
-              <Button variant="outline" asChild className="justify-start w-full">
+              <Button variant="outline" asChild className="h-auto w-full justify-start whitespace-normal py-2 text-left">
                 <Link href="/admin/usuarios">
-                  <Users className="mr-2 h-4 w-4" />
-                  Gestionar Usuarios
+                  <Users className="mr-2 h-4 w-4 shrink-0" />
+                  <span className="min-w-0 break-words">Gestionar Usuarios</span>
                 </Link>
               </Button>
             )}
             {can("orders") && (
-              <Button variant="outline" asChild className="justify-start w-full">
+              <Button variant="outline" asChild className="h-auto w-full justify-start whitespace-normal py-2 text-left">
                 <Link href="/admin/ordenes">
-                  <ShoppingBag className="mr-2 h-4 w-4" />
-                  Ver Órdenes
+                  <ShoppingBag className="mr-2 h-4 w-4 shrink-0" />
+                  <span className="min-w-0 break-words">Ver Órdenes</span>
                 </Link>
               </Button>
             )}
             {can("settings") && (
-              <Button variant="outline" asChild className="justify-start w-full">
+              <Button variant="outline" asChild className="h-auto w-full justify-start whitespace-normal py-2 text-left">
                 <Link href="/admin/configuracion?tab=monedas">
-                  <Coins className="mr-2 h-4 w-4" />
-                  Configurar Monedas
+                  <Coins className="mr-2 h-4 w-4 shrink-0" />
+                  <span className="min-w-0 break-words">Configurar Monedas</span>
                 </Link>
               </Button>
             )}
             {can("users") && (
-              <Button variant="outline" asChild className="justify-start w-full">
+              <Button variant="outline" asChild className="h-auto w-full justify-start whitespace-normal py-2 text-left">
                 <Link href="/admin/referidos">
-                  <Gift className="mr-2 h-4 w-4" />
-                  Sistema de Referidos
+                  <Gift className="mr-2 h-4 w-4 shrink-0" />
+                  <span className="min-w-0 break-words">Sistema de Referidos</span>
                 </Link>
               </Button>
             )}

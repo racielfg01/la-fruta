@@ -226,7 +226,7 @@ function CategoriesAdmin() {
       </div>
 
       {/* Desktop: Categories Table */}
-      <Card className="hidden md:block">
+      <Card className="hidden overflow-hidden md:block">
         <CardHeader>
           <CardTitle>Lista de Categorías ({categories.length})</CardTitle>
         </CardHeader>

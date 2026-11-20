@@ -382,8 +382,8 @@ export default function OffersAdminPage() {
                 </div>
                 <CardContent className="space-y-2 p-4">
                   <div className="flex items-start justify-between gap-2">
-                    <h3 className="text-sm font-semibold">{offer.name}</h3>
-                    <Badge variant={offer.type === "combo" ? "default" : "secondary"}>
+                    <h3 className="min-w-0 flex-1 truncate text-sm font-semibold">{offer.name}</h3>
+                    <Badge className="shrink-0" variant={offer.type === "combo" ? "default" : "secondary"}>
                       {offer.type === "combo" ? "Combo" : "Rebaja"}
                     </Badge>
                   </div>
@@ -452,7 +452,7 @@ export default function OffersAdminPage() {
       </div>
 
       {/* Desktop: tabla */}
-      <Card className="hidden md:block">
+      <Card className="hidden overflow-hidden md:block">
         <CardHeader>
           <CardTitle>Lista de Ofertas ({offers.length})</CardTitle>
         </CardHeader>
@@ -492,10 +492,12 @@ export default function OffersAdminPage() {
                         </div>
                       </TableCell>
                       <TableCell>
-                        <span className="font-medium">{offer.name}</span>
-                        <p className="line-clamp-1 text-xs text-muted-foreground">
-                          {offer.description || "Sin descripción"}
-                        </p>
+                        <div className="min-w-0 max-w-[220px]">
+                          <p className="truncate font-medium">{offer.name}</p>
+                          <p className="truncate text-xs text-muted-foreground">
+                            {offer.description || "Sin descripción"}
+                          </p>
+                        </div>
                       </TableCell>
                       <TableCell>
                         <Badge variant={offer.type === "combo" ? "default" : "secondary"}>
@@ -504,9 +506,9 @@ export default function OffersAdminPage() {
                       </TableCell>
                       <TableCell>
                         {offer.type === "product" ? (
-                          <span className="flex items-center gap-1 text-sm">
-                            <Package className="h-4 w-4 text-muted-foreground" />
-                            {productName(offer.product_id)}
+                          <span className="flex max-w-[180px] items-center gap-1 text-sm">
+                            <Package className="h-4 w-4 shrink-0 text-muted-foreground" />
+                            <span className="truncate">{productName(offer.product_id)}</span>
                           </span>
                         ) : (
                           <span className="text-muted-foreground">—</span>

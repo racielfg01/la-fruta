@@ -403,7 +403,7 @@ export default function CurrenciesPage() {
       </div>
 
       {/* Desktop: Currencies Table */}
-      <Card className="hidden md:block">
+      <Card className="hidden overflow-hidden md:block">
         <CardHeader>
           <CardTitle>Lista de Monedas ({filteredCurrencies.length})</CardTitle>
         </CardHeader>

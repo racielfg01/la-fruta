@@ -408,9 +408,9 @@ export default function DeliveryAdmin() {
       <CardContent className="p-3 sm:p-4">
         <div className="flex items-start justify-between gap-2 sm:gap-3">
           <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-2">
-              <MapPin className="h-4 w-4 text-primary shrink-0" />
-              <span className="font-medium text-sm sm:text-base">{zone.name}</span>
+            <div className="flex min-w-0 items-center gap-2">
+              <MapPin className="h-4 w-4 shrink-0 text-primary" />
+              <span className="min-w-0 break-words font-medium text-sm sm:text-base">{zone.name}</span>
             </div>
             <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 mt-1.5">
               <p className="text-xs text-muted-foreground">

@@ -273,48 +273,48 @@ export default function UsersPage() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <Card>
-          <CardContent className="flex items-center gap-4 p-4">
-            <div className="rounded-full bg-primary/10 p-3">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+        <Card className="overflow-hidden">
+          <CardContent className="flex items-center gap-3 p-3 sm:gap-4 sm:p-4">
+            <div className="shrink-0 rounded-full bg-primary/10 p-2 sm:p-3">
               <Users className="h-5 w-5 text-primary" />
             </div>
-            <div>
-              <p className="text-sm text-muted-foreground">Usuarios</p>
-              <p className="text-2xl font-bold">{stats.total}</p>
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-xs text-muted-foreground sm:text-sm">Usuarios</p>
+              <p className="text-xl font-bold sm:text-2xl">{stats.total}</p>
             </div>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="flex items-center gap-4 p-4">
-            <div className="rounded-full bg-green-500/10 p-3">
+        <Card className="overflow-hidden">
+          <CardContent className="flex items-center gap-3 p-3 sm:gap-4 sm:p-4">
+            <div className="shrink-0 rounded-full bg-green-500/10 p-2 sm:p-3">
               <UserCheck className="h-5 w-5 text-green-500" />
             </div>
-            <div>
-              <p className="text-sm text-muted-foreground">Activos</p>
-              <p className="text-2xl font-bold">{stats.active}</p>
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-xs text-muted-foreground sm:text-sm">Activos</p>
+              <p className="text-xl font-bold sm:text-2xl">{stats.active}</p>
             </div>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="flex items-center gap-4 p-4">
-            <div className="rounded-full bg-purple-500/10 p-3">
+        <Card className="overflow-hidden">
+          <CardContent className="flex items-center gap-3 p-3 sm:gap-4 sm:p-4">
+            <div className="shrink-0 rounded-full bg-purple-500/10 p-2 sm:p-3">
               <Shield className="h-5 w-5 text-purple-500" />
             </div>
-            <div>
-              <p className="text-sm text-muted-foreground">Administradores</p>
-              <p className="text-2xl font-bold">{stats.admins}</p>
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-xs text-muted-foreground sm:text-sm">Administradores</p>
+              <p className="text-xl font-bold sm:text-2xl">{stats.admins}</p>
             </div>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="flex items-center gap-4 p-4">
-            <div className="rounded-full bg-red-500/10 p-3">
+        <Card className="overflow-hidden">
+          <CardContent className="flex items-center gap-3 p-3 sm:gap-4 sm:p-4">
+            <div className="shrink-0 rounded-full bg-red-500/10 p-2 sm:p-3">
               <UserX className="h-5 w-5 text-red-500" />
             </div>
-            <div>
-              <p className="text-sm text-muted-foreground">Suspendidos</p>
-              <p className="text-2xl font-bold">{stats.suspended}</p>
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-xs text-muted-foreground sm:text-sm">Suspendidos</p>
+              <p className="text-xl font-bold sm:text-2xl">{stats.suspended}</p>
             </div>
           </CardContent>
         </Card>
@@ -408,7 +408,7 @@ export default function UsersPage() {
       </div>
 
       {/* Desktop: Users Table */}
-      <Card className="hidden md:block">
+      <Card className="hidden overflow-hidden md:block">
         <CardHeader>
           <CardTitle>Lista de Usuarios ({filteredUsers.length})</CardTitle>
         </CardHeader>

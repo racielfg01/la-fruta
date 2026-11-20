@@ -3,6 +3,18 @@ import { MAX_OFFER_IMPORT_ROWS, OFFER_HEADERS, type OfferRowInput } from "./offe
 
 const SHEET_NAME = "Ofertas";
 
+export interface OfferTemplateRow {
+  name: string;
+  description: string;
+  type: "combo" | "product";
+  /** Nombre del producto para rebajas; vacío para combos. */
+  product: string;
+  price: number;
+  /** Fecha de vencimiento en formato datetime-local (YYYY-MM-DDTHH:mm) o vacío. */
+  endDate: string;
+  active: boolean;
+}
+
 function pad(n: number): string {
   return String(n).padStart(2, "0");
 }
@@ -19,8 +31,8 @@ function serialDate(value: number): string | null {
   return `${date.getUTCFullYear()}-${pad(date.getUTCMonth() + 1)}-${pad(date.getUTCDate())}T${pad(date.getUTCHours())}:${pad(date.getUTCMinutes())}`;
 }
 
-/** Genera la plantilla vacía: el usuario rellena las filas con sus ofertas. */
-export async function buildOfferWorkbook(): Promise<Buffer> {
+/** Genera la plantilla de ofertas; si se pasan filas, las incluye (exportación actual). */
+export async function buildOfferWorkbook(rows: OfferTemplateRow[] = []): Promise<Buffer> {
   const workbook = new ExcelJS.Workbook();
   workbook.creator = "MercaToma";
   const sheet = workbook.addWorksheet(SHEET_NAME);
@@ -42,6 +54,18 @@ export async function buildOfferWorkbook(): Promise<Buffer> {
     fgColor: { argb: "FFE8EEF7" },
   };
   sheet.views = [{ state: "frozen", ySplit: 1 }];
+
+  for (const row of rows) {
+    sheet.addRow({
+      name: row.name ?? "",
+      description: row.description ?? "",
+      type: row.type === "product" ? "Rebaja" : "Combo",
+      product: row.type === "product" ? (row.product ?? "") : "",
+      price: Number.isFinite(row.price) ? row.price : "",
+      endDate: row.endDate ?? "",
+      active: row.active ? "Sí" : "No",
+    });
+  }
 
   return Buffer.from((await workbook.xlsx.writeBuffer()) as ArrayBuffer);
 }

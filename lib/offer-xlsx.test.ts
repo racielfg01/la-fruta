@@ -18,6 +18,50 @@ describe("buildOfferWorkbook", () => {
     expect(headers).toEqual([...OFFER_HEADERS]);
     expect(sheet.rowCount).toBe(1);
   });
+
+  test("incluye las ofertas actuales cuando se pasan filas", async () => {
+    const buffer = await buildOfferWorkbook([
+      {
+        name: "Combo familiar",
+        description: "Verduras y viandas",
+        type: "combo",
+        product: "",
+        price: 1500,
+        endDate: "2027-01-01T12:00",
+        active: true,
+      },
+      {
+        name: "Rebaja tomate",
+        description: "Tomate de oferta",
+        type: "product",
+        product: "Tomate",
+        price: 80,
+        endDate: "2027-02-01T09:30",
+        active: false,
+      },
+    ]);
+
+    const workbook = new ExcelJS.Workbook();
+    await workbook.xlsx.load(buffer as unknown as ArrayBuffer);
+    const sheet = workbook.worksheets[0];
+
+    expect(sheet.rowCount).toBe(3);
+
+    const row2 = sheet.getRow(2);
+    expect(row2.getCell(1).value).toBe("Combo familiar");
+    expect(row2.getCell(2).value).toBe("Verduras y viandas");
+    expect(row2.getCell(3).value).toBe("Combo");
+    expect(row2.getCell(4).value).toBe("");
+    expect(row2.getCell(5).value).toBe(1500);
+    expect(row2.getCell(6).value).toBe("2027-01-01T12:00");
+    expect(row2.getCell(7).value).toBe("Sí");
+
+    const row3 = sheet.getRow(3);
+    expect(row3.getCell(1).value).toBe("Rebaja tomate");
+    expect(row3.getCell(3).value).toBe("Rebaja");
+    expect(row3.getCell(4).value).toBe("Tomate");
+    expect(row3.getCell(7).value).toBe("No");
+  });
 });
 
 describe("readOfferWorkbook", () => {

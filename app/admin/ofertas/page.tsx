@@ -239,7 +239,17 @@ export default function OffersAdminPage() {
     setDownloadingOffers(true);
     try {
       const { buildOfferWorkbook } = await import("@/lib/offer-xlsx");
-      const buffer = await buildOfferWorkbook();
+      const buffer = await buildOfferWorkbook(
+        offers.map((o) => ({
+          name: o.name,
+          description: o.description,
+          type: o.type,
+          product: o.type === "product" ? productName(o.product_id) : "",
+          price: o.price,
+          endDate: toDateTimeLocalValue(o.end_date),
+          active: o.active,
+        }))
+      );
       const blob = new Blob([buffer], {
         type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
       });

@@ -218,6 +218,81 @@ async function setup() {
     T.text("store_schedule"),
   ]);
 
+  // 13. stories (portada). Lectura pública; escritura solo admin (server actions).
+  await createCollection(
+    pb,
+    "stories",
+    [
+      T.text("name", true),
+      T.text("image", true),
+      T.number("duration"),
+      {
+        name: "link_type",
+        type: "select",
+        required: false,
+        maxSelect: 1,
+        values: ["none", "product", "offer"],
+      },
+      T.text("product_id"),
+      T.text("offer_id"),
+      T.bool("active"),
+      T.number("sort"),
+      T.autodate("created"),
+      T.autodate("updated", true),
+    ],
+    { listRule: "", viewRule: "" }
+  );
+
+  // 13b. story_reactions (reacción por usuario). Cada usuario solo ve/gestiona las suyas.
+  let usersCollId = "";
+  let storiesCollId = "";
+  try { usersCollId = (await pb.collections.getOne("users")).id; } catch {}
+  try { storiesCollId = (await pb.collections.getOne("stories")).id; } catch {}
+  await createCollection(
+    pb,
+    "story_reactions",
+    [
+      storiesCollId
+        ? {
+            name: "story",
+            type: "relation",
+            required: true,
+            collectionId: storiesCollId,
+            cascadeDelete: true,
+            minSelect: 1,
+            maxSelect: 1,
+          }
+        : T.text("story", true),
+      usersCollId
+        ? {
+            name: "user",
+            type: "relation",
+            required: true,
+            collectionId: usersCollId,
+            cascadeDelete: true,
+            minSelect: 1,
+            maxSelect: 1,
+          }
+        : T.text("user", true),
+      {
+        name: "reaction",
+        type: "select",
+        required: true,
+        maxSelect: 1,
+        values: ["like", "love", "whatever", "dislike"],
+      },
+      T.autodate("created"),
+      T.autodate("updated", true),
+    ],
+    {
+      listRule: '@request.auth.id != "" && user = @request.auth.id',
+      viewRule: '@request.auth.id != "" && user = @request.auth.id',
+      createRule: '@request.auth.id != "" && @request.body.user = @request.auth.id',
+      updateRule: '@request.auth.id != "" && user = @request.auth.id',
+      deleteRule: '@request.auth.id != "" && user = @request.auth.id',
+    }
+  );
+
   // ── Seed (solo si la colección está vacía) ──
   const PROVINCES = [
     "Pinar del Río", "Artemisa", "La Habana", "Mayabeque", "Matanzas",

@@ -293,6 +293,64 @@ async function setup() {
     }
   );
 
+  // 14. suppliers: contactos de proveedores. Sin reglas = solo administradores.
+  await createCollection(pb, "suppliers", [
+    T.text("name", true),
+    T.text("phone", true),
+    T.autodate("created"),
+    T.autodate("updated", true),
+  ]);
+
+  // 15. purchases: compras al proveedor. La relación es obligatoria; T.relation
+  // deja required=false y minSelect=0, por eso se escribe explícitamente.
+  const suppliersCollId = (await pb.collections.getOne("suppliers").catch(() => null))?.id ?? "";
+  await createCollection(pb, "purchases", [
+    {
+      name: "supplier",
+      type: "relation",
+      required: true,
+      collectionId: suppliersCollId,
+      cascadeDelete: false,
+      minSelect: 1,
+      maxSelect: 1,
+    },
+    T.text("notes"),
+    T.text("created_by"),
+    { name: "purchased_at", type: "date", required: false },
+    { name: "stock_applied_at", type: "date", required: false },
+    T.autodate("created"),
+    T.autodate("updated", true),
+  ]);
+
+  // 16. purchase_items: líneas de compra, apuntan a purchases y products.
+  const purchasesCollId = (await pb.collections.getOne("purchases").catch(() => null))?.id ?? "";
+  const productsCollId = (await pb.collections.getOne("products").catch(() => null))?.id ?? "";
+  await createCollection(pb, "purchase_items", [
+    {
+      name: "purchase",
+      type: "relation",
+      required: true,
+      collectionId: purchasesCollId,
+      cascadeDelete: false,
+      minSelect: 1,
+      maxSelect: 1,
+    },
+    {
+      name: "product",
+      type: "relation",
+      required: true,
+      collectionId: productsCollId,
+      cascadeDelete: false,
+      minSelect: 1,
+      maxSelect: 1,
+    },
+    T.text("product_name"),
+    T.number("quantity", true),
+    T.number("unit_price", true),
+    T.autodate("created"),
+    T.autodate("updated", true),
+  ]);
+
   // ── Seed (solo si la colección está vacía) ──
   const PROVINCES = [
     "Pinar del Río", "Artemisa", "La Habana", "Mayabeque", "Matanzas",

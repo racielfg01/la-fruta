@@ -47,7 +47,7 @@ Objetivo: crear `/admin/proveedores` con alta de proveedores (nombre y teléfono
 - **Colecciones nuevas:** `suppliers`, `purchases`, `purchase_items`, con reglas de acceso solo admin (lectura/escritura mediante server actions, siguiendo el patrón de otras colecciones administradas del repo).
 - **Snapshot del producto:** guardar también el nombre del producto en cada línea de compra. Es para que el histórico siga siendo legible si el producto se renombra o se elimina del catálogo.
 - **Edición/borrado:** alta y edición de proveedores. Borrar proveedor solo si no tiene compras. Las compras se pueden crear y consultar; borrar una compra solo si no tiene stock aplicado. Sin edición de líneas ya registradas en esta versión.
-- **Idempotencia de stock:** el botón “Agregar stock” ejecuta una sola vez por compra. Se guarda `stock_applied_at` y el botón desaparece o se deshabilita después. Usar `pb.batch()` (disponible en el SDK instalado) para aplicar todas las líneas y la marca en una sola operación; si no está disponible, guardar una marca por línea para poder reintentar sin duplicar.
+- **Idempotencia de stock:** el botón “Agregar stock” ejecuta una sola vez por compra. Se guarda `stock_applied_at` y el botón desaparece o se deshabilita después. Usar `pb.createBatch()` (disponible en el SDK instalado) para aplicar todas las líneas y la marca en una sola operación; si no está disponible, guardar una marca por línea para poder reintentar sin duplicar.
 - **Aplicación de stock:** actualizar solo `products.stock` (y `in_stock: true` cuando corresponda), sin tocar `product_locations`. Si un producto ya no existe al aplicar, omitir esa línea, avisar al admin en el resultado y dejar la compra como aplicada, igual que hace `restoreOrderStock()`.
 - **Moneda y formato:** usar el formateo de dinero ya existente en la app; `unit_price` se guarda como número.
 - **Totales:** el total de la compra se calcula (suma de cantidad × precio unitario), no se pide por separado.
@@ -117,7 +117,7 @@ Acciones de solo lectura para la ficha: Detalle derivado (precios + histórico) 
 
 - Validar que toda línea apunte a un producto existente del catálogo antes de guardar.
 - Validar cantidad > 0 y precio >= 0; sanitizar notas (texto plano, sin HTML).
-- Creación de compra + líneas: preferir `pb.batch()` para guardar todo junto; si falla o no está disponible, limpiar lo creado y reportar el error.
+- Creación de compra + líneas: preferir `pb.createBatch()` para guardar todo junto; si falla o no está disponible, limpiar lo creado y reportar el error.
 - Aplicar stock: recalcular dentro de la acción y marcar `stock_applied_at` al final; si una actualización de producto falla, no marcar como aplicada y permitir reintento sin duplicar.
 
 ### 5.6 Pruebas

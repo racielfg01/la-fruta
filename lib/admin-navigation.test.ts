@@ -10,6 +10,10 @@ describe("etiqueta de sección del panel de administración", () => {
     expect(adminSectionLabel("/admin/productos/abc123")).toBe("Productos");
   });
 
+  it("muestra Proveedores en la ruta de proveedores", () => {
+    expect(adminSectionLabel("/admin/proveedores")).toBe("Proveedores");
+  });
+
   it("cae al título general en una ruta sin sección", () => {
     expect(adminSectionLabel("/admin/desconocido")).toBe(
       "Panel de Administración"

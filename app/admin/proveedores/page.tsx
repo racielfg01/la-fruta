@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { AlertTriangle, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -9,6 +9,7 @@ import {
   type SupplierDetail,
   type SuppliersOverview,
 } from "@/app/actions/suppliers";
+import { SupplierDetailPanel } from "@/components/admin/suppliers/supplier-detail";
 import { SupplierSidebar } from "@/components/admin/suppliers/supplier-sidebar";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useAuthStore } from "@/lib/auth-context";
@@ -19,16 +20,18 @@ export default function ProveedoresPage() {
   const [loading, setLoading] = useState(true);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [detail, setDetail] = useState<SupplierDetail | null>(null);
+  const detailRequestRef = useRef<string | null>(null);
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (): Promise<SuppliersOverview | null> => {
     if (!token) {
       setLoading(false);
-      return;
+      return null;
     }
     setLoading(true);
     try {
       const result = await getSuppliersOverviewAction(token);
       setOverview(result);
+      return result;
     } catch (error) {
       console.error("Error loading suppliers overview:", error);
       toast.error(
@@ -36,6 +39,7 @@ export default function ProveedoresPage() {
           ? error.message
           : "No se pudo cargar la información de proveedores"
       );
+      return null;
     } finally {
       setLoading(false);
     }
@@ -46,10 +50,11 @@ export default function ProveedoresPage() {
   }, [load]);
 
   const loadDetail = async (id: string) => {
+    detailRequestRef.current = id;
     if (!token || overview?.setupNeeded) return;
     try {
       const result = await getSupplierDetailAction(token, id);
-      setDetail(result);
+      if (detailRequestRef.current === id) setDetail(result);
     } catch (error) {
       console.error("Error loading supplier detail:", error);
       toast.error(
@@ -57,29 +62,41 @@ export default function ProveedoresPage() {
           ? error.message
           : "No se pudo cargar el detalle del proveedor"
       );
-      setDetail(null);
+      if (detailRequestRef.current === id) setDetail(null);
     }
   };
 
   const handleSelect = (id: string) => {
+    if (overview?.setupNeeded) return;
     setSelectedId(id);
     setDetail(null);
+    void loadDetail(id);
   };
 
-  const handleCreated = () => {
+  const handleCreated = async () => {
     if (overview?.setupNeeded) return;
-    void load();
+    const result = await load();
+    if (
+      result &&
+      selectedId &&
+      !result.suppliers.some((supplier) => supplier.id === selectedId)
+    ) {
+      detailRequestRef.current = null;
+      setSelectedId(null);
+      setDetail(null);
+    }
   };
 
   const handleError = (message: string) => {
     toast.error(message);
   };
 
-  // `detail` y `loadDetail` quedan listos para el panel de detalle (Task 6).
-  void detail;
-  void loadDetail;
+  const handleChanged = () => {
+    void load();
+    if (selectedId && !overview?.setupNeeded) void loadDetail(selectedId);
+  };
 
-  if (loading) {
+  if (loading && !overview) {
     return (
       <div className="flex justify-center py-16">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -88,6 +105,8 @@ export default function ProveedoresPage() {
   }
 
   const setupNeeded = overview?.setupNeeded ?? false;
+  const selectedSupplier =
+    overview?.suppliers.find((supplier) => supplier.id === selectedId) ?? null;
 
   return (
     <div className="space-y-6">
@@ -120,9 +139,19 @@ export default function ProveedoresPage() {
           setupNeeded={setupNeeded}
         />
 
-        <div className="flex min-h-[240px] items-center justify-center rounded-lg border bg-card p-6 text-sm text-muted-foreground">
-          Selecciona un proveedor
-        </div>
+        {!setupNeeded && selectedSupplier ? (
+          <SupplierDetailPanel
+            supplier={selectedSupplier}
+            detail={detail}
+            products={overview?.products ?? []}
+            token={token}
+            onChanged={handleChanged}
+          />
+        ) : (
+          <div className="flex min-h-[240px] items-center justify-center rounded-lg border bg-card p-6 text-sm text-muted-foreground">
+            Selecciona un proveedor
+          </div>
+        )}
       </div>
     </div>
   );

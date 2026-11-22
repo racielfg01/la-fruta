@@ -13,6 +13,15 @@ export interface PurchaseInput {
   supplier: string; purchasedAt: string; notes: string; items: PurchaseLineInput[]
 }
 
+const supplierMoneyFormatter = new Intl.NumberFormat("es-ES", {
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+});
+
+export function formatSupplierMoney(value: number): string {
+  return supplierMoneyFormatter.format(value);
+}
+
 function text(value: unknown): string {
   return value === undefined || value === null ? "" : String(value);
 }
@@ -66,6 +75,12 @@ export function validatePurchaseInput(input: PurchaseInput): PurchaseInput {
     throw new Error("La compra debe tener al menos un item");
   }
   for (const line of input.items) {
+    if (!text(line.product).trim()) {
+      throw new Error("El producto de la línea es requerido");
+    }
+    if (text(line.unitPrice).trim() === "") {
+      throw new Error("El precio unitario es requerido");
+    }
     if (!(numeric(line.quantity) > 0)) {
       throw new Error("La cantidad debe ser mayor a 0");
     }
@@ -85,14 +100,14 @@ export function purchaseTotal(lines: PurchaseLineInput[]): number {
 
 export function latestPrices(purchases: Purchase[], products: ProductOption[]): SupplierPrice[] {
   const catalog = new Map(products.map((product) => [product.id, product]));
-  const seen = new Set<string>();
-  const prices: SupplierPrice[] = [];
+  const prices = new Map<string, SupplierPrice>();
   for (const purchase of purchases) {
     for (const item of purchase.items) {
-      if (seen.has(item.product)) continue;
-      seen.add(item.product);
+      const current = prices.get(item.product);
+      // Fecha PB "YYYY-MM-DD HH:mm:ss" compara como texto; empatado gana la línea posterior.
+      if (current && current.purchasedAt > purchase.purchasedAt) continue;
       const product = catalog.get(item.product);
-      prices.push({
+      prices.set(item.product, {
         product: item.product,
         productName: product?.name ?? item.productName,
         unit: product?.unit ?? "",
@@ -101,7 +116,7 @@ export function latestPrices(purchases: Purchase[], products: ProductOption[]): 
       });
     }
   }
-  return prices;
+  return Array.from(prices.values());
 }
 
 export function canApplyStock(purchase: Purchase): boolean {

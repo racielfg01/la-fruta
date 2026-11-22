@@ -47,6 +47,14 @@ export interface ApplyStockResult {
   missing: string[];
 }
 
+const REQUIRED_SUPPLIER_COLLECTIONS = [
+  'suppliers',
+  'products',
+  'purchases',
+  'purchase_items',
+  'stock_applications',
+];
+
 async function getDataPB(token: string): Promise<PocketBase> {
   try {
     return await getAdminPB();
@@ -72,6 +80,15 @@ export async function getSuppliersOverviewAction(
   await requirePermission(token, 'products');
   const pb = await getDataPB(token);
   try {
+    // El detalle también lee purchases, purchase_items y stock_applications:
+    // si falta una sola, degradar aquí evita dejar la UI cargando para siempre.
+    for (const name of REQUIRED_SUPPLIER_COLLECTIONS) {
+      try {
+        await pb.collection(name).getList(1, 1, { fields: 'id' });
+      } catch {
+        return { setupNeeded: true, suppliers: [], products: [] };
+      }
+    }
     const suppliers = await getAllRecords(pb, 'suppliers', { sort: 'name' });
     const products = await getAllRecords(pb, 'products', { sort: 'name' });
     return {
@@ -193,7 +210,9 @@ export async function createPurchaseAction(
     }
     await batch.send();
   } catch (error) {
-    await pb.collection('purchases').delete(purchase.id).catch(() => {});
+    await pb.collection('purchases').delete(purchase.id).catch((cleanupError) => {
+      console.error('No se pudo borrar la compra huérfana tras fallar el batch:', cleanupError);
+    });
     throw error;
   }
   return { id: purchase.id };
@@ -219,6 +238,20 @@ export async function deletePurchaseAction(
   await batch.send();
 }
 
+function isStockClaimConflict(error: unknown): boolean {
+  if (!error || typeof error !== 'object') return false;
+  const err = error as { message?: unknown; response?: { data?: unknown } };
+  const detail = JSON.stringify({
+    message: err.message,
+    data: err.response?.data,
+  }).toLowerCase();
+  return (
+    detail.includes('not_unique') ||
+    detail.includes('must be unique') ||
+    detail.includes('unique constraint')
+  );
+}
+
 export async function applyPurchaseStockAction(
   token: string,
   purchaseId: string
@@ -233,7 +266,6 @@ export async function applyPurchaseStockAction(
   }
 
   const products = await getAllRecords(pb, 'products');
-  const catalog = new Map(products.map((product) => [String(product.id), product]));
   const { updates: deltas, missing } = stockDeltas(
     purchase,
     products.map((product) => String(product.id))
@@ -245,18 +277,27 @@ export async function applyPurchaseStockAction(
   }
   const updates = Array.from(totals, ([product, quantity]) => ({ product, quantity }));
 
+  // La creación del reclamo tiene un índice único por compra: si dos admins
+  // aplican la misma compra a la vez, el segundo falla y el batch se revierte.
   const batch = pb.createBatch();
+  batch.collection('stock_applications').create({ purchase: purchaseId });
   for (const update of updates) {
-    const product = catalog.get(update.product);
     batch.collection('products').update(update.product, {
-      stock: (Number(product?.stock) || 0) + update.quantity,
+      'stock+': update.quantity,
       in_stock: true,
     });
   }
   batch.collection('purchases').update(purchaseId, {
     stock_applied_at: toPocketBaseDate(new Date()),
   });
-  await batch.send();
+  try {
+    await batch.send();
+  } catch (error) {
+    if (isStockClaimConflict(error)) {
+      throw new Error('El stock de esta compra ya fue aplicado');
+    }
+    throw error;
+  }
 
   return { applied: updates.length, missing };
 }

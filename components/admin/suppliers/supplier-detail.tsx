@@ -33,6 +33,7 @@ import {
 import {
   canApplyStock,
   canDeletePurchase,
+  formatSupplierMoney,
   purchaseTotal,
   type ProductOption,
   type Purchase,
@@ -46,11 +47,6 @@ interface SupplierDetailPanelProps {
   token: string | null;
   onChanged: () => void;
 }
-
-const priceFormatter = new Intl.NumberFormat("es-ES", {
-  minimumFractionDigits: 2,
-  maximumFractionDigits: 2,
-});
 
 function formatDate(value: string): string {
   if (!value) return "—";
@@ -205,7 +201,7 @@ export function SupplierDetailPanel({
                         {price.productName}
                       </TableCell>
                       <TableCell className="text-right">
-                        {priceFormatter.format(price.unitPrice)}
+                        {formatSupplierMoney(price.unitPrice)}
                       </TableCell>
                       <TableCell className="text-muted-foreground">
                         {price.unit || "—"}
@@ -259,9 +255,7 @@ export function SupplierDetailPanel({
                       <TableCell>{formatDate(purchase.purchasedAt)}</TableCell>
                       <TableCell>{purchase.items.length}</TableCell>
                       <TableCell className="text-right font-medium">
-                        {priceFormatter.format(
-                          purchaseTotal(purchase.items)
-                        )}
+                        {formatSupplierMoney(purchaseTotal(purchase.items))}
                       </TableCell>
                       <TableCell className="max-w-[220px] truncate text-muted-foreground">
                         {purchase.notes || "—"}

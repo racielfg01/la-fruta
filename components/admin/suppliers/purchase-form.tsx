@@ -34,6 +34,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { useAuthStore } from "@/lib/auth-context";
 import {
+  formatSupplierMoney,
   purchaseTotal,
   validatePurchaseInput,
   type ProductOption,
@@ -54,11 +55,6 @@ interface LineForm {
   quantity: string;
   unitPrice: string;
 }
-
-const currency = new Intl.NumberFormat("es-ES", {
-  minimumFractionDigits: 2,
-  maximumFractionDigits: 2,
-});
 
 function today(): string {
   const now = new Date();
@@ -283,7 +279,7 @@ export function PurchaseForm({
                     Total
                   </TableCell>
                   <TableCell className="text-right font-semibold">
-                    {currency.format(total)}
+                    {formatSupplierMoney(total)}
                   </TableCell>
                 </TableRow>
               </TableFooter>

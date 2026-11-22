@@ -39,6 +39,16 @@ async function createCollection(pb, name, fields, rules = {}) {
   console.log(`[collection] created "${name}"`);
 }
 
+async function requiredCollectionId(pb, name) {
+  const collection = await pb.collections.getOne(name).catch(() => null);
+  if (!collection?.id) {
+    throw new Error(
+      `No se pudo leer el id de la colección "${name}" requerida por una relación obligatoria`
+    );
+  }
+  return collection.id;
+}
+
 async function addFields(pb, collName, newFields) {
   const c = await pb.collections.getOne(collName);
   const names = new Set(c.fields.map((f) => f.name));
@@ -303,7 +313,7 @@ async function setup() {
 
   // 15. purchases: compras al proveedor. La relación es obligatoria; T.relation
   // deja required=false y minSelect=0, por eso se escribe explícitamente.
-  const suppliersCollId = (await pb.collections.getOne("suppliers").catch(() => null))?.id ?? "";
+  const suppliersCollId = await requiredCollectionId(pb, "suppliers");
   await createCollection(pb, "purchases", [
     {
       name: "supplier",
@@ -323,8 +333,8 @@ async function setup() {
   ]);
 
   // 16. purchase_items: líneas de compra, apuntan a purchases y products.
-  const purchasesCollId = (await pb.collections.getOne("purchases").catch(() => null))?.id ?? "";
-  const productsCollId = (await pb.collections.getOne("products").catch(() => null))?.id ?? "";
+  const purchasesCollId = await requiredCollectionId(pb, "purchases");
+  const productsCollId = await requiredCollectionId(pb, "products");
   await createCollection(pb, "purchase_items", [
     {
       name: "purchase",
@@ -350,6 +360,32 @@ async function setup() {
     T.autodate("created"),
     T.autodate("updated", true),
   ]);
+
+  // 17. stock_applications: reclamo único por compra. El índice unique hace
+  // atómica la idempotencia del botón "Agregar stock" dentro del batch.
+  // Sin reglas = solo administradores, igual que las colecciones anteriores.
+  await createCollection(
+    pb,
+    "stock_applications",
+    [
+      {
+        name: "purchase",
+        type: "relation",
+        required: true,
+        collectionId: purchasesCollId,
+        cascadeDelete: false,
+        minSelect: 1,
+        maxSelect: 1,
+      },
+      T.autodate("created"),
+      T.autodate("updated", true),
+    ],
+    {
+      indexes: [
+        "CREATE UNIQUE INDEX `idx_stock_applications_purchase` ON `stock_applications` (`purchase`)",
+      ],
+    }
+  );
 
   // ── Seed (solo si la colección está vacía) ──
   const PROVINCES = [

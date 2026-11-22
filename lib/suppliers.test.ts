@@ -3,6 +3,7 @@ import {
   canApplyStock,
   canDeletePurchase,
   canDeleteSupplier,
+  formatSupplierMoney,
   isSuppliersSetupError,
   latestPrices,
   purchaseTotal,
@@ -115,6 +116,32 @@ describe("suppliers validation", () => {
     ).toThrow(/precio/i);
     expect(validatePurchaseInput(input)).toEqual(input);
   });
+
+  test("validatePurchaseInput rejects empty product and missing unit price", () => {
+    const input = {
+      supplier: "s1",
+      purchasedAt: "2026-11-20",
+      notes: "",
+      items: [{ product: "p1", quantity: 1, unitPrice: 10 }],
+    };
+    expect(() =>
+      validatePurchaseInput({ ...input, items: [{ product: "  ", quantity: 1, unitPrice: 10 }] })
+    ).toThrow(/producto/i);
+    for (const unitPrice of [null, undefined, ""]) {
+      expect(() =>
+        validatePurchaseInput({
+          ...input,
+          items: [{ product: "p1", quantity: 1, unitPrice: unitPrice as unknown as number }],
+        })
+      ).toThrow(/precio/i);
+    }
+    expect(
+      validatePurchaseInput({
+        ...input,
+        items: [{ product: "p1", quantity: 1, unitPrice: 0 }],
+      })
+    ).toEqual({ ...input, items: [{ product: "p1", quantity: 1, unitPrice: 0 }] });
+  });
 });
 
 describe("purchase totals and prices", () => {
@@ -149,6 +176,36 @@ describe("purchase totals and prices", () => {
         purchasedAt: "2026-11-20",
       },
     ]);
+  });
+
+  test("latestPrices is deterministic: newest date wins, later line wins on ties", () => {
+    const catalog = [{ id: "p1", name: "Tomate", unit: "por kg" }];
+    const first = makePurchase({
+      purchasedAt: "2026-11-20",
+      items: [
+        { id: "i1", product: "p1", productName: "Tomate", quantity: 1, unitPrice: 1200 },
+        { id: "i2", product: "p1", productName: "Tomate", quantity: 1, unitPrice: 1300 },
+      ],
+    });
+    const newer = makePurchase({
+      id: "buy2",
+      purchasedAt: "2026-11-21",
+      items: [{ id: "i3", product: "p1", productName: "Tomate", quantity: 1, unitPrice: 1500 }],
+    });
+    expect(latestPrices([first, newer], catalog)[0].unitPrice).toBe(1500);
+    expect(latestPrices([newer, first], catalog)[0].unitPrice).toBe(1500);
+    expect(latestPrices([first], catalog)[0].unitPrice).toBe(1300);
+  });
+});
+
+describe("money formatting", () => {
+  test("formatSupplierMoney uses es-ES with two decimals", () => {
+    const expected = new Intl.NumberFormat("es-ES", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
+    expect(formatSupplierMoney(1234.5)).toBe(expected.format(1234.5));
+    expect(formatSupplierMoney(0)).toContain("0,00");
   });
 });
 

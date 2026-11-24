@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
+import { ChevronDown } from 'lucide-react'
 import { getPublicBanners, getPublicSettings } from '@/app/actions/public'
 import { getPublicProducts } from '@/app/actions/public-products'
 import { getPublicOffers } from '@/app/actions/public-offers'
@@ -113,54 +114,65 @@ export default async function HomePage() {
         offers={offers}
         stories={stories}
         showHomeBanners={showHomeBanners}
-      />
+      >
+        {/* Texto y enlaces en el HTML del servidor: da a Google y a los agentes
+            algo que citar, y a la gente una forma de explorar por categoría.
+            Va aquí para quedar encima del footer de la tienda. */}
+        <section className="mx-auto w-full max-w-5xl px-5 pb-16 pt-12">
+          <h2 className="font-[family-name:var(--font-playfair)] text-2xl font-bold text-foreground">
+            Productos agrícolas frescos en Santiago de Cuba
+          </h2>
+          <p className="mt-3 max-w-3xl text-sm leading-relaxed text-muted-foreground">
+            En {storeName} compras frutas, viandas y alimentos del campo, bien
+            pesados y llevados hasta tu casa. Elige tu zona de entrega para ver
+            el stock disponible y paga en efectivo al recibir o por transferencia.
+          </p>
 
-      {/* Texto y enlaces en el HTML del servidor: da a Google y a los agentes
-          algo que citar, y a la gente una forma de explorar por categoría. */}
-      <section className="mx-auto w-full max-w-5xl px-5 pb-16 pt-12">
-        <h2 className="font-[family-name:var(--font-playfair)] text-2xl font-bold text-foreground">
-          Productos agrícolas frescos en Santiago de Cuba
-        </h2>
-        <p className="mt-3 max-w-3xl text-sm leading-relaxed text-muted-foreground">
-          En {storeName} compras frutas, viandas y alimentos del campo, bien
-          pesados y llevados hasta tu casa. Elige tu zona de entrega para ver
-          el stock disponible y paga en efectivo al recibir o por transferencia.
-        </p>
+          {categories.length > 0 && (
+            <nav aria-label="Categorías de productos" className="mt-6">
+              <h3 className="text-sm font-semibold text-foreground">Compra por categoría</h3>
+              <ul className="mt-3 flex flex-wrap gap-2">
+                {(categories as string[]).map((category: string) => (
+                  <li key={category}>
+                    <Link
+                      href={`/categoria/${categorySlug(category)}`}
+                      className="inline-flex items-center gap-1.5 rounded-full border border-border bg-muted/40 px-3 py-1.5 text-sm text-foreground hover:bg-muted"
+                    >
+                      {(() => {
+                        const icon = categoryIcon(category, categoryIcons);
+                        return icon ? (
+                          <img src={icon} alt="" aria-hidden="true" className="h-5 w-5 shrink-0 object-contain" />
+                        ) : null;
+                      })()}
+                      {category}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </nav>
+          )}
 
-        {categories.length > 0 && (
-          <nav aria-label="Categorías de productos" className="mt-6">
-            <h3 className="text-sm font-semibold text-foreground">Compra por categoría</h3>
-            <ul className="mt-3 flex flex-wrap gap-2">
-              {(categories as string[]).map((category: string) => (
-                <li key={category}>
-                  <Link
-                    href={`/categoria/${categorySlug(category)}`}
-                    className="inline-flex items-center gap-1.5 rounded-full border border-border bg-muted/40 px-3 py-1.5 text-sm text-foreground hover:bg-muted"
-                  >
-                    {(() => {
-                      const icon = categoryIcon(category, categoryIcons);
-                      return icon ? (
-                        <img src={icon} alt="" aria-hidden="true" className="h-5 w-5 shrink-0 object-contain" />
-                      ) : null;
-                    })()}
-                    {category}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </nav>
-        )}
-
-        <h3 className="mt-10 text-lg font-bold text-foreground">Preguntas frecuentes</h3>
-        <dl className="mt-3 grid max-w-3xl gap-4">
-          {faqs.map((faq) => (
-            <div key={faq.question}>
-              <dt className="text-sm font-semibold text-foreground">{faq.question}</dt>
-              <dd className="mt-1 text-sm leading-relaxed text-muted-foreground">{faq.answer}</dd>
-            </div>
-          ))}
-        </dl>
-      </section>
+          <h3 className="mt-10 text-lg font-bold text-foreground">Preguntas frecuentes</h3>
+          <div className="mt-3 grid max-w-3xl gap-2">
+            {faqs.map((faq) => (
+              <details
+                key={faq.question}
+                name="home-faq"
+                className="group rounded-lg border border-border bg-muted/20 px-4 py-3 open:bg-muted/40"
+              >
+                <summary className="flex cursor-pointer list-none items-start justify-between gap-4 rounded-sm text-sm font-semibold text-foreground marker:content-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring [&::-webkit-details-marker]:hidden">
+                  {faq.question}
+                  <ChevronDown
+                    aria-hidden="true"
+                    className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground transition-transform group-open:rotate-180"
+                  />
+                </summary>
+                <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{faq.answer}</p>
+              </details>
+            ))}
+          </div>
+        </section>
+      </HomeExperience>
     </>
   )
 }

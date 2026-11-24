@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import type { Banner } from "@/components/banner-carousel";
 import { Onboarding } from "@/components/onboarding";
 import { StoreView } from "@/components/store-view";
@@ -16,6 +16,7 @@ interface HomeExperienceProps {
   offers: PublicOffer[];
   stories: PublicStory[];
   showHomeBanners?: boolean;
+  children?: ReactNode;
 }
 
 /**
@@ -30,6 +31,7 @@ export function HomeExperience({
   offers,
   stories,
   showHomeBanners = true,
+  children,
 }: HomeExperienceProps) {
   const [mounted, setMounted] = useState(false);
   const onboardingComplete = useCartStore((state) => state.onboardingComplete);
@@ -57,7 +59,9 @@ export function HomeExperience({
         initialStories={stories}
         showHomeBanners={showHomeBanners}
         locationPromptEnabled={onboardingComplete}
-      />
+      >
+        {children}
+      </StoreView>
       {showOnboarding && (
         <Onboarding onComplete={() => setOnboardingComplete(true)} />
       )}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect, useRef } from "react";
+import { useState, useMemo, useEffect, useRef, type ReactNode } from "react";
 import { usePagination } from "@/lib/use-pagination";
 import { PaginationBar } from "@/components/pagination-bar";
 import { MobileBottomNav } from "@/components/mobile-bottom-nav";
@@ -115,6 +115,8 @@ interface StoreViewProps {
   locationPromptEnabled?: boolean;
   /** Permite ocultar los banners de la portada desde configuración. */
   showHomeBanners?: boolean;
+  /** Contenido del servidor que va justo antes del footer. */
+  children?: ReactNode;
 }
 
 export function StoreView({
@@ -126,6 +128,7 @@ export function StoreView({
   initialStories,
   locationPromptEnabled = true,
   showHomeBanners = true,
+  children,
 }: StoreViewProps = {}) {
   const hasServerProducts = (initialProducts?.length ?? 0) > 0;
   const [products, setProducts] = useState<Product[]>(initialProducts ?? []);
@@ -922,6 +925,8 @@ export function StoreView({
             </p>
           </div>
         </section>
+
+        {children}
 
         {/* Footer */}
         <SiteFooter />

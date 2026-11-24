@@ -78,6 +78,7 @@ interface OfferForm {
   productId: string;
   image: string;
   endDate: string;
+  notes: string;
   active: boolean;
 }
 
@@ -90,6 +91,7 @@ const emptyForm: OfferForm = {
   productId: "",
   image: "",
   endDate: "",
+  notes: "",
   active: true,
 };
 
@@ -152,6 +154,7 @@ export default function OffersAdminPage() {
       productId: offer.product_id,
       image: offer.image,
       endDate: toDateTimeLocalValue(offer.end_date),
+      notes: offer.notes || "",
       active: offer.active,
     });
     setImageUploaded(false);
@@ -190,6 +193,7 @@ export default function OffersAdminPage() {
         productId: form.type === "product" ? form.productId : "",
         image: form.image,
         endDate: form.endDate,
+        notes: form.notes,
         active: form.active,
       };
       if (editing) {
@@ -397,9 +401,14 @@ export default function OffersAdminPage() {
                       {offer.type === "combo" ? "Combo" : "Rebaja"}
                     </Badge>
                   </div>
-                  <p className="line-clamp-2 text-xs text-muted-foreground">
+                  <p className="line-clamp-2 whitespace-pre-line text-xs text-muted-foreground">
                     {offer.description || "Sin descripción"}
                   </p>
+                  {offer.notes && (
+                    <p className="line-clamp-1 text-xs text-muted-foreground">
+                      Notas: {offer.notes}
+                    </p>
+                  )}
                   <p className="text-sm font-semibold">
                     {offer.price.toFixed(2)} {offer.currencyCode}
                     {offer.type === "product" && (
@@ -507,6 +516,11 @@ export default function OffersAdminPage() {
                           <p className="truncate text-xs text-muted-foreground">
                             {offer.description || "Sin descripción"}
                           </p>
+                          {offer.notes && (
+                            <p className="truncate text-xs text-muted-foreground">
+                              Notas: {offer.notes}
+                            </p>
+                          )}
                         </div>
                       </TableCell>
                       <TableCell>
@@ -604,6 +618,20 @@ export default function OffersAdminPage() {
               />
             </Field>
 
+            <Field>
+              <FieldLabel htmlFor="offerNotes">Notas (solo admin)</FieldLabel>
+              <Textarea
+                id="offerNotes"
+                value={form.notes}
+                onChange={(e) => setForm({ ...form, notes: e.target.value })}
+                placeholder="Recordatorios para el equipo…"
+                rows={2}
+              />
+              <p className="text-xs text-muted-foreground">
+                No aparecen en la portada ni en el checkout.
+              </p>
+            </Field>
+
             <div className="grid gap-4 sm:grid-cols-2">
               <Field>
                 <FieldLabel htmlFor="offerType">Tipo</FieldLabel>
@@ -667,10 +695,10 @@ export default function OffersAdminPage() {
                 type="datetime-local"
                 value={form.endDate}
                 onChange={(e) => setForm({ ...form, endDate: e.target.value })}
-                required
               />
               <p className="text-xs text-muted-foreground">
-                Al llegar la fecha, la oferta desaparece de la portada.
+                Vacía = sin vencimiento. Si la pones, al llegar la fecha la
+                oferta desaparece de la portada.
               </p>
             </Field>
 

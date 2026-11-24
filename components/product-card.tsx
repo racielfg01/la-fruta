@@ -91,7 +91,9 @@ export function ProductCard({ product, compact = false }: ProductCardProps) {
           </h3>
         </Link>
         {!compact && (
-          <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">{product.description}</p>
+          <p className="mt-1 line-clamp-2 whitespace-pre-line text-sm text-muted-foreground">
+            {product.description}
+          </p>
         )}
         <div className={cn("flex items-center justify-between", compact ? "mt-auto pt-1.5" : "mt-3")}>
           <div className="min-w-0">

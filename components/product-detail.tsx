@@ -123,7 +123,9 @@ export function ProductDetail({ product, related }: ProductDetailProps) {
                 />
               )}
 
-            <p className="mt-6 text-muted-foreground leading-relaxed">{product.description}</p>
+            <p className="mt-6 whitespace-pre-line text-muted-foreground leading-relaxed">
+              {product.description}
+            </p>
 
             <div className="mt-6 flex items-center gap-2 text-sm text-muted-foreground">
               <MapPin className="h-4 w-4 text-primary" />

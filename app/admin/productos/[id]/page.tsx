@@ -163,7 +163,7 @@ export default function ProductDetailAdmin() {
                 <Package className="h-4 w-4 text-primary" />
                 Descripción
               </h3>
-              <p className="text-muted-foreground leading-relaxed">
+              <p className="whitespace-pre-line text-muted-foreground leading-relaxed">
                 {product.description}
               </p>
             </div>
@@ -237,7 +237,7 @@ export default function ProductDetailAdmin() {
                   ${product.price.toFixed(2)}
                 </span>
               </div>
-              <p className="text-sm text-muted-foreground line-clamp-2 mb-3">
+              <p className="mb-3 line-clamp-2 whitespace-pre-line text-sm text-muted-foreground">
                 {product.description}
               </p>
               <Button className="w-full" size="sm" disabled={product.stock <= 0}>

@@ -155,7 +155,9 @@ export function OfferCard({
               <DialogTitle className="mt-1 text-lg">{offer.name}</DialogTitle>
             </DialogHeader>
 
-            <DialogDescription>{offer.description}</DialogDescription>
+            <DialogDescription className="whitespace-pre-line">
+              {offer.description}
+            </DialogDescription>
 
             <div className="flex items-end justify-between gap-3">
               <span className="text-2xl font-bold text-primary">
@@ -200,7 +202,7 @@ export function OfferCard({
         </h3>
         <p
           className={cn(
-            "text-xs text-muted-foreground",
+            "whitespace-pre-line text-xs text-muted-foreground",
             !isList && "line-clamp-2"
           )}
         >

@@ -938,7 +938,7 @@ function ProductsAdmin() {
                             />
                             <div className="min-w-0 max-w-[220px]">
                               <p className="truncate font-medium">{product.name}</p>
-                              <p className="truncate text-xs text-muted-foreground">
+                              <p className="line-clamp-2 whitespace-pre-line text-xs text-muted-foreground">
                                 {product.description}
                               </p>
                             </div>

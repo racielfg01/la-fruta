@@ -7,8 +7,11 @@ import {
   countdownParts,
   isOfferActive,
   offerLineTargets,
+  toAdminOffer,
+  toIsoOfferDate,
   toPublicOffer,
   toUsdAmount,
+  validateOfferInput,
   type OfferType,
 } from "./offers";
 
@@ -134,6 +137,54 @@ describe("offerLineTargets", () => {
   });
 });
 
+describe("vencimiento opcional", () => {
+  const base = {
+    name: "Combo",
+    description: "Desc",
+    price: "10",
+    type: "combo",
+    productId: "",
+    image: "",
+    active: true,
+  };
+
+  test("una fecha vacía no se convierte en un vencimiento inmediato", () => {
+    expect(toIsoOfferDate("")).toBe("");
+    expect(toIsoOfferDate("   ")).toBe("");
+  });
+
+  test("acepta guardar una oferta sin fecha límite", () => {
+    expect(validateOfferInput({ ...base, endDate: "" })).toBe(true);
+  });
+
+  test("sigue rechazando una fecha mal escrita", () => {
+    expect(validateOfferInput({ ...base, endDate: "no es fecha" })).toBe(false);
+  });
+});
+
+describe("notas solo de administrador", () => {
+  const record = {
+    id: "o1",
+    name: "Combo",
+    description: "Desc",
+    price: 1000,
+    type: "combo",
+    product_id: "",
+    image: "",
+    end_date: "",
+    active: true,
+    notes: "Recordatorio interno del equipo",
+  };
+
+  test("al normalizar el registro se conservan las notas", () => {
+    expect(toAdminOffer(record).notes).toBe("Recordatorio interno del equipo");
+  });
+
+  test("la oferta pública no expone las notas", () => {
+    expect(toPublicOffer({ ...toAdminOffer(record), notes: "secreto" })).not.toHaveProperty("notes");
+  });
+});
+
 describe("toPublicOffer", () => {
   test("convierte AdminOffer a PublicOffer", () => {
     const o = {
@@ -145,6 +196,7 @@ describe("toPublicOffer", () => {
       product_id: "p1",
       image: "img.jpg",
       end_date: "2026-11-11T00:00:00Z",
+      notes: "Nota interna",
       active: true,
     } as const;
     const p = toPublicOffer(o);

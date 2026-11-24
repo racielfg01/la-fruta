@@ -17,8 +17,10 @@ export interface AdminOffer {
   type: OfferType;
   product_id: string;
   image: string;
-  /** Fecha de vencimiento ISO 8601. */
+  /** Fecha de vencimiento ISO 8601; vacía si la oferta no caduca. */
   end_date: string;
+  /** Notas internas: nunca se envían a la portada. */
+  notes: string;
   active: boolean;
   created_at?: string;
   updated_at?: string;
@@ -50,6 +52,7 @@ export interface OfferInput {
   productId: string;
   image: string;
   endDate: string;
+  notes?: string;
   active: boolean;
 }
 
@@ -65,6 +68,7 @@ export function toAdminOffer(rec: Record<string, any>): AdminOffer {
     product_id: String(rec.product_id ?? ""),
     image: rec.image ?? "",
     end_date: rec.end_date ?? "",
+    notes: String(rec.notes ?? ""),
     active: rec.active !== false,
     created_at: rec.created_at ?? undefined,
     updated_at: rec.updated_at ?? undefined,
@@ -143,17 +147,16 @@ export function toPublicOffer(o: AdminOffer): PublicOffer {
 
 /**
  * Convierte el valor de un `datetime-local` (o la fecha ISO/PU — PB devuelve
- * "YYYY-MM-DD HH:MM:SS" con espacio) a ISO 8601 UTC. Si no se puede parsear,
- * devuelve «ahora».
+ * "YYYY-MM-DD HH:MM:SS" con espacio) a ISO 8601 UTC. Vacío significa que la
+ * oferta no tiene límite, así que se guarda vacío en lugar de «ahora».
  */
 export function toIsoOfferDate(v: string): string {
-  if (v?.trim()) {
-    const direct = new Date(v).getTime();
-    const spaced = new Date(v.replace(" ", "T")).getTime();
-    const t = Number.isNaN(direct) ? spaced : direct;
-    if (!Number.isNaN(t)) return new Date(t).toISOString();
-  }
-  return new Date().toISOString();
+  if (!v?.trim()) return "";
+  const direct = new Date(v).getTime();
+  const spaced = new Date(v.replace(" ", "T")).getTime();
+  const t = Number.isNaN(direct) ? spaced : direct;
+  if (!Number.isNaN(t)) return new Date(t).toISOString();
+  return "";
 }
 
 /** ¿Es una fecha límite utilizable (datetime-local, ISO o formato PB)? */
@@ -179,7 +182,8 @@ export function validateOfferInput(
   if (!f.description?.trim()) return false;
   const price = Number(f.price);
   if (!Number.isFinite(price) || price <= 0) return false;
-  if (!isValidOfferEndDate(f.endDate)) return false;
+  // Vencimiento opcional: vacío es «sin límite»; lo que esté escrito debe ser fecha válida.
+  if (f.endDate?.trim() && !isValidOfferEndDate(f.endDate)) return false;
   // Una rebaja necesita el producto que la respalda.
   if (f.type === "product" && !f.productId) return false;
   return true;

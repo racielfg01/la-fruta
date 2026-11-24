@@ -98,7 +98,7 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
               <p className="mt-1 text-xs text-muted-foreground">{product.unit}</p>
             )}
             {product.description && (
-              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+              <p className="mt-2 whitespace-pre-line text-sm leading-relaxed text-muted-foreground">
                 {product.description}
               </p>
             )}

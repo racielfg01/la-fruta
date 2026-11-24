@@ -80,7 +80,14 @@ export function OffersSection({ offers }: { offers: PublicOffer[] }) {
             Ofertas
           </h2>
           <div className="flex items-center gap-2">
-            <Badge variant="secondary">{visible.length}</Badge>
+               <Link
+            href="/ofertas"
+            className="inline-flex items-center gap-1 text-sm font-medium text-primary transition-colors hover:text-primary/80"
+          >
+            Ver más
+            <ArrowRight className="h-3.5 w-3.5" />
+          </Link>
+            {/* <Badge variant="secondary">{visible.length}</Badge>
             {multiple && (
               <>
                 <Button
@@ -104,7 +111,7 @@ export function OffersSection({ offers }: { offers: PublicOffer[] }) {
                   <ChevronRight className="h-4 w-4" />
                 </Button>
               </>
-            )}
+            )} */}
           </div>
         </div>
 
@@ -152,13 +159,7 @@ export function OffersSection({ offers }: { offers: PublicOffer[] }) {
               ))}
             </div>
           )}
-          <Link
-            href="/ofertas"
-            className="inline-flex items-center gap-1 text-sm font-medium text-primary transition-colors hover:text-primary/80"
-          >
-            Ver más
-            <ArrowRight className="h-3.5 w-3.5" />
-          </Link>
+
         </div>
       </div>
     </section>

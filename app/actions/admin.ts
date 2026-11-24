@@ -594,6 +594,7 @@ export async function addOfferAction(data: OfferInput, token: string): Promise<A
     ...(data.type === 'product' && data.productId ? { product_id: data.productId } : {}),
     image: data.image || '',
     end_date: toIsoOfferDate(data.endDate),
+    notes: String(data.notes ?? ''),
     active: !!data.active,
   });
   return toAdminOffer(record as Record<string, any>);
@@ -609,6 +610,7 @@ export async function editOfferAction(id: string, data: Partial<OfferInput>, tok
   if (data.currencyCode !== undefined) updateData.currency_code = data.currencyCode.toUpperCase();
   if (data.type !== undefined) updateData.type = data.type;
   if (data.image !== undefined) updateData.image = data.image || '';
+  if (data.notes !== undefined) updateData.notes = data.notes || '';
   if (data.active !== undefined) updateData.active = !!data.active;
   if (data.endDate !== undefined) updateData.end_date = toIsoOfferDate(data.endDate);
   if (data.productId !== undefined) {

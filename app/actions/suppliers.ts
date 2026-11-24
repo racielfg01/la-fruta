@@ -77,7 +77,7 @@ async function getPurchaseItems(
 export async function getSuppliersOverviewAction(
   token: string
 ): Promise<SuppliersOverview> {
-  await requirePermission(token, 'products');
+  await requirePermission(token, 'suppliers');
   const pb = await getDataPB(token);
   try {
     // El detalle también lee purchases, purchase_items y stock_applications:
@@ -108,7 +108,7 @@ export async function getSupplierDetailAction(
   token: string,
   supplierId: string
 ): Promise<SupplierDetail> {
-  await requirePermission(token, 'products');
+  await requirePermission(token, 'suppliers');
   const pb = await getDataPB(token);
   const rows = await getAllRecords(pb, 'purchases', {
     filter: `supplier = "${sanitize(supplierId)}"`,
@@ -135,7 +135,7 @@ export async function createSupplierAction(
   token: string,
   input: { name: string; phone: string }
 ): Promise<Supplier> {
-  await requirePermission(token, 'products');
+  await requirePermission(token, 'suppliers');
   const data = validateSupplierInput(input);
   const pb = await getDataPB(token);
   const rec = await pb.collection('suppliers').create(data);
@@ -147,7 +147,7 @@ export async function updateSupplierAction(
   id: string,
   input: { name: string; phone: string }
 ): Promise<void> {
-  await requirePermission(token, 'products');
+  await requirePermission(token, 'suppliers');
   const data = validateSupplierInput(input);
   const pb = await getDataPB(token);
   await pb.collection('suppliers').update(id, data);
@@ -157,7 +157,7 @@ export async function deleteSupplierAction(
   token: string,
   id: string
 ): Promise<void> {
-  await requirePermission(token, 'products');
+  await requirePermission(token, 'suppliers');
   const pb = await getDataPB(token);
   const purchases = await getAllRecords<Purchase>(pb, 'purchases', {
     filter: `supplier = "${sanitize(id)}"`,
@@ -172,7 +172,7 @@ export async function createPurchaseAction(
   token: string,
   input: PurchaseInput
 ): Promise<{ id: string }> {
-  const auth = await requirePermission(token, 'products');
+  const auth = await requirePermission(token, 'suppliers');
   for (const line of input.items ?? []) {
     if (!Number.isFinite(Number(line.quantity))) {
       throw new Error('La cantidad debe ser un número');
@@ -230,7 +230,7 @@ export async function deletePurchaseAction(
   token: string,
   id: string
 ): Promise<void> {
-  await requirePermission(token, 'products');
+  await requirePermission(token, 'suppliers');
   const pb = await getDataPB(token);
   const rec = await pb.collection('purchases').getOne(id);
   const itemRows = await getPurchaseItems(pb, [id]);
@@ -263,7 +263,7 @@ export async function applyPurchaseStockAction(
   token: string,
   purchaseId: string
 ): Promise<ApplyStockResult> {
-  await requirePermission(token, 'products');
+  await requirePermission(token, 'suppliers');
   const pb = await getDataPB(token);
   const rec = await pb.collection('purchases').getOne(purchaseId);
   const itemRows = await getPurchaseItems(pb, [purchaseId]);

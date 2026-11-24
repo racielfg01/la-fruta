@@ -7,12 +7,23 @@ import {
 } from "./permissions";
 
 function resolvePermissions(user: AuthUser): RolePermissions {
-  if (user.permissions) return user.permissions;
-  // Rol sin permisos configurados: el admin (role_id 2) ve todo, igual que
-  // roles-tab.tsx trata un rol vacío como ALL_PERMISSIONS. Cualquier otro
-  // rol sin configurar queda en denegado total, no en acceso total.
-  if (user.role_id === 2) return { ...ALL_PERMISSIONS };
-  return { ...NO_PERMISSIONS };
+  let permissions: RolePermissions;
+  if (user.permissions) {
+    permissions = { ...user.permissions };
+  } else if (user.role_id === 2) {
+    // Rol sin permisos configurados: el admin (role_id 2) ve todo, igual que
+    // roles-tab.tsx trata un rol vacío como ALL_PERMISSIONS. Cualquier otro
+    // rol sin configurar queda en denegado total, no en acceso total.
+    permissions = { ...ALL_PERMISSIONS };
+  } else {
+    permissions = { ...NO_PERMISSIONS };
+  }
+  // La sesión puede venir de localStorage de antes de que existiera
+  // `suppliers`. hereda de products solo cuando la clave no está guardada.
+  if (typeof permissions.suppliers !== 'boolean') {
+    permissions.suppliers = permissions.products === true;
+  }
+  return permissions;
 }
 
 export function hasPermission(

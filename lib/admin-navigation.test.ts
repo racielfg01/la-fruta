@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { adminSectionLabel } from "@/lib/admin-navigation";
+import { adminNavigation, adminSectionLabel } from "@/lib/admin-navigation";
 
 describe("etiqueta de sección del panel de administración", () => {
   it("muestra Panel Principal en la raíz", () => {
@@ -18,5 +18,16 @@ describe("etiqueta de sección del panel de administración", () => {
     expect(adminSectionLabel("/admin/desconocido")).toBe(
       "Panel de Administración"
     );
+  });
+});
+
+describe("permiso de la navegación de Proveedores", () => {
+  it("se rige por suppliers y no por products", () => {
+    const item = adminNavigation.find(
+      (entry) => entry.href === "/admin/proveedores"
+    );
+
+    expect(item?.name).toBe("Proveedores");
+    expect(item?.permission).toBe("suppliers");
   });
 });

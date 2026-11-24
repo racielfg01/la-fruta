@@ -25,7 +25,7 @@ export const adminNavigation: AdminNavItem[] = [
   { name: "Órdenes", href: "/admin/ordenes", icon: ShoppingBag, permission: "orders" },
   { name: "Valoraciones", href: "/admin/valoraciones", icon: Star, permission: "orders" },
   { name: "Productos", href: "/admin/productos", icon: Package, permission: "products" },
-  { name: "Proveedores", href: "/admin/proveedores", icon: Warehouse, permission: "products" },
+  { name: "Proveedores", href: "/admin/proveedores", icon: Warehouse, permission: "suppliers" },
   { name: "Categorías", href: "/admin/categorias", icon: Tags, permission: "products" },
   { name: "Envíos", href: "/admin/envios", icon: Truck, permission: "shipping" },
   { name: "Usuarios", href: "/admin/usuarios", icon: Users, permission: "users" },

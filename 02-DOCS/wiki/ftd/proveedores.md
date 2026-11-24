@@ -12,12 +12,17 @@ El panel de administración permite gestionar proveedores, registrar sus compras
 ## Scope
 
 **Dentro**
-- Alta, edición y borrado de proveedores (nombre y teléfono) en `/admin/proveedores`, con permiso `products`.
+- Alta, edición y borrado de proveedores (nombre y teléfono) en `/admin/proveedores`, con permiso `suppliers`, independiente de `products`.
 - Precios derivados: para cada proveedor, el `unit_price` de la compra más reciente de ese producto.
 - Histórico de compras con notas, fecha, líneas de producto, cantidad y precio unitario. Crear una compra no modifica el stock.
 - Botón “Agregar stock” por compra: suma las cantidades a `products.stock` y marca `in_stock: true`; es idempotente por compra mediante un reclamo único en `stock_applications`, creado antes de las escrituras y con compensación si falla alguna.
 - Detección de setup incompleto: la vista se degrada con aviso si falta alguna de las colecciones que usa, incluidas `purchases`, `purchase_items` y `stock_applications`.
 - Paginado inferior de la lista lateral: máximo 10 proveedores por página, con primera/anterior/siguiente/última y reseteo a la página 1 al buscar, crear o borrar.
+- Permiso `suppliers` editable desde `/admin/configuración?tab=roles`, junto a los otros permisos del rol.
+
+### Permiso `suppliers`
+
+Proveedores necesita poder concederse sin entregar también Productos, por eso no reutiliza la clave `products`. Para no dejar fuera a roles guardados antes de que existiera la clave nueva, `permissionsForRole` y la normalización de la sesión del cliente heredan `suppliers` de `products` solo cuando la clave no está presente; un `suppliers: false` explícito se respeta. La navegación y las ocho acciones de proveedores exigen `suppliers`.
 
 **Fuera**
 - Stock por zona (`product_locations`): el botón solo toca el stock general.
@@ -28,8 +33,9 @@ El panel de administración permite gestionar proveedores, registrar sus compras
 
 - [x] Dominio y validaciones en `lib/suppliers.ts`, con pruebas (`lib/suppliers.test.ts`).
 - [x] Colecciones PocketBase en `scripts/setup-collections-extra.cjs` y esta ficha FTD, incluida `stock_applications` con índice único por compra.
-- [x] Entrada de “Proveedores” en la navegación del admin con permiso `products`.
-- [x] Acciones admin sobre PocketBase con `requirePermission(token, "products")`.
+- [x] Entrada de “Proveedores” en la navegación del admin con permiso `suppliers`.
+- [x] Acciones admin sobre PocketBase con `requirePermission(token, "suppliers")`.
+- [x] Opción “Proveedores” en el editor de roles y herencia compatible desde `products` para roles antiguos.
 - [x] Alta/edición de proveedores y vista de detalle en `/admin/proveedores`.
 - [x] Tabla de precios derivados e histórico de compras con notas.
 - [x] Botón “Agregar stock” con confirmación, aviso de productos ausentes y doble clic bloqueado.
@@ -66,12 +72,14 @@ Si falta alguna colección, la UI muestra el aviso de setup sin romper.
 - Commits de implementación: `d852ea4` (plan y diseño), `94497a5` (dominio y pruebas), `6f213bd` (colecciones PocketBase), `69195d5` (navegación), `5a58aff` (acciones), `fae1084` (página y UI del admin), `a062b15` (precios, histórico y aplicación de stock).
 - Commit de endurecimiento: `fix(proveedores): harden stock idempotency and setup degradation` (idempotencia del stock, degradación completa del setup y correcciones menores).
 - Commit de corrección en producción: `77da72d` (reemplaza `/api/batch`, deshabilitado en la instancia, por escrituras secuenciales con limpieza y compensación).
-- Commit de paginado (este cambio): helper con pruebas, controles inferiores y documentación actualizada.
-- `pnpm verify` → 56 archivos, 398 pruebas, 0 fallos; `tsc --noEmit` limpio; lint con 0 errores y 264 avisos preexistentes.
+- Commit de paginado: helper con pruebas, controles inferiores y documentación actualizada.
+- Cambio de permisos (este tramo): `suppliers` en `RolePermissions`, opción en el editor de roles, gateo de navegación y ocho acciones, y herencia desde `products` para sesiones/roles anteriores.
+- `pnpm verify` → 56 archivos, 411 pruebas, 0 fallos; `tsc --noEmit` limpio; lint con 0 errores y 264 avisos preexistentes.
 - `pnpm exec tsc --noEmit` → sin errores de tipos.
 - `pnpm lint` → 0 errores, 264 avisos preexistentes en el repositorio (4 `no-explicit-any` en `lib/suppliers.ts` y 1 `react-hooks/set-state-in-effect` en `app/admin/proveedores/page.tsx`, entre otros archivos no tocados).
 - `node --check scripts/setup-collections-extra.cjs` → sintaxis correcta.
 - Smoke de paginado en navegador: 13 proveedores → página 1 con 10 (`1–10 de 13 · Página 1 de 2`), página 2 con 3 (`11–13 de 13 · Página 2 de 2`), botones de límites deshabilitados según corresponda, búsqueda y sin resultados vuelven a la página 1. Datos temporales eliminados.
+- Smoke de permisos en navegador: el editor de Roles muestra “Proveedores” como octava opción; con `suppliers: false` el menú no muestra la entrada, al activarla el guardado envió `"suppliers":true` en el JSON del rol y, tras recargar, “Proveedores” apareció en la navegación y `/admin/proveedores` cargó sin error de permisos. Se usó un PocketBase local de prueba porque la instancia remota devolvió `429` durante el smoke; no se modificaron roles reales.
 
 ## Next
 

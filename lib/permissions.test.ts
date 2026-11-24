@@ -55,6 +55,24 @@ describe("permissionsForRole", () => {
     expect(perms.products).toBe(true);
     expect(perms.orders).toBe(false);
   });
+
+  test("un rol con el permiso suppliers lo recibe", () => {
+    const perms = permissionsForRole({
+      name: "proveedor",
+      permissions: JSON.stringify({ suppliers: true }),
+    });
+    expect(perms.suppliers).toBe(true);
+    expect(perms.products).toBe(false);
+  });
+
+  test("un rol guardado antes de suppliers hereda el acceso de products", () => {
+    const perms = permissionsForRole({
+      name: "operador",
+      permissions: JSON.stringify({ products: true }),
+    });
+    expect(perms.products).toBe(true);
+    expect(perms.suppliers).toBe(true);
+  });
 });
 
 describe("sectionsForPermissions", () => {
@@ -94,9 +112,9 @@ describe("sectionsForPermissions", () => {
 });
 
 describe("PERMISSION_KEYS", () => {
-  test("cubre las siete secciones del panel", () => {
+  test("cubre las ocho secciones del panel", () => {
     expect([...PERMISSION_KEYS].sort()).toEqual(
-      ["dashboard", "offers", "orders", "products", "settings", "shipping", "users"].sort()
+      ["dashboard", "offers", "orders", "products", "settings", "shipping", "suppliers", "users"].sort()
     );
   });
 });

@@ -1,7 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import { Pencil, Plus, Trash2 } from "lucide-react";
+import {
+  ChevronFirst,
+  ChevronLast,
+  ChevronLeft,
+  ChevronRight,
+  Pencil,
+  Plus,
+  Trash2,
+} from "lucide-react";
 import { toast } from "sonner";
 import { deleteSupplierAction } from "@/app/actions/suppliers";
 import { SupplierForm } from "@/components/admin/suppliers/supplier-form";
@@ -19,7 +27,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { useAuthStore } from "@/lib/auth-context";
-import type { Supplier } from "@/lib/suppliers";
+import { paginateSuppliers, type Supplier } from "@/lib/suppliers";
 
 interface SupplierSidebarProps {
   suppliers: Supplier[];
@@ -45,6 +53,7 @@ export function SupplierSidebar({
   const [deleting, setDeleting] = useState<Supplier | null>(null);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [savingDelete, setSavingDelete] = useState(false);
+  const [page, setPage] = useState(1);
 
   const filtered = suppliers.filter((supplier) => {
     const q = search.trim().toLowerCase();
@@ -54,6 +63,9 @@ export function SupplierSidebar({
       supplier.phone.toLowerCase().includes(q)
     );
   });
+  const paged = paginateSuppliers(filtered, page);
+  const firstVisible = paged.total === 0 ? 0 : (paged.page - 1) * paged.pageSize + 1;
+  const lastVisible = Math.min(paged.page * paged.pageSize, paged.total);
 
   const openCreate = () => {
     if (setupNeeded) return;
@@ -76,6 +88,7 @@ export function SupplierSidebar({
   const handleSaved = () => {
     setFormOpen(false);
     setEditing(null);
+    setPage(1);
     onCreated();
   };
 
@@ -87,6 +100,7 @@ export function SupplierSidebar({
       toast.success("Proveedor eliminado");
       setDeleteOpen(false);
       setDeleting(null);
+      setPage(1);
       onCreated();
     } catch (error) {
       console.error("Error deleting supplier:", error);
@@ -113,13 +127,16 @@ export function SupplierSidebar({
           </div>
           <Input
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setPage(1);
+            }}
             placeholder="Buscar proveedor..."
             aria-label="Buscar proveedor"
           />
         </CardHeader>
         <CardContent className="space-y-2">
-          {filtered.map((supplier) => {
+          {paged.items.map((supplier) => {
             const selected = supplier.id === selectedId;
             return (
               <div
@@ -170,6 +187,59 @@ export function SupplierSidebar({
             </p>
           )}
         </CardContent>
+        <div className="flex flex-wrap items-center justify-between gap-2 border-t px-6 py-3">
+          <p className="text-xs text-muted-foreground" aria-live="polite">
+            {paged.total === 0
+              ? "Sin proveedores"
+              : `${firstVisible}–${lastVisible} de ${paged.total} · Página ${paged.page} de ${paged.totalPages}`}
+          </p>
+          <div className="flex items-center gap-0.5">
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              onClick={() => setPage(1)}
+              disabled={!paged.hasPrevious}
+              aria-label="Primera página"
+            >
+              <ChevronFirst className="h-4 w-4" />
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              onClick={() => setPage(paged.page - 1)}
+              disabled={!paged.hasPrevious}
+              aria-label="Página anterior"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              onClick={() => setPage(paged.page + 1)}
+              disabled={!paged.hasNext}
+              aria-label="Página siguiente"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              onClick={() => setPage(paged.totalPages)}
+              disabled={!paged.hasNext}
+              aria-label="Última página"
+            >
+              <ChevronLast className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
       </Card>
 
       <SupplierForm

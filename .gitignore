@@ -139,3 +139,6 @@ pnpm-lock.yaml
 .opencode/rsc/security-audit
 .opencode/rsc/asdd
 .opencode/commands/security-audit.md
+
+# Brainstorm mockups (sesiones locales)
+.superpowers/brainstorm/

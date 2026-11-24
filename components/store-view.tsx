@@ -683,8 +683,7 @@ export function StoreView({
         </div>
 
 
-        {/* Ofertas vigentes, justo debajo del carrusel */}
-        <OffersSection offers={offers} />
+       
 
         {/* Contenido */}
         <div className="container mx-auto px-4 py-6 sm:px-6 md:py-8 lg:px-8 lg:py-10">
@@ -868,6 +867,9 @@ export function StoreView({
             </div>
           </div>
         </div>
+
+         {/* Ofertas vigentes, justo debajo del carrusel */}
+        <OffersSection offers={offers} />
 
         {/* Testimonios */}
         <section aria-labelledby="testimonios" className="border-t bg-background py-12 sm:py-16">

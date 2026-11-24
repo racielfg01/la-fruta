@@ -68,6 +68,8 @@ import {
   XCircle,
 } from "lucide-react";
 import { ImageUpload } from "@/components/upload-button";
+import { usePagination } from "@/lib/use-pagination";
+import { PaginationBar } from "@/components/pagination-bar";
 
 interface OfferForm {
   name: string;
@@ -132,6 +134,15 @@ export default function OffersAdminPage() {
   const [offerPlan, setOfferPlan] = useState<OfferImportPlan | null>(null);
   const [offerPreviewOpen, setOfferPreviewOpen] = useState(false);
   const [applyingOfferPlan, setApplyingOfferPlan] = useState(false);
+
+  const {
+    paginatedData: paginatedOffers,
+    currentPage,
+    totalPages,
+    perPage,
+    goToPage,
+    changePerPage,
+  } = usePagination(offers, 10);
 
   const productName = (id?: string) =>
     products.find((p) => p.id === id)?.name || "Producto no disponible";
@@ -377,7 +388,7 @@ export default function OffersAdminPage() {
       {/* Mobile: tarjetas */}
       <div className="block md:hidden">
         <div className="grid gap-4 sm:grid-cols-2">
-          {offers.map((offer) => {
+          {paginatedOffers.map((offer) => {
             const vigente = isOfferActive(offer);
             return (
               <Card key={offer.id} className={`overflow-hidden ${vigente ? "" : "opacity-60"}`}>
@@ -491,7 +502,7 @@ export default function OffersAdminPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {offers.map((offer) => {
+                {paginatedOffers.map((offer) => {
                   const vigente = isOfferActive(offer);
                   return (
                     <TableRow key={offer.id} className={vigente ? "" : "opacity-60"}>
@@ -586,6 +597,17 @@ export default function OffersAdminPage() {
           </div>
         </CardContent>
       </Card>
+
+      {offers.length > 0 && (
+        <PaginationBar
+          currentPage={currentPage}
+          totalPages={totalPages}
+          totalItems={offers.length}
+          perPage={perPage}
+          onPageChange={goToPage}
+          onPerPageChange={changePerPage}
+        />
+      )}
 
       {/* Formulario */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>

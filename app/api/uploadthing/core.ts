@@ -3,6 +3,7 @@ import type { FileRouter } from "uploadthing/next";
 import { UploadThingError } from "uploadthing/server";
 import { verifySession, isInvalidSession } from "@/lib/verify-session";
 import { RECEIPT_MAX_BYTES } from "@/lib/receipt";
+import { CATEGORY_IMAGE_FILE_TYPES } from "@/lib/uploadthing-file-types";
 
 const f = createUploadthing();
 
@@ -48,7 +49,7 @@ export const ourFileRouter = {
     })
     .onUploadComplete(({ file }) => ({ url: file.url })),
 
-  categoryImage: f({ image: { maxFileSize: "2MB" } })
+  categoryImage: f(CATEGORY_IMAGE_FILE_TYPES)
     .middleware(async ({ req }) => {
       const session = await authedUser(req);
       return { userId: session.userId };

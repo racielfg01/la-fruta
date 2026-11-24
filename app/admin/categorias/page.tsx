@@ -39,6 +39,7 @@ import { ImageUpload } from "@/components/upload-button";
 
 import { Switch } from "@/components/ui/switch";
 import { CATEGORY_ICON_OPTIONS, categoryIcon } from "@/lib/category-icons";
+import { isSvgImageUrl } from "@/lib/image-url";
 
 const emptyCategory: Omit<Category, "id"> = {
   name: "",
@@ -166,7 +167,7 @@ function CategoriesAdmin() {
                   <img
                     src={category.image || '/placeholder.svg'}
                     alt={category.name}
-                    className="h-full w-full object-cover"
+                    className={`h-full w-full ${isSvgImageUrl(category.image) ? "object-contain" : "object-cover"}`}
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
                   <div className="absolute bottom-3 left-3">
@@ -255,7 +256,7 @@ function CategoriesAdmin() {
                             <img
                               src={category.image || '/placeholder.svg'}
                               alt={category.name}
-                              className="h-full w-full object-cover"
+                              className={`h-full w-full ${isSvgImageUrl(category.image) ? "object-contain" : "object-cover"}`}
                             />
                           </div>
                         </div>
@@ -427,7 +428,9 @@ function CategoriesAdmin() {
             </Field>
 
             <Field>
-              <FieldLabel htmlFor="image">Imagen de la categoría</FieldLabel>
+              <FieldLabel htmlFor="image">
+                Imagen de la categoría (SVG incluido)
+              </FieldLabel>
               <div className="flex flex-col gap-3">
                 <div className="flex gap-2">
                   <Input
@@ -435,7 +438,7 @@ function CategoriesAdmin() {
                     type="url"
                     value={formData.image}
                     onChange={handleImageUrlChange}
-                    placeholder="https://... o sube una imagen"
+                    placeholder="https://... o sube una imagen .svg"
                     className="flex-1"
                     disabled={imageUploaded}
                   />
@@ -445,6 +448,9 @@ function CategoriesAdmin() {
                     disabled={imageUploaded}
                   />
                 </div>
+                <p className="text-xs text-muted-foreground">
+                  Admite JPG, PNG, WebP y SVG hasta 2 MB.
+                </p>
                 {imageUploaded && (
                   <div className="text-sm text-green-600">
                     ✅ Imagen subida correctamente. No es necesario ingresar una URL manual.
@@ -458,7 +464,7 @@ function CategoriesAdmin() {
                 <img
                   src={formData.image}
                   alt="Preview"
-                  className="h-32 w-full object-cover"
+                  className={`h-32 w-full ${isSvgImageUrl(formData.image) ? "object-contain" : "object-cover"}`}
                 />
               </div>
             )}

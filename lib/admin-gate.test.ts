@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { adminGate } from "./admin-gate";
+import { NO_PERMISSIONS } from "./permissions";
 import type { AuthUser } from "./auth-context";
 
 const operador: AuthUser = {
@@ -10,15 +11,7 @@ const operador: AuthUser = {
   address: "",
   gender: "",
   role_id: 1,
-  permissions: {
-    dashboard: false,
-    orders: true,
-    products: false,
-    shipping: false,
-    users: false,
-    settings: false,
-    offers: false,
-  },
+  permissions: { ...NO_PERMISSIONS, orders: true },
 };
 
 const admin: AuthUser = {

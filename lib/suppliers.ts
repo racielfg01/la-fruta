@@ -1,4 +1,13 @@
 export interface Supplier { id: string; name: string; phone: string }
+export interface SupplierPage {
+  items: Supplier[];
+  page: number;
+  pageSize: number;
+  total: number;
+  totalPages: number;
+  hasPrevious: boolean;
+  hasNext: boolean;
+}
 export interface ProductOption { id: string; name: string; unit: string }
 export interface PurchaseLineInput { product: string; quantity: number; unitPrice: number }
 export interface PurchaseItem extends PurchaseLineInput { id: string; productName: string }
@@ -33,6 +42,23 @@ function numeric(value: unknown): number {
 
 export function toSupplier(rec: Record<string, any>): Supplier {
   return { id: text(rec.id), name: text(rec.name), phone: text(rec.phone) };
+}
+
+export function paginateSuppliers(suppliers: Supplier[], page: number): SupplierPage {
+  const pageSize = 10;
+  const total = suppliers.length;
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
+  const current = Math.min(Math.max(Math.trunc(page) || 1, 1), totalPages);
+  const start = (current - 1) * pageSize;
+  return {
+    items: suppliers.slice(start, start + pageSize),
+    page: current,
+    pageSize,
+    total,
+    totalPages,
+    hasPrevious: current > 1,
+    hasNext: current < totalPages,
+  };
 }
 
 export function toProductOption(rec: Record<string, any>): ProductOption {

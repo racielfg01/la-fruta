@@ -6,6 +6,7 @@ import {
   formatSupplierMoney,
   isSuppliersSetupError,
   latestPrices,
+  paginateSuppliers,
   purchaseTotal,
   stockDeltas,
   toProductOption,
@@ -15,6 +16,7 @@ import {
   validatePurchaseInput,
   validateSupplierInput,
   type Purchase,
+  type Supplier,
 } from "./suppliers";
 
 function makePurchase(overrides: Partial<Purchase> = {}): Purchase {
@@ -243,5 +245,63 @@ describe("suppliers setup error detection", () => {
     expect(isSuppliersSetupError(new Error("Collection 'suppliers' not found."))).toBe(true);
     expect(isSuppliersSetupError(new Error("red"))).toBe(false);
     expect(isSuppliersSetupError(null)).toBe(false);
+  });
+});
+
+describe("supplier pagination", () => {
+  const suppliers: Supplier[] = Array.from({ length: 25 }, (_, index) => ({
+    id: `s${index + 1}`,
+    name: `S${index + 1}`,
+    phone: `555-${index + 1}`,
+  }));
+
+  test("paginateSuppliers returns ten suppliers and the requested page metadata", () => {
+    const result = paginateSuppliers(suppliers, 2);
+    expect(result.items.map((supplier) => supplier.name)).toEqual([
+      "S11", "S12", "S13", "S14", "S15", "S16", "S17", "S18", "S19", "S20",
+    ]);
+    expect(result).toMatchObject({
+      page: 2,
+      pageSize: 10,
+      total: 25,
+      totalPages: 3,
+      hasPrevious: true,
+      hasNext: true,
+    });
+  });
+
+  test("paginateSuppliers clamps a page past the end to the last page", () => {
+    const result = paginateSuppliers(suppliers, 99);
+    expect(result.items.map((supplier) => supplier.name)).toEqual([
+      "S21", "S22", "S23", "S24", "S25",
+    ]);
+    expect(result).toMatchObject({ page: 3, hasPrevious: true, hasNext: false });
+  });
+
+  test("paginateSuppliers clamps a zero page to the first page", () => {
+    const result = paginateSuppliers(suppliers, 0);
+    expect(result.items[0].name).toBe("S1");
+    expect(result).toMatchObject({ page: 1, hasPrevious: false, hasNext: true });
+  });
+
+  test("paginateSuppliers keeps an empty list on page one", () => {
+    expect(paginateSuppliers([], 4)).toEqual({
+      items: [],
+      page: 1,
+      pageSize: 10,
+      total: 0,
+      totalPages: 1,
+      hasPrevious: false,
+      hasNext: false,
+    });
+  });
+
+  test("paginateSuppliers does not create a second page for exactly ten suppliers", () => {
+    const result = paginateSuppliers(suppliers.slice(0, 10), 1);
+    expect(result).toMatchObject({
+      totalPages: 1,
+      hasPrevious: false,
+      hasNext: false,
+    });
   });
 });

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import { canAccessAdmin, hasPermission } from "./use-permissions";
+import { NO_PERMISSIONS } from "./permissions";
 import type { AuthUser } from "./auth-context";
 
 /**
@@ -17,15 +18,28 @@ const operadorCobre: AuthUser = {
   name: "Jenny",
   email: "jenny@lafruta.com",
   role_id: 1,
+  permissions: { ...NO_PERMISSIONS, orders: true },
+} as AuthUser;
+
+const operadorPreSuppliers: AuthUser = {
+  id: "u4",
+  name: "Operador antiguo",
+  email: "antiguo@lafruta.com",
+  role_id: 1,
   permissions: {
     dashboard: false,
     orders: true,
-    products: false,
+    products: true,
     shipping: false,
     users: false,
     settings: false,
     offers: false,
   },
+} as AuthUser;
+
+const operadorSinProveedores: AuthUser = {
+  ...operadorPreSuppliers,
+  permissions: { ...operadorPreSuppliers.permissions, suppliers: false },
 } as AuthUser;
 
 const cliente: AuthUser = {
@@ -51,6 +65,16 @@ describe("canAccessAdmin (cliente)", () => {
     expect(hasPermission(operadorCobre, "orders")).toBe(true);
     expect(hasPermission(operadorCobre, "users")).toBe(false);
     expect(hasPermission(operadorCobre, "settings")).toBe(false);
+  });
+
+  it("una sesión guardada antes de suppliers hereda el acceso de products", () => {
+    expect(hasPermission(operadorPreSuppliers, "products")).toBe(true);
+    expect(hasPermission(operadorPreSuppliers, "suppliers")).toBe(true);
+  });
+
+  it("un suppliers explícito en false no se hereda de products", () => {
+    expect(hasPermission(operadorSinProveedores, "products")).toBe(true);
+    expect(hasPermission(operadorSinProveedores, "suppliers")).toBe(false);
   });
 
   it("cliente sin permisos → no entra al panel", () => {

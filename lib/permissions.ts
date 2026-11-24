@@ -2,6 +2,7 @@ export interface RolePermissions {
   dashboard: boolean;
   orders: boolean;
   products: boolean;
+  suppliers: boolean;
   shipping: boolean;
   users: boolean;
   settings: boolean;
@@ -12,6 +13,7 @@ export const ALL_PERMISSIONS: RolePermissions = {
   dashboard: true,
   orders: true,
   products: true,
+  suppliers: true,
   shipping: true,
   users: true,
   settings: true,
@@ -22,6 +24,7 @@ export const NO_PERMISSIONS: RolePermissions = {
   dashboard: false,
   orders: false,
   products: false,
+  suppliers: false,
   shipping: false,
   users: false,
   settings: false,
@@ -34,6 +37,7 @@ export const PERMISSION_KEYS: PermissionKey[] = [
   "dashboard",
   "orders",
   "products",
+  "suppliers",
   "shipping",
   "users",
   "settings",
@@ -49,6 +53,12 @@ function parseRolePermissions(raw: unknown): RolePermissions | null {
     const merged = { ...NO_PERMISSIONS };
     for (const key of PERMISSION_KEYS) {
       if (record[key] === true) merged[key] = true;
+    }
+    // Los roles guardados antes de que existiera `suppliers` ya daban acceso
+    // a proveedores vía `products`. Solo hereda cuando la clave no vino en el
+    // JSON: un `suppliers: false` explícito se respeta.
+    if (typeof record.suppliers !== 'boolean') {
+      merged.suppliers = merged.products;
     }
     return merged;
   } catch {

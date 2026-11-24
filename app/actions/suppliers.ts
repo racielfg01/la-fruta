@@ -197,21 +197,29 @@ export async function createPurchaseAction(
     notes: input.notes || '',
     created_by: auth.userId,
   });
+  // PocketBase puede tener deshabilitada la API de batch (HTTP 403), así que
+  // las líneas se crean una a una. Si alguna falla se borran las creadas y la
+  // compra para no dejar un registro huérfano.
+  const createdItems: string[] = [];
   try {
-    const batch = pb.createBatch();
     for (const line of input.items) {
-      batch.collection('purchase_items').create({
+      const item = await pb.collection('purchase_items').create({
         purchase: purchase.id,
         product: line.product,
         product_name: String(catalog.get(line.product)?.name ?? ''),
         quantity: Number(line.quantity),
         unit_price: Number(line.unitPrice),
       });
+      createdItems.push(String(item.id));
     }
-    await batch.send();
   } catch (error) {
+    for (const itemId of createdItems) {
+      await pb.collection('purchase_items').delete(itemId).catch((cleanupError) => {
+        console.error('No se pudo borrar la línea huérfana:', cleanupError);
+      });
+    }
     await pb.collection('purchases').delete(purchase.id).catch((cleanupError) => {
-      console.error('No se pudo borrar la compra huérfana tras fallar el batch:', cleanupError);
+      console.error('No se pudo borrar la compra huérfana:', cleanupError);
     });
     throw error;
   }
@@ -230,12 +238,11 @@ export async function deletePurchaseAction(
   if (!canDeletePurchase(purchase)) {
     throw new Error('No se puede borrar una compra con stock aplicado');
   }
-  const batch = pb.createBatch();
+  // Sin API de batch: se borran las líneas y después la compra.
   for (const row of itemRows) {
-    batch.collection('purchase_items').delete(String(row.id));
+    await pb.collection('purchase_items').delete(String(row.id));
   }
-  batch.collection('purchases').delete(id);
-  await batch.send();
+  await pb.collection('purchases').delete(id);
 }
 
 function isStockClaimConflict(error: unknown): boolean {
@@ -277,24 +284,51 @@ export async function applyPurchaseStockAction(
   }
   const updates = Array.from(totals, ([product, quantity]) => ({ product, quantity }));
 
-  // La creación del reclamo tiene un índice único por compra: si dos admins
-  // aplican la misma compra a la vez, el segundo falla y el batch se revierte.
-  const batch = pb.createBatch();
-  batch.collection('stock_applications').create({ purchase: purchaseId });
-  for (const update of updates) {
-    batch.collection('products').update(update.product, {
-      'stock+': update.quantity,
-      in_stock: true,
-    });
-  }
-  batch.collection('purchases').update(purchaseId, {
-    stock_applied_at: toPocketBaseDate(new Date()),
-  });
+  // El reclamo se crea primero y su índice único por compra evita que dos
+  // llamadas concurrentes sumen dos veces el mismo stock.
+  let claimId = '';
   try {
-    await batch.send();
+    const claim = await pb.collection('stock_applications').create({
+      purchase: purchaseId,
+    });
+    claimId = String(claim?.id ?? '');
   } catch (error) {
     if (isStockClaimConflict(error)) {
       throw new Error('El stock de esta compra ya fue aplicado');
+    }
+    throw error;
+  }
+
+  const applied: Array<{ product: string; quantity: number }> = [];
+  try {
+    for (const update of updates) {
+      await pb.collection('products').update(update.product, {
+        'stock+': update.quantity,
+        in_stock: true,
+      });
+      applied.push(update);
+    }
+    await pb.collection('purchases').update(purchaseId, {
+      stock_applied_at: toPocketBaseDate(new Date()),
+    });
+  } catch (error) {
+    // Sin API de batch no hay revertido atómico: se descarta lo ya sumado y se
+    // libera el reclamo para que la compra pueda reintentarse.
+    for (const update of applied.reverse()) {
+      await pb
+        .collection('products')
+        .update(update.product, { 'stock+': -update.quantity })
+        .catch((rollbackError) => {
+          console.error('No se pudo revertir el stock aplicado:', rollbackError);
+        });
+    }
+    if (claimId) {
+      await pb
+        .collection('stock_applications')
+        .delete(claimId)
+        .catch((cleanupError) => {
+          console.error('No se pudo liberar el reclamo de stock:', cleanupError);
+        });
     }
     throw error;
   }

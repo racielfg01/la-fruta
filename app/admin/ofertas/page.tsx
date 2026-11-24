@@ -1,12 +1,13 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { useAdminStore } from "@/lib/admin-store";
 import { useAuthStore } from "@/lib/auth-context";
 import { applyOfferImportAction } from "@/app/actions/admin";
 import type { OfferImportPlan } from "@/lib/offer-excel";
 import {
+  filterOffersByName,
   isOfferActive,
   validateOfferInput,
   type AdminOffer,
@@ -66,6 +67,8 @@ import {
   FileSpreadsheet,
   CheckCircle2,
   XCircle,
+  Search,
+  X,
 } from "lucide-react";
 import { ImageUpload } from "@/components/upload-button";
 import { usePagination } from "@/lib/use-pagination";
@@ -126,6 +129,7 @@ export default function OffersAdminPage() {
   const [saving, setSaving] = useState(false);
   const [imageUploaded, setImageUploaded] = useState(false);
   const [offerToDelete, setOfferToDelete] = useState<AdminOffer | null>(null);
+  const [search, setSearch] = useState("");
 
   // ── Plantilla Excel de ofertas ──
   const offerFileInputRef = useRef<HTMLInputElement>(null);
@@ -135,6 +139,8 @@ export default function OffersAdminPage() {
   const [offerPreviewOpen, setOfferPreviewOpen] = useState(false);
   const [applyingOfferPlan, setApplyingOfferPlan] = useState(false);
 
+  const filteredOffers = filterOffersByName(offers, search);
+
   const {
     paginatedData: paginatedOffers,
     currentPage,
@@ -142,7 +148,18 @@ export default function OffersAdminPage() {
     perPage,
     goToPage,
     changePerPage,
-  } = usePagination(offers, 10);
+  } = usePagination(filteredOffers, 10);
+
+  // Al cambiar la búsqueda volvemos a la primera página; si no, podemos
+  // quedar en una página que ya no tiene resultados.
+  const isFirstSearch = useRef(true);
+  useEffect(() => {
+    if (isFirstSearch.current) {
+      isFirstSearch.current = false;
+      return;
+    }
+    goToPage(1);
+  }, [search, goToPage]);
 
   const productName = (id?: string) =>
     products.find((p) => p.id === id)?.name || "Producto no disponible";
@@ -385,6 +402,50 @@ export default function OffersAdminPage() {
         </div>
       </div>
 
+      {/* Buscador por nombre */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+        <div className="relative w-full sm:max-w-sm">
+          <Search
+            aria-hidden
+            className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+          />
+          <Input
+            type="search"
+            inputMode="search"
+            enterKeyHint="search"
+            aria-label="Buscar ofertas por nombre"
+            placeholder="Buscar por nombre…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="h-10 pl-9 pr-9"
+          />
+          {search && (
+            <button
+              type="button"
+              onClick={() => setSearch("")}
+              aria-label="Limpiar búsqueda"
+              className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          )}
+        </div>
+        {search && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setSearch("")}
+            className="h-10 shrink-0 gap-1.5 self-end text-muted-foreground hover:text-foreground sm:self-auto"
+          >
+            <X className="h-3.5 w-3.5" />
+            Limpiar
+          </Button>
+        )}
+        <p className="text-sm text-muted-foreground sm:ml-auto">
+          {filteredOffers.length} {filteredOffers.length === 1 ? "oferta" : "ofertas"}
+        </p>
+      </div>
+
       {/* Mobile: tarjetas */}
       <div className="block md:hidden">
         <div className="grid gap-4 sm:grid-cols-2">
@@ -463,18 +524,28 @@ export default function OffersAdminPage() {
               </Card>
             );
           })}
-          {offers.length === 0 && (
+          {filteredOffers.length === 0 && (
             <Card className="sm:col-span-2">
               <CardContent className="flex flex-col items-center justify-center py-16">
                 <BadgePercent className="mb-4 h-12 w-12 text-muted-foreground" />
-                <h3 className="mb-2 text-lg font-semibold">No hay ofertas</h3>
+                <h3 className="mb-2 text-lg font-semibold">
+                  {offers.length === 0 ? "No hay ofertas" : "Sin resultados"}
+                </h3>
                 <p className="mb-4 text-center text-muted-foreground">
-                  Crea la primera para destacarla en la portada.
+                  {offers.length === 0
+                    ? "Crea la primera para destacarla en la portada."
+                    : `No hay ofertas que coincidan con «${search}».`}
                 </p>
-                <Button onClick={openNew}>
-                  <Plus className="mr-2 h-4 w-4" />
-                  Crear Oferta
-                </Button>
+                {offers.length === 0 ? (
+                  <Button onClick={openNew}>
+                    <Plus className="mr-2 h-4 w-4" />
+                    Crear Oferta
+                  </Button>
+                ) : (
+                  <Button variant="outline" onClick={() => setSearch("")}>
+                    Limpiar búsqueda
+                  </Button>
+                )}
               </CardContent>
             </Card>
           )}
@@ -484,7 +555,7 @@ export default function OffersAdminPage() {
       {/* Desktop: tabla */}
       <Card className="hidden overflow-hidden md:block">
         <CardHeader>
-          <CardTitle>Lista de Ofertas ({offers.length})</CardTitle>
+          <CardTitle>Lista de Ofertas ({filteredOffers.length})</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
@@ -585,10 +656,12 @@ export default function OffersAdminPage() {
                     </TableRow>
                   );
                 })}
-                {offers.length === 0 && (
+                {filteredOffers.length === 0 && (
                   <TableRow>
                     <TableCell colSpan={8} className="py-8 text-center text-muted-foreground">
-                      No hay ofertas. Crea la primera para destacarla en la portada.
+                      {offers.length === 0
+                        ? "No hay ofertas. Crea la primera para destacarla en la portada."
+                        : `No hay ofertas que coincidan con «${search}». Prueba con otro nombre.`}
                     </TableCell>
                   </TableRow>
                 )}
@@ -598,11 +671,11 @@ export default function OffersAdminPage() {
         </CardContent>
       </Card>
 
-      {offers.length > 0 && (
+      {filteredOffers.length > 0 && (
         <PaginationBar
           currentPage={currentPage}
           totalPages={totalPages}
-          totalItems={offers.length}
+          totalItems={filteredOffers.length}
           perPage={perPage}
           onPageChange={goToPage}
           onPerPageChange={changePerPage}

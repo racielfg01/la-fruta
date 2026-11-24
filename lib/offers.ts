@@ -75,6 +75,26 @@ export function toAdminOffer(rec: Record<string, any>): AdminOffer {
   };
 }
 
+/** Normaliza texto para buscar: sin acentos y en minúsculas. */
+function normalizeOfferSearch(value: string): string {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLocaleLowerCase("es");
+}
+
+/** Filtra ofertas por nombre; la descripción no participa en la búsqueda. */
+export function filterOffersByName<T extends { name: string }>(
+  offers: T[],
+  search: string
+): T[] {
+  const query = normalizeOfferSearch(search.trim());
+  if (!query) return offers;
+  return offers.filter((offer) =>
+    normalizeOfferSearch(offer.name).includes(query)
+  );
+}
+
 /**
  * ¿La oferta está vigente? Debe estar activa y con fecha límite por delante.
  * Sin fecha (o fecha inútil) cuenta como vigente «infinita».

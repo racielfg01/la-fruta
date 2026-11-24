@@ -5,6 +5,7 @@ import { describe, test, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import {
   countdownParts,
+  filterOffersByName,
   isOfferActive,
   offerLineTargets,
   toAdminOffer,
@@ -276,5 +277,37 @@ describe("cableado de las ofertas públicas", () => {
 
   test("la página de ofertas está en el sitemap", () => {
     expect(sitemap).toContain("/ofertas");
+  });
+});
+
+describe("filterOffersByName", () => {
+  const offers = [
+    { id: "1", name: "Combo 15", description: "Lomo y hamburguesas" },
+    { id: "2", name: "Combo Fin de semana", description: "Pollo" },
+    { id: "3", name: "Combo infantil", description: "Malta y galletas" },
+  ];
+
+  test("devuelve todas con una búsqueda vacía", () => {
+    expect(filterOffersByName(offers, "   ")).toEqual(offers);
+  });
+
+  test("filtra por nombre sin distinguir mayúsculas", () => {
+    expect(filterOffersByName(offers, "semana").map((o) => o.id)).toEqual([
+      "2",
+    ]);
+    expect(filterOffersByName(offers, "COMBO 15").map((o) => o.id)).toEqual([
+      "1",
+    ]);
+  });
+
+  test("no busca en la descripción", () => {
+    expect(filterOffersByName(offers, "pollo")).toEqual([]);
+  });
+
+  test("ignora los acentos", () => {
+    const acentuadas = [{ id: "4", name: "Cítricos" }];
+    expect(filterOffersByName(acentuadas, "citr").map((o) => o.id)).toEqual([
+      "4",
+    ]);
   });
 });

@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useCallback } from 'react'
 
 export function usePagination<T>(data: T[], itemsPerPage = 10) {
   const [currentPage, setCurrentPage] = useState(1)
@@ -12,14 +12,14 @@ export function usePagination<T>(data: T[], itemsPerPage = 10) {
     return data.slice(start, start + perPage)
   }, [data, safePage, perPage])
 
-  const goToPage = (page: number) => {
+  const goToPage = useCallback((page: number) => {
     setCurrentPage(Math.max(1, Math.min(page, totalPages)))
-  }
+  }, [totalPages])
 
-  const changePerPage = (n: number) => {
+  const changePerPage = useCallback((n: number) => {
     setPerPage(n)
     setCurrentPage(1)
-  }
+  }, [])
 
   return {
     currentPage: safePage,
